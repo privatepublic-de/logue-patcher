@@ -147,6 +147,16 @@ Layout:
 Design notes and the reasoning behind many constants live in [`CLAUDE.md`](CLAUDE.md) and
 [`docs/`](docs).
 
+## Acknowledgements
+
+Several primitives build on published DSP work: the Karplus-Strong string adapts techniques
+from Mutable Instruments' [eurorack](https://github.com/pichenettes/eurorack) modules (Emilie
+Gillet, MIT), the example reverb follows Jezar's Freeverb, the pink noise is Paul Kellet's
+filter, the frequency shifter uses Olli Niemitalo's Hilbert allpass pair, the formant filter
+uses Peterson & Barney's vowel formants, and phase distortion follows Casio's CZ series. The
+app grew out of an editor for [Axoloti](http://www.axoloti.com), and builds on Korg's
+[logue SDK](https://github.com/korginc/logue-sdk).
+
 ## License
 
 [MIT](LICENSE) © 2026 Peter Witzel
