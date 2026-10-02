@@ -1,0 +1,270 @@
+/* A bespoke warm-graphite neutral scale (one consistent hue, ~30°, low saturation) replacing
+ * electron-vite's unmodified scaffold defaults (the old --ev-c-* values below were the stock
+ * template palette, never actually designed for this app -- a cool, inconsistent mix of
+ * hue-neutral blacks and blue-gray mid-tones). Paired with one considered accent -- a
+ * teal-cyan "signal" color, chosen to read as its own thing next to the wire-type palette
+ * (portColors.ts: blue/red/yellow/green/pink) and the amber/olive tones already used for
+ * warnings and comment nodes, rather than collide with any of them. */
+:root {
+  --ev-c-black: #18140f;
+  --ev-c-black-soft: #1e1a15;
+  --ev-c-black-mute: #24201a;
+
+  --ev-c-gray-1: #6f6559;
+  --ev-c-gray-2: #4a443c;
+  --ev-c-gray-3: #34302a;
+
+  --ev-c-text-1: rgba(246, 241, 232, 0.88);
+  --ev-c-text-2: rgba(236, 228, 214, 0.6);
+  --ev-c-text-3: rgba(236, 228, 214, 0.4);
+
+  --ev-button-alt-border: transparent;
+  --ev-button-alt-text: var(--ev-c-text-1);
+  --ev-button-alt-bg: var(--ev-c-gray-3);
+  --ev-button-alt-hover-border: transparent;
+  --ev-button-alt-hover-text: var(--ev-c-text-1);
+  --ev-button-alt-hover-bg: var(--ev-c-gray-2);
+
+  /* Primary interactive accent (selection, focus, live/interactive values) -- a bright
+   * teal-cyan for lines/text/icons on the dark chrome, and a deeper shade for the rare case
+   * of a filled highlight needing white text on top (kept legible per WCAG at that size). */
+  --color-accent: #4fbac7;
+  --color-accent-strong: #1f7c89;
+  --color-section-label: color-mix(in srgb, var(--color-accent) 45%, var(--ev-c-text-3));
+
+  /* Status-message color-coding (the tab bar's save/open feedback line) -- error reuses the
+   * same red already used for a zombie node's border (main.css's .patch-node--zombie) so
+   * "something's wrong" reads as one consistent hue app-wide; success is a plain, unclaimed
+   * green (nothing else in the palette uses green). Harmonization pass (2026-09-11): each of
+   * these previously had a second, independently hand-typed literal drifting from it across
+   * main.css/UsbPanel.tsx (e.g. error's old #b0524f token vs. an unrelated #e07070 typed at six
+   * separate call sites) -- one accessible hex per role now, contrast-checked against the node
+   * background this app actually shows it on (>=5.6:1; error was as low as 3.4:1). Error is also
+   * shifted a few degrees off true red (hue ~350 vs. portColors.ts's frac32buffer wire at hue 0)
+   * so a build-failed chip and an audio-buffer wire don't read as the same red. */
+  --color-status-error: #da7485;
+  --color-status-success: #6cba71;
+  /* Same amber already used for the VU meter's peak marker (main.css) -- promoted to a token
+     so the VU meter's zone coloring (below) can share one source of truth for "warning". */
+  --color-status-warning: #dda63f;
+
+  /* "Device is live" power-light gold -- previously typed out as a bare literal at two unrelated
+     call sites (main.css's .live-icon--live and .patch-node__perf-indicator-dot), each with its
+     own copy of the same RGB triple in a matching drop-shadow. Given its own token here, and
+     nudged a further few degrees from --color-status-warning's amber (hue 39) toward true
+     yellow-green (hue 54) so "live" and "warning" stay visually distinct at a glance -- still
+     the single brightest color in the palette (11:1 on node bg). */
+  --color-live: #e5d017;
+}
+
+:root {
+  --color-background: var(--ev-c-black);
+  --color-background-soft: var(--ev-c-black-soft);
+  --color-background-mute: var(--ev-c-black-mute);
+
+  --color-text: var(--ev-c-text-1);
+
+  /** Canvas background when this tab's patch is the one currently live-bound to the connected
+   *  device (see PatchCanvas.tsx) -- a dim green tint distinct from the app's own cool
+   *  near-black palette, deliberately not a literal port of 1.0.12's light-gray/dark-gray pair
+   *  (Theme.java's Patch_Unlocked_Background/Patch_Locked_Background), which would clash badly
+   *  against this app's dark theme throughout. */
+  --canvas-bg-live: #16241a;
+
+  /** Drag-alignment guide lines, horizontal and vertical (see PatchCanvas.tsx/
+   *  AlignmentGuideLine.tsx) -- a violet, deliberately distinct from the teal selection/focus
+   *  accent above (would read as "this node is selected") and from portColors.ts's blue/red/
+   *  yellow/green/pink wire hues. */
+  --canvas-guide-line: #b388ff;
+
+  /** Performance-view widget grouping/labeling colors (PerformanceView.tsx) -- one base hex per
+   *  color; the actual card washes (handle strip vs body vs border, see main.css's
+   *  .performance-widget--color-*) are computed via color-mix() at different strengths rather
+   *  than three hand-picked hex values per color. Muted relative to portColors.ts's brighter
+   *  same-hue-family wire dots (this tints a whole card, not a 6px port) and deliberately not
+   *  identical to --color-status-error/-success/-warning above (a grouping color must not read
+   *  as a status signal). */
+  --perf-color-red: #9c4a45;
+  --perf-color-orange: #b8763a;
+  --perf-color-yellow: #ab9138;
+  --perf-color-green: #4c8a56;
+  --perf-color-blue: #3d6ba3;
+  --perf-color-purple: #7a4bab;
+
+  /** Comment node palette (main.css's .comment-node) -- previously four independently
+   *  hand-typed hex values in the same amber/olive family --perf-color-yellow already lives in.
+   *  Derived from it via color-mix() instead, the same technique the VU meter's dark-zone
+   *  variants above already use, so this amber family has one governed source rather than two
+   *  unrelated ones. */
+  --color-comment-bg: color-mix(in srgb, var(--perf-color-yellow) 18%, var(--ev-c-black-mute));
+  --color-comment-border: color-mix(in srgb, var(--perf-color-yellow) 45%, var(--ev-c-black-mute));
+  --color-comment-text: color-mix(in srgb, var(--perf-color-yellow) 20%, var(--ev-c-text-1));
+}
+
+/** React Flow's own chrome (Background/Controls/MiniMap, mounted in PatchCanvas.tsx) ships
+ *  unstyled by default -- its `.react-flow.dark` class (from this app's `colorMode="dark"`)
+ *  covers most of the library's own --xy-* tokens but never the controls-button ones, so the
+ *  zoom/fit-view/lock buttons render in the library's literal light-mode default (#fefefe) no
+ *  matter what; the minimap's generic dark grays don't match this app's warm-graphite hue
+ *  family either. Overriding the library's own custom properties (its stylesheet already reads
+ *  each one as var(--xy-foo, var(--xy-foo-default))) themes it without fighting xyflow's own
+ *  cascade or needing per-component color props in PatchCanvas.tsx. */
+.react-flow {
+  --xy-controls-button-background-color: var(--ev-c-black-mute);
+  --xy-controls-button-background-color-hover: var(--ev-c-gray-2);
+  --xy-controls-button-color: var(--ev-c-text-2);
+  --xy-controls-button-color-hover: var(--color-accent);
+  --xy-controls-button-border-color: var(--ev-c-gray-2);
+  --xy-minimap-background-color: var(--ev-c-black-soft);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--ev-c-black-soft) 70%, transparent);
+  /* The mask is one path with the visible-viewport rect cut out as a hole (see
+     .react-flow__minimap-mask below) -- its stroke traces that hole's edge, so this is what
+     actually outlines the viewport rect. Library default is stroke-color: transparent, leaving
+     the viewport with no visible frame at all beyond the mask/no-mask color difference (easy to
+     miss against busy node content). */
+  --xy-minimap-mask-stroke-color: var(--color-accent);
+  --xy-minimap-mask-stroke-width: 2;
+  --xy-minimap-node-background-color: var(--ev-c-gray-2);
+  --xy-background-color: var(--ev-c-black);
+  --xy-background-pattern-dots-color: var(--ev-c-gray-3);
+}
+
+/* Neither panel gets a border/radius from the library's own tokens (there isn't one to override --
+ * `.react-flow__minimap`/`.react-flow__controls` ship as flat, square-cornered rectangles by
+ * default). Matches Performance View's own hand-built minimap/zoom-controls panels
+ * (`.performance-minimap`/`.performance-zoom-controls`, main.css) exactly, so the two views' panels
+ * read as the same UI element rather than two different chrome styles. `overflow: hidden` clips
+ * each panel's own content (the minimap's `<svg>`, the button stack) to the rounded corners. */
+.react-flow__minimap,
+.react-flow__controls {
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* A stronger dropshadow than .view-mode-pill's own (main.css, same `0 2px 8px/0.35` value the
+ * rule above still uses for .react-flow__controls) -- the minimap sits over the canvas's own
+ * near-black background rather than the pill's lighter dotted-grid area, so an identical shadow
+ * reads as barely-there here; this stays soft/diffuse (no hard edge) but with enough spread and
+ * opacity to actually separate the panel from that backdrop. */
+.react-flow__minimap {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+/* A considered keyboard-focus ring in the accent color, app-wide -- also replaces whatever
+   default blue ring Chromium would otherwise draw on a button/input/select. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+ul {
+  list-style: none;
+}
+
+/* A dark-theme default for any plain, unclassed form control -- several panels (BuildPanel,
+   UsbPanel) have raw <input>s with no component-specific styling, which previously fell back
+   to the browser's default white input chrome. A more specific class-based rule elsewhere
+   still wins over this, so existing carefully-styled inputs are unaffected. */
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--color-text);
+  background-color: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* Same fallback for a plain, unclassed <button> (e.g. UsbPanel/BuildPanel's Connect/Compile/
+   Stop Patch, which never had a scoped ".foo button" rule) -- a more specific selector like
+   ".tab-bar__new" still wins over this bare-type one. */
+button {
+  cursor: pointer;
+  font: inherit;
+  border: 1px solid var(--ev-button-alt-border);
+  color: var(--ev-button-alt-text);
+  background-color: var(--ev-button-alt-bg);
+  border-radius: 6px;
+  padding: 4px 12px;
+}
+
+button:hover:not(:disabled) {
+  color: var(--ev-button-alt-hover-text);
+  background-color: var(--ev-button-alt-hover-bg);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  line-height: 1.6;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- scrollbars (match dark theme instead of the OS-default light chrome) --- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ev-c-gray-2) var(--color-background-mute);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--color-background-mute);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--ev-c-gray-2);
+  border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ev-c-gray-1);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--color-background-mute);
+}

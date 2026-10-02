@@ -1,0 +1,22 @@
+node_modules
+dist
+out
+build-resources
+.DS_Store
+.eslintcache
+*.log*
+# ...but not the patch and subpatch files that pattern also matches (examples/).
+!*.loguepatch
+!*.loguesub
+*.tsbuildinfo
+
+# logue-codegen/harness/*/main.cpp's own documented convention -- a debugging snapshot of
+# generated output copied in locally, never source, never committed (see that file's own header
+# comment).
+logue-codegen/harness/*/osc_real.cpp
+
+# logue-codegen/harness/sysex-emu/run.sh's compiled emulator -- rebuilt from main.swift on demand.
+logue-codegen/harness/sysex-emu/logue-emu
+
+# scripts/build-midi-helper.mjs's output -- compiled from native/logue-midi-helper on demand.
+resources/bin/

@@ -1,0 +1,848 @@
+{
+  "nodes": [
+    {
+      "type": "./resobp",
+      "name": "resobp_1",
+      "x": 179,
+      "y": -279,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "bp_1:pitch",
+          "value": "-12"
+        },
+        {
+          "name": "bp_1:reso",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "ctrl/dial b",
+      "name": "dial_1",
+      "x": 202.02598652550535,
+      "y": 62.04331087584215,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "value",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "audio/in left",
+      "name": "in_1",
+      "x": -5,
+      "y": -279,
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "math/*",
+      "name": "*_1",
+      "x": 204.02598652550535,
+      "y": -44.95668912415785,
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "audio/out stereo",
+      "name": "out_1",
+      "x": 1738.7423848343658,
+      "y": 70.80529795420713,
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "./resobp",
+      "name": "resobp_2",
+      "x": 415,
+      "y": -279,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "bp_1:pitch",
+          "value": "0"
+        },
+        {
+          "name": "bp_1:reso",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "ctrl/dial b",
+      "name": "dial_2",
+      "x": 382.02598652550535,
+      "y": 62.04331087584215,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "value",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "math/*",
+      "name": "*_2",
+      "x": 443.02598652550535,
+      "y": -44.95668912415785,
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "lfo/sine",
+      "name": "sine_1",
+      "x": 22.025986525505346,
+      "y": -44.95668912415785,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "pitch",
+          "value": "-64.0"
+        }
+      ]
+    },
+    {
+      "type": "./resobp",
+      "name": "resobp_3",
+      "x": 633,
+      "y": -279,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "bp_1:pitch",
+          "value": "7"
+        },
+        {
+          "name": "bp_1:reso",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "ctrl/dial b",
+      "name": "dial_3",
+      "x": 660.0259865255053,
+      "y": 62.04331087584215,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "value",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "math/*",
+      "name": "*_3",
+      "x": 623.0259865255053,
+      "y": -44.95668912415785,
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "./resobp",
+      "name": "resobp_4",
+      "x": 857,
+      "y": -279,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "bp_1:pitch",
+          "value": "2"
+        },
+        {
+          "name": "bp_1:reso",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "ctrl/dial b",
+      "name": "dial_4",
+      "x": 840.0259865255053,
+      "y": 62.04331087584215,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "value",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "math/*",
+      "name": "*_4",
+      "x": 842.0259865255053,
+      "y": -44.95668912415785,
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "ctrl/dial p",
+      "name": "resonance",
+      "x": 560,
+      "y": -462,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "value",
+          "value": "58"
+        }
+      ]
+    },
+    {
+      "type": "ctrl/dial b",
+      "name": "pitch",
+      "x": 364,
+      "y": -462,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "value",
+          "value": "24"
+        }
+      ]
+    },
+    {
+      "type": "spat/pan",
+      "name": "pan",
+      "x": 1032.1214912186358,
+      "y": -279,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "c",
+          "value": "17"
+        }
+      ]
+    },
+    {
+      "type": "spat/pan",
+      "name": "pan_1",
+      "x": 1030.463201871752,
+      "y": -146.5053059300603,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "c",
+          "value": "-17"
+        }
+      ]
+    },
+    {
+      "type": "spat/pan",
+      "name": "pan_2",
+      "x": 1030.1684734635946,
+      "y": -16.351918684743097,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "c",
+          "value": "-47"
+        }
+      ]
+    },
+    {
+      "type": "spat/pan",
+      "name": "pan_3",
+      "x": 1029.5835512277886,
+      "y": 115.19303456082275,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "c",
+          "value": "47"
+        }
+      ]
+    },
+    {
+      "type": "phi/mix/mix 2 st2 sq",
+      "name": "mix_2_st2_sq",
+      "x": 1201.132659395372,
+      "y": -146.5053059300603,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "gain1",
+          "value": "29"
+        },
+        {
+          "name": "gain2",
+          "value": "29"
+        }
+      ]
+    },
+    {
+      "type": "phi/mix/mix 2 st2 sq",
+      "name": "mix_2_st2_sq_1",
+      "x": 1201.2032024976752,
+      "y": 70.80529795420713,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "gain1",
+          "value": "29"
+        },
+        {
+          "name": "gain2",
+          "value": "29"
+        }
+      ]
+    },
+    {
+      "type": "phi/mix/mix 2 st2 sq",
+      "name": "mix_2_st2_sq_1_1",
+      "x": 1364.1265200844775,
+      "y": 70.80529795420713,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "gain1",
+          "value": "64"
+        },
+        {
+          "name": "gain2",
+          "value": "64"
+        }
+      ]
+    },
+    {
+      "type": "fx/rngs/reverb",
+      "name": "reverb",
+      "x": 1568,
+      "y": 70.80529795420713,
+      "kind": "obj",
+      "params": [
+        {
+          "name": "amount",
+          "value": "9.5"
+        },
+        {
+          "name": "time",
+          "value": "59"
+        },
+        {
+          "name": "gain",
+          "value": "14"
+        },
+        {
+          "name": "lowpass",
+          "value": "54.5"
+        },
+        {
+          "name": "diffusion",
+          "value": "52.5"
+        }
+      ]
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "resobp_1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan",
+          "inlet": "i1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "resobp_2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan_1",
+          "inlet": "i1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "resobp_3",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan_2",
+          "inlet": "i1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "resobp_4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan_3",
+          "inlet": "i1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "in_1",
+          "outlet": "wave"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "resobp_1",
+          "inlet": "in"
+        },
+        {
+          "obj": "resobp_2",
+          "inlet": "in"
+        },
+        {
+          "obj": "resobp_3",
+          "inlet": "in"
+        },
+        {
+          "obj": "resobp_4",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "*_1",
+          "outlet": "result"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "resobp_1",
+          "inlet": "pitchmod"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "*_2",
+          "outlet": "result"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "resobp_2",
+          "inlet": "pitchmod"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "*_3",
+          "outlet": "result"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "resobp_3",
+          "inlet": "pitchmod"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "*_4",
+          "outlet": "result"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "resobp_4",
+          "inlet": "pitchmod"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sine_1",
+          "outlet": "wave"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "*_1",
+          "inlet": "b"
+        },
+        {
+          "obj": "*_2",
+          "inlet": "b"
+        },
+        {
+          "obj": "*_3",
+          "inlet": "b"
+        },
+        {
+          "obj": "*_4",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "dial_1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "*_1",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "dial_2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "*_2",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "dial_3",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "*_3",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "dial_4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "*_4",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "resonance",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "resobp_1",
+          "inlet": "reso"
+        },
+        {
+          "obj": "resobp_2",
+          "inlet": "reso"
+        },
+        {
+          "obj": "resobp_3",
+          "inlet": "reso"
+        },
+        {
+          "obj": "resobp_4",
+          "inlet": "reso"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pitch",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "resobp_4",
+          "inlet": "pitch"
+        },
+        {
+          "obj": "resobp_3",
+          "inlet": "pitch"
+        },
+        {
+          "obj": "resobp_2",
+          "inlet": "pitch"
+        },
+        {
+          "obj": "resobp_1",
+          "inlet": "pitch"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan",
+          "outlet": "left"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq",
+          "inlet": "l1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan",
+          "outlet": "right"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq",
+          "inlet": "r1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan_1",
+          "outlet": "left"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq",
+          "inlet": "l2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan_1",
+          "outlet": "right"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq",
+          "inlet": "r2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan_2",
+          "outlet": "left"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1",
+          "inlet": "l1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan_2",
+          "outlet": "right"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1",
+          "inlet": "r1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan_3",
+          "outlet": "left"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1",
+          "inlet": "l2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan_3",
+          "outlet": "right"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1",
+          "inlet": "r2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_2_st2_sq",
+          "outlet": "L"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1_1",
+          "inlet": "l1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_2_st2_sq",
+          "outlet": "R"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1_1",
+          "inlet": "r1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_2_st2_sq_1",
+          "outlet": "L"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1_1",
+          "inlet": "l2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_2_st2_sq_1",
+          "outlet": "R"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_2_st2_sq_1_1",
+          "inlet": "r2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "reverb",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "out_1",
+          "inlet": "left"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "reverb",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "out_1",
+          "inlet": "right"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_2_st2_sq_1_1",
+          "outlet": "L"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "reverb",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_2_st2_sq_1_1",
+          "outlet": "R"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "reverb",
+          "inlet": "r"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "platform": "nts1mkii",
+      "module": "osc"
+    }
+  },
+  "notes": ""
+}

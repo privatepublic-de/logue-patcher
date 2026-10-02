@@ -1,0 +1,229 @@
+import { describe, it, expect } from 'vitest'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { findLoguePrimitive, recognizedLoguePrimitiveIds } from '../logue-codegen/src/primitives'
+import { CPU_COST_BASELINE_CYCLES, CPU_COST_TABLE } from '../logue-codegen/src/cpuCostTable'
+import {
+  cpuZone,
+  estimateOscCpuCost,
+  NTS1MKII_OSC_CEILING_CYCLES,
+  XD_CONFIRMED_WORKING_CYCLES,
+  XD_HUNG_REFERENCE_CYCLES
+} from '../logue-codegen/src/estimateOscCpuCost'
+import { LOGUE_AUDIO_OUT_TYPE } from '../logue-codegen/src/oscInstances'
+import type { Net, ObjNode, PatchDocument } from '../src/shared/domain/patch'
+import { testSampleAsset } from './support/testSample'
+
+const RE_MEASURE = 'EMU_PYTHON=<venv python> npx tsx logue-codegen/scripts/measureCpuCosts.ts <id>'
+
+function xdSnapshotHash(id: string): string {
+  const file = join(
+    import.meta.dirname,
+    '__snapshots__',
+    'primitives',
+    `${id.slice('logue/'.length).replace('/', '.')}.minilogue-xd.txt`
+  )
+  return createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 16)
+}
+
+const xdIds = recognizedLoguePrimitiveIds().filter((id) => {
+  const p = findLoguePrimitive(id)!
+  // Effect-only primitives have no oscillator build to measure (and effects get no CPU estimate).
+  if (p.modules && !p.modules.includes('osc')) return false
+  return !p.platforms || p.platforms.includes('minilogue-xd')
+})
+
+/**
+ * A missing or stale entry only warns: re-measuring needs the ARM toolchain, a logue-sdk checkout
+ * and the emulator venv, and `npm run build` runs these tests, so failing here would block every
+ * build after a codegen change. The estimate then counts a missing primitive as 0 and names it.
+ * `CPU_COST_STRICT=1` turns the warnings back into failures (e.g. right after re-measuring).
+ */
+function reportTableProblem(what: string, ids: string[]): void {
+  if (ids.length === 0) return
+  const message = `CPU cost table: ${what}: ${ids.join(', ')} -- re-measure with: ${RE_MEASURE}`
+  if (process.env.CPU_COST_STRICT === '1') throw new Error(message)
+  console.warn(message)
+}
+
+describe('CPU cost table', () => {
+  it('has a measurement for every primitive the minilogue xd supports (warns if not)', () => {
+    reportTableProblem(
+      'no entry for',
+      xdIds.filter((id) => !CPU_COST_TABLE[id])
+    )
+    expect(CPU_COST_BASELINE_CYCLES).toBeGreaterThan(0)
+  })
+
+  it('was measured against the current generated code (warns if not)', () => {
+    reportTableProblem(
+      'measured against older generated code',
+      xdIds.filter(
+        (id) => CPU_COST_TABLE[id] && CPU_COST_TABLE[id].snapshotHash !== xdSnapshotHash(id)
+      )
+    )
+  })
+})
+
+function node(type: string, name: string, params: ObjNode['params'] = []): ObjNode {
+  return { kind: 'obj', type, name, x: 0, y: 0, params }
+}
+function net(from: string, outlet: string, to: string, inlet: string): Net {
+  return { sources: [{ obj: from, outlet }], dests: [{ obj: to, inlet }] }
+}
+function doc(nodes: ObjNode[], nets: Net[]): PatchDocument {
+  return {
+    nodes: [...nodes, node(LOGUE_AUDIO_OUT_TYPE, 'out')],
+    nets,
+    settings: {},
+    notes: ''
+  }
+}
+
+describe('estimateOscCpuCost', () => {
+  const svf = CPU_COST_TABLE['logue/filter/svf']
+
+  it('counts the variant matching the switches and the control wiring', () => {
+    const tracked = doc(
+      [
+        node('logue/osc/saw', 's'),
+        node('logue/filter/svf', 'f', [{ name: 'TRACK', value: '100' }])
+      ],
+      [net('s', 'out', 'f', 'in'), net('f', 'lp', 'out', 'in')]
+    )
+    const r = estimateOscCpuCost(tracked)
+    expect(r.status).toBe('ok')
+    if (r.status !== 'ok') return
+    const f = r.estimate.perInstance.find((i) => i.nodeName === 'f')!
+    expect(f).toMatchObject({ variant: 'TRACK', cycles: svf.variants.TRACK })
+    const saw = CPU_COST_TABLE['logue/osc/saw'].variants.base
+    expect(r.estimate.cyclesPerVoice).toBe(CPU_COST_BASELINE_CYCLES + saw + svf.variants.TRACK)
+
+    tracked.nodes.push(node('logue/lfo/sine-lfo', 'l'))
+    tracked.nets.push(net('l', 'out', 'f', 'pitch'))
+    const wired = estimateOscCpuCost(tracked)
+    if (wired.status === 'ok') {
+      expect(wired.estimate.perInstance.find((i) => i.nodeName === 'f')).toMatchObject({
+        variant: 'TRACK+control',
+        cycles: svf.variants['TRACK+control']
+      })
+    }
+  })
+
+  it('counts granular by its switches and wiring, not its worst case, when a setting moves', () => {
+    const g = node('logue/osc/granular', 'g', [
+      { name: 'SIZE', value: '50' },
+      { name: 'SYNC', value: '0' }
+    ])
+    g.sample = testSampleAsset()
+    const r = estimateOscCpuCost(doc([g], [net('g', 'out', 'out', 'in')]))
+    expect(r.status === 'ok' && r.estimate.perInstance[0]).toMatchObject({
+      variant: 'SYNC',
+      cycles: CPU_COST_TABLE['logue/osc/granular'].variants.SYNC
+    })
+  })
+
+  it('reports an incomplete graph instead of throwing', () => {
+    expect(estimateOscCpuCost(doc([], [])).status).toBe('incomplete')
+  })
+})
+
+describe('estimateOscCpuCost on a patch the xd cannot build', () => {
+  it('reports it incomplete, like the RAM estimate', () => {
+    const vel = doc(
+      [node('logue/sense/velocity', 'v'), node('logue/gain/vca', 'a'), node('logue/osc/saw', 's')],
+      [net('s', 'out', 'a', 'in'), net('v', 'unipolar', 'a', 'gain'), net('a', 'out', 'out', 'in')]
+    )
+    expect(estimateOscCpuCost(vel).status).toBe('incomplete')
+  })
+})
+
+describe('cpuZone', () => {
+  it('is fine up to the patch known to work, untested up to the one that hung, then hangs', () => {
+    expect(cpuZone(XD_CONFIRMED_WORKING_CYCLES)).toEqual({ zone: 'fine', between: 0 })
+    const mid = cpuZone((XD_CONFIRMED_WORKING_CYCLES + XD_HUNG_REFERENCE_CYCLES) / 2)
+    expect(mid.zone).toBe('between')
+    expect(mid.between).toBeCloseTo(0.5)
+    expect(cpuZone(XD_HUNG_REFERENCE_CYCLES)).toEqual({ zone: 'over', between: 1 })
+    expect(cpuZone(5000).between).toBe(1)
+  })
+})
+
+describe('estimateOscCpuCost with params on device knobs', () => {
+  it('has no extra range when nothing that matters is exposed', () => {
+    const plain = doc([node('logue/osc/saw', 's')], [net('s', 'out', 'out', 'in')])
+    const r = estimateOscCpuCost(plain)
+    expect(r.status === 'ok' && r.estimate.maxCyclesPerVoice).toBe(
+      r.status === 'ok' && r.estimate.cyclesPerVoice
+    )
+  })
+
+  it('counts an exposed checkbox in either position', () => {
+    const svfNode = node('logue/filter/svf', 'f', [
+      { name: 'TRACK', value: '0', logueParamIndex: { 'minilogue-xd': 0 } }
+    ])
+    const r = estimateOscCpuCost(
+      doc(
+        [node('logue/osc/saw', 's'), svfNode],
+        [net('s', 'out', 'f', 'in'), net('f', 'lp', 'out', 'in')]
+      )
+    )
+    const svf = CPU_COST_TABLE['logue/filter/svf']
+    expect(
+      r.status === 'ok' && r.estimate.perInstance.find((i) => i.nodeName === 'f')
+    ).toMatchObject({
+      cycles: svf.variants.base,
+      maxCycles: Math.max(svf.variants.base, svf.variants.TRACK)
+    })
+  })
+
+  it('lets an exposed granular setting reach its heavy measured cases', () => {
+    const g = node('logue/osc/granular', 'g', [
+      { name: 'WINDOW', value: '0', logueParamIndex: { 'minilogue-xd': 0 } }
+    ])
+    g.sample = testSampleAsset()
+    const r = estimateOscCpuCost(doc([g], [net('g', 'out', 'out', 'in')]))
+    const entry = CPU_COST_TABLE['logue/osc/granular']
+    expect(r.status === 'ok' && r.estimate.perInstance[0]).toMatchObject({
+      cycles: entry.variants.base,
+      maxCycles: entry.worst
+    })
+  })
+})
+
+describe('NTS-1 mkII CPU estimate', () => {
+  it('is fine up to half the measured ceiling and over at the ceiling', () => {
+    expect(cpuZone(NTS1MKII_OSC_CEILING_CYCLES / 2, 'nts1mkii').zone).toBe('fine')
+    expect(cpuZone(NTS1MKII_OSC_CEILING_CYCLES * 0.75, 'nts1mkii').zone).toBe('between')
+    expect(cpuZone(NTS1MKII_OSC_CEILING_CYCLES, 'nts1mkii').zone).toBe('over')
+  })
+
+  it('estimates an NTS-1 mkII-only patch, counting helper-less sense/velocity as free', () => {
+    const vel = doc(
+      [node('logue/sense/velocity', 'v'), node('logue/gain/vca', 'a'), node('logue/osc/saw', 's')],
+      [net('s', 'out', 'a', 'in'), net('v', 'unipolar', 'a', 'gain'), net('a', 'out', 'out', 'in')]
+    )
+    const r = estimateOscCpuCost(vel, new Map(), 'nts1mkii')
+    expect(r.status).toBe('ok')
+    if (r.status !== 'ok') return
+    expect(r.estimate.unmeasured).toEqual([])
+    expect(r.estimate.perInstance.find((i) => i.nodeName === 'v')).toMatchObject({
+      cycles: 0,
+      variant: 'trivial'
+    })
+  })
+
+  it('counts params exposed on the NTS-1 mkII, not the xd, for the knob range', () => {
+    const g = node('logue/osc/granular', 'g', [
+      { name: 'WINDOW', value: '0', logueParamIndex: { nts1mkii: 2 } }
+    ])
+    g.sample = testSampleAsset()
+    const d = doc([g], [net('g', 'out', 'out', 'in')])
+    const nts = estimateOscCpuCost(d, new Map(), 'nts1mkii')
+    const xd = estimateOscCpuCost(d, new Map(), 'minilogue-xd')
+    const worst = CPU_COST_TABLE['logue/osc/granular'].worst
+    expect(nts.status === 'ok' && nts.estimate.perInstance[0].maxCycles).toBe(worst)
+    expect(xd.status === 'ok' && xd.estimate.perInstance[0].maxCycles).toBeLessThan(worst)
+  })
+})

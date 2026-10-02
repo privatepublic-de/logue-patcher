@@ -1,0 +1,147 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/audio-in",
+      "x": 0,
+      "y": 200,
+      "name": "audio-in",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/sense/tempo",
+      "x": 240,
+      "y": 40,
+      "name": "beat",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "DIVISION",
+          "value": "2",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 520,
+      "y": 120,
+      "name": "amp_l",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 520,
+      "y": 320,
+      "name": "amp_r",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/audio-out",
+      "x": 800,
+      "y": 200,
+      "name": "audio-out",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "beat",
+          "outlet": "ramp"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "amp_l",
+          "inlet": "gain"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "beat",
+          "outlet": "ramp"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "amp_r",
+          "inlet": "gain"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "amp_l",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "amp_r",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "amp_l",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "amp_r",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "r"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "module": "modfx"
+    },
+    "unitName": "LP Swell"
+  },
+  "notes": "Each beat division fades the input in, at the device tempo. TIME = the division."
+}

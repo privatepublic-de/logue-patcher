@@ -1,0 +1,359 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 0,
+      "name": "buf",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 120,
+      "name": "trig",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 240,
+      "name": "position",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 360,
+      "name": "bus-l",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 480,
+      "name": "bus-r",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 600,
+      "name": "attack",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 720,
+      "name": "decay",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/inlet",
+      "x": 0,
+      "y": 840,
+      "name": "size",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/util/grain",
+      "x": 260,
+      "y": 0,
+      "name": "grain",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "POSITION",
+          "value": "0",
+          "subpatchExpose": {
+            "outerName": "POSITION"
+          }
+        },
+        {
+          "name": "SIZE",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth"
+          }
+        },
+        {
+          "name": "FADE",
+          "value": "10"
+        }
+      ]
+    },
+    {
+      "type": "logue/env/ad",
+      "x": 260,
+      "y": 380,
+      "name": "env",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "ATTACK",
+          "value": "0"
+        },
+        {
+          "name": "DECAY",
+          "value": "0"
+        },
+        {
+          "name": "EXP",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 520,
+      "y": 120,
+      "name": "vca",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 740,
+      "y": 240,
+      "name": "pan",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "0",
+          "subpatchExpose": {
+            "outerName": "PAN"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/io/outlet",
+      "x": 980,
+      "y": 200,
+      "name": "l",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/io/outlet",
+      "x": 980,
+      "y": 320,
+      "name": "r",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "buf",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "grain",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "trig",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "grain",
+          "inlet": "trig"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "trig",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env",
+          "inlet": "trig"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "position",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "grain",
+          "inlet": "position"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "size",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "grain",
+          "inlet": "size"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "attack",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env",
+          "inlet": "attack"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "decay",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env",
+          "inlet": "decay"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "grain",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "vca",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "vca",
+          "inlet": "gain"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "vca",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "bus-l",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "bus-r",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan",
+          "inlet": "r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "l",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "r",
+          "inlet": "in"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "subpatch": true
+  },
+  "notes": "One grain-mill voice: a looping grain from the buffer, an AD envelope with exponential decay, panned onto the stereo bus coming in on bus-l/bus-r."
+}

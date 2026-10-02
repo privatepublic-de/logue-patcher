@@ -1,0 +1,132 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/audio-in",
+      "x": 0,
+      "y": 200,
+      "name": "audio-in",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/env/follower",
+      "x": 260,
+      "y": 40,
+      "name": "level",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "ATTACK",
+          "value": "20"
+        },
+        {
+          "name": "RELEASE",
+          "value": "30"
+        },
+        {
+          "name": "GAIN",
+          "value": "60",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/svf",
+      "x": 560,
+      "y": 160,
+      "name": "wah",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "CUTOFF",
+          "value": "0"
+        },
+        {
+          "name": "RESONANCE",
+          "value": "70",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/io/audio-out",
+      "x": 860,
+      "y": 200,
+      "name": "audio-out",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "mono"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "level",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "level",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "wah",
+          "inlet": "cutoff"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "mono"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "wah",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "wah",
+          "outlet": "lp"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "l"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "module": "modfx"
+    },
+    "unitName": "LP AutoWah"
+  },
+  "notes": "The input's level opens a resonant lowpass. TIME = resonance, DEPTH = sensitivity."
+}

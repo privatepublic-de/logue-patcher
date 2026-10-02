@@ -1,0 +1,30 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
+  "include": [
+    "electron.vite.config.*",
+    "vitest.config.ts",
+    "src/main/**/*",
+    "src/preload/**/*",
+    "src/shared/**/*",
+    "logue-codegen/**/*",
+    "test/**/*"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    // The electron-toolkit base turns this off; with it off, a stale `IPC_CHANNELS['...']` key
+    // silently typed as `any`.
+    "noImplicitAny": true,
+    "types": ["electron-vite/node"],
+    // DOM lib is needed here (not just tsconfig.web.json) because preload.ts genuinely runs in
+    // a renderer-adjacent context with real DOM globals (window, File, webUtils.getPathForFile)
+    // -- it's typechecked under THIS config, per the "src/preload/**/*" include above. Purely
+    // additive: main-process code gains type declarations it will never actually invoke at
+    // runtime, no behavior change.
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["src/shared/*"],
+      "@logue-codegen/*": ["logue-codegen/src/*"]
+    }
+  }
+}

@@ -1,0 +1,1288 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/audio-in",
+      "x": 0,
+      "y": 700,
+      "name": "audio-in",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 260,
+      "y": 700,
+      "name": "in+fb",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/util/buffer",
+      "x": 500,
+      "y": 700,
+      "name": "buffer",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "LENGTH",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "type": "logue/sense/control",
+      "x": 0,
+      "y": 1000,
+      "name": "depth",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "50",
+          "logueKnob": {
+            "minilogue-xd": "depth"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/logic/greater-than",
+      "x": 260,
+      "y": 1000,
+      "name": "freeze",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "THRESHOLD",
+          "value": "95"
+        }
+      ]
+    },
+    {
+      "type": "logue/lfo/square-lfo",
+      "x": 0,
+      "y": 0,
+      "name": "clock",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RATE",
+          "value": "35"
+        }
+      ]
+    },
+    {
+      "type": "logue/logic/chance",
+      "x": 260,
+      "y": 0,
+      "name": "chance",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "CHANCE",
+          "value": "50"
+        }
+      ]
+    },
+    {
+      "type": "logue/logic/round-robin",
+      "x": 500,
+      "y": 60,
+      "name": "voices",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VOICES",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "type": "logue/sense/control",
+      "x": 0,
+      "y": 1100,
+      "name": "time",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "40",
+          "logueKnob": {
+            "minilogue-xd": "time"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 260,
+      "y": 1100,
+      "name": "env-t",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "50"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/constant",
+      "x": 500,
+      "y": 1220,
+      "name": "env-one",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/constant",
+      "x": 500,
+      "y": 1340,
+      "name": "env-short",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "20"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/subtract",
+      "x": 740,
+      "y": 1220,
+      "name": "env-1-t",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/multiply",
+      "x": 980,
+      "y": 1220,
+      "name": "env-t(1-t)",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 1220,
+      "y": 1220,
+      "name": "env-2x",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 1460,
+      "y": 1220,
+      "name": "env-bump",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 1700,
+      "y": 1220,
+      "name": "env-0.8",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "80"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/add",
+      "x": 1940,
+      "y": 1220,
+      "name": "env-1.8",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 2180,
+      "y": 1220,
+      "name": "env-length",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/multiply",
+      "x": 2420,
+      "y": 1100,
+      "name": "env-attack",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/multiply",
+      "x": 2420,
+      "y": 1340,
+      "name": "env-decay",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/lfo/random-steps",
+      "x": 0,
+      "y": 1300,
+      "name": "jitter",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RATE",
+          "value": "75"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 260,
+      "y": 1300,
+      "name": "jitter-amt",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/negate",
+      "x": 500,
+      "y": 1300,
+      "name": "jitter-inv",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "sub/grain-voice",
+      "x": 1000,
+      "y": 260,
+      "name": "voice1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "-100"
+        },
+        {
+          "name": "POSITION",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "type": "sub/grain-voice",
+      "x": 1240,
+      "y": 200,
+      "name": "voice2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "100"
+        },
+        {
+          "name": "POSITION",
+          "value": "19"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/mix2",
+      "x": 1480,
+      "y": 700,
+      "name": "fb-sum",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "GAIN1",
+          "value": "100"
+        },
+        {
+          "name": "GAIN2",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/highpass-cheap",
+      "x": 1720,
+      "y": 700,
+      "name": "fb-hp",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "CUTOFF",
+          "value": "19"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/multiply",
+      "x": 1720,
+      "y": 860,
+      "name": "fb-curve",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 1720,
+      "y": 980,
+      "name": "fb-t",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "60"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/subtract",
+      "x": 1960,
+      "y": 980,
+      "name": "fb-tcomp",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/multiply",
+      "x": 1960,
+      "y": 860,
+      "name": "fb-level",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/multiply",
+      "x": 1960,
+      "y": 700,
+      "name": "fb-amt",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/shape/soft-clip",
+      "x": 2200,
+      "y": 700,
+      "name": "fb-sat",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/crossfader",
+      "x": 1960,
+      "y": 140,
+      "name": "mix-l",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "50",
+          "logueKnob": {
+            "minilogue-xd": "mix"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/crossfader",
+      "x": 1960,
+      "y": 300,
+      "name": "mix-r",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "50",
+          "logueKnob": {
+            "minilogue-xd": "mix"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/io/audio-out",
+      "x": 2200,
+      "y": 200,
+      "name": "audio-out",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "mono"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "in+fb",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "in+fb",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "buffer",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "depth",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "freeze",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "freeze",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "buffer",
+          "inlet": "freeze"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "clock",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "chance",
+          "inlet": "trig"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "chance",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voices",
+          "inlet": "trig"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-t",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "clock",
+          "inlet": "rate"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-one",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-1-t",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-t",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-1-t",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-t",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-t(1-t)",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-1-t",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-t(1-t)",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-t(1-t)",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-2x",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-t(1-t)",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-2x",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-2x",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-bump",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-2x",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-bump",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-bump",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-0.8",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-bump",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-1.8",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-0.8",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-1.8",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-1.8",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-length",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-short",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-length",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-t",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-attack",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-length",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-attack",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-1-t",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-decay",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-length",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "env-decay",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "jitter",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "jitter-amt",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "jitter-amt",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "jitter-inv",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice1",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voices",
+          "outlet": "o1"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice1",
+          "inlet": "trig"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-attack",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice1",
+          "inlet": "attack"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-decay",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice1",
+          "inlet": "decay"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "jitter-amt",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice1",
+          "inlet": "position"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "depth",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice1",
+          "inlet": "size"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voices",
+          "outlet": "o2"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "trig"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-attack",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "attack"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-decay",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "decay"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "jitter-inv",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "position"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "depth",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "size"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voice1",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "bus-l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voice1",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "voice2",
+          "inlet": "bus-r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voice2",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-sum",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voice2",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-sum",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-sum",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-hp",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "depth",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-curve",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "depth",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-curve",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-hp",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-amt",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-t",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "env-one",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-tcomp",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-t",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-tcomp",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-curve",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-level",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-tcomp",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-level",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-level",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-amt",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-amt",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-sat",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-sat",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "in+fb",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-l",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voice2",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-l",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-r",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voice2",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-r",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix-l",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix-r",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "r"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "module": "delfx"
+    },
+    "unitName": "Grain Rnd"
+  },
+  "notes": "grain-mill for the minilogue xd, free clock, half its ticks at random: 2 looping grain voices from a 5.5 s buffer, each reading from its own fixed distance back. Time = the grain clock rate and the grain envelope from short and harsh to long and smooth; Depth = grain size and feedback (full travel freezes the buffer); Shift+Depth = dry/wet. The voice is grain-voice.loguesub next to this file."
+}

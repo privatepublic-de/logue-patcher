@@ -1,0 +1,896 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/audio-in",
+      "x": 0,
+      "y": 1880,
+      "name": "audio-in",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 0,
+      "name": "comb_l1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "7.4110"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 480,
+      "name": "comb_l2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "8.4793"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 960,
+      "name": "comb_l3",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "9.4439"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 1440,
+      "name": "comb_l4",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "10.3412"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/mix2",
+      "x": 720,
+      "y": 380,
+      "name": "sum_la",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/mix2",
+      "x": 720,
+      "y": 1340,
+      "name": "sum_lb",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/mix2",
+      "x": 960,
+      "y": 860,
+      "name": "sum_l",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 1200,
+      "y": 620,
+      "name": "diffuse_l1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "34.8783"
+        },
+        {
+          "name": "GAIN",
+          "value": "55.6"
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 1200,
+      "y": 900,
+      "name": "diffuse_l2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "30.8994"
+        },
+        {
+          "name": "GAIN",
+          "value": "55.6"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/crossfader",
+      "x": 1480,
+      "y": 820,
+      "name": "mix_l",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "35",
+          "logueKnob": {
+            "nts1mkii": "mix",
+            "minilogue-xd": "mix"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 2000,
+      "name": "comb_r1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "7.5636"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 2480,
+      "name": "comb_r2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "8.6320"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 2960,
+      "name": "comb_r3",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "9.5965"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/long-delay",
+      "x": 320,
+      "y": 3440,
+      "name": "comb_r4",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RANGE",
+          "value": "0"
+        },
+        {
+          "name": "TIME",
+          "value": "10.4939"
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "84",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "DAMPING",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/mix2",
+      "x": 720,
+      "y": 2380,
+      "name": "sum_ra",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/mix2",
+      "x": 720,
+      "y": 3340,
+      "name": "sum_rb",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/mix2",
+      "x": 960,
+      "y": 2860,
+      "name": "sum_r",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 1200,
+      "y": 2620,
+      "name": "diffuse_r1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "35.6208"
+        },
+        {
+          "name": "GAIN",
+          "value": "55.6"
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 1200,
+      "y": 2900,
+      "name": "diffuse_r2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "31.7351"
+        },
+        {
+          "name": "GAIN",
+          "value": "55.6"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/crossfader",
+      "x": 1480,
+      "y": 2820,
+      "name": "mix_r",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "35",
+          "logueKnob": {
+            "nts1mkii": "mix",
+            "minilogue-xd": "mix"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/io/audio-out",
+      "x": 1760,
+      "y": 1880,
+      "name": "audio-out",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_l1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_l2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_l3",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_l4",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_l1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_la",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_l2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_la",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_l3",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_lb",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_l4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_lb",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_la",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_l",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_lb",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_l",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_l",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse_l1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse_l1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse_l2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_l",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse_l2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_l",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_l",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r3",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r4",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_r1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_ra",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_r2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_ra",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_r3",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_rb",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_r4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_rb",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_ra",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_r",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_rb",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_r",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_r",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse_r1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse_r1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse_r2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_r",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse_r2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix_r",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix_r",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "r"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "module": "revfx"
+    },
+    "unitName": "LP Reverb"
+  },
+  "notes": "Freeverb-style stereo reverb from primitives: 4 damped combs and 2 allpasses per side. TIME = decay, DEPTH = damping, MIX = dry/wet."
+}

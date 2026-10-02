@@ -1,0 +1,19 @@
+{
+  "nodes": [
+    {
+      "type": "patch/comment",
+      "x": 140,
+      "y": 28,
+      "kind": "comment",
+      "text": "-848"
+    }
+  ],
+  "nets": [],
+  "settings": {
+    "logueTarget": {
+      "platform": "nts1mkii",
+      "module": "osc"
+    }
+  },
+  "notes": ""
+}

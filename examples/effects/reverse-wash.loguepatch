@@ -1,0 +1,1803 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/audio-in",
+      "x": 0,
+      "y": 600,
+      "name": "audio-in",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/env/follower",
+      "x": 260,
+      "y": 0,
+      "name": "att-fast",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "ATTACK",
+          "value": "0"
+        },
+        {
+          "name": "RELEASE",
+          "value": "15"
+        },
+        {
+          "name": "GAIN",
+          "value": "40"
+        }
+      ]
+    },
+    {
+      "type": "logue/env/follower",
+      "x": 260,
+      "y": 240,
+      "name": "att-slow",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "ATTACK",
+          "value": "100"
+        },
+        {
+          "name": "RELEASE",
+          "value": "31.55"
+        },
+        {
+          "name": "GAIN",
+          "value": "40"
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 520,
+      "y": 240,
+      "name": "att-slow-x1.6",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "GAIN",
+          "value": "40"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/subtract",
+      "x": 760,
+      "y": 120,
+      "name": "attack",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/clamp",
+      "x": 1000,
+      "y": 120,
+      "name": "attack-0..1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "LO",
+          "value": "0"
+        },
+        {
+          "name": "HI",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 1000,
+      "y": 120,
+      "name": "soften",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "100",
+          "logueParamIndex": {
+            "nts1mkii": 6
+          },
+          "label": "SOFTEN"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/constant",
+      "x": 1000,
+      "y": 320,
+      "name": "one",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "100"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/subtract",
+      "x": 1240,
+      "y": 200,
+      "name": "duck-gain",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 1480,
+      "y": 480,
+      "name": "duck",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 1720,
+      "y": 600,
+      "name": "in+fb",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/filter/lowpass-cheap",
+      "x": 1960,
+      "y": 600,
+      "name": "tone",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "CUTOFF",
+          "value": "70",
+          "logueParamIndex": {
+            "nts1mkii": 8
+          },
+          "label": "TONE"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/buffer",
+      "x": 2200,
+      "y": 600,
+      "name": "buffer",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "LENGTH",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "type": "logue/sense/control",
+      "x": 1960,
+      "y": 900,
+      "name": "time",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 2200,
+      "y": 860,
+      "name": "size-1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "GAIN",
+          "value": "43.7"
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 2200,
+      "y": 1060,
+      "name": "size-2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "GAIN",
+          "value": "50"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/reverse-tap",
+      "x": 2460,
+      "y": 600,
+      "name": "rev-1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "SIZE",
+          "value": "0"
+        },
+        {
+          "name": "WINDOW",
+          "value": "100",
+          "logueParamIndex": {
+            "nts1mkii": 9
+          },
+          "label": "WINDOW"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/reverse-tap",
+      "x": 2460,
+      "y": 1000,
+      "name": "rev-2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "SIZE",
+          "value": "0"
+        },
+        {
+          "name": "WINDOW",
+          "value": "100",
+          "logueFollow": {
+            "nts1mkii": 9
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/lfo/sine-lfo",
+      "x": 2460,
+      "y": 1500,
+      "name": "motion-1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RATE",
+          "value": "15",
+          "logueParamIndex": {
+            "nts1mkii": 5
+          },
+          "label": "MOTION SPEED"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/constant",
+      "x": 2200,
+      "y": 1700,
+      "name": "motion-2-offset",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "10"
+        }
+      ]
+    },
+    {
+      "type": "logue/lfo/sine-lfo",
+      "x": 2460,
+      "y": 1700,
+      "name": "motion-2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "RATE",
+          "value": "15",
+          "logueFollow": {
+            "nts1mkii": 5
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 2720,
+      "y": 1500,
+      "name": "motion-amt-1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "30",
+          "logueParamIndex": {
+            "nts1mkii": 4
+          },
+          "label": "MOTION"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 2720,
+      "y": 1700,
+      "name": "motion-amt-2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "30",
+          "logueFollow": {
+            "nts1mkii": 4
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/util/unipolar-to-bipolar",
+      "x": 2980,
+      "y": 0,
+      "name": "swing-1a",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 3220,
+      "y": 0,
+      "name": "spread-1a",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "70",
+          "logueParamIndex": {
+            "nts1mkii": 3
+          },
+          "label": "SPREAD"
+        }
+      ]
+    },
+    {
+      "type": "logue/math/add",
+      "x": 3700,
+      "y": 0,
+      "name": "pan-to-1a",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 3940,
+      "y": 0,
+      "name": "pan-1a",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/unipolar-to-bipolar",
+      "x": 2980,
+      "y": 360,
+      "name": "swing-1b",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 3220,
+      "y": 360,
+      "name": "spread-1b",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "70",
+          "logueFollow": {
+            "nts1mkii": 3
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/negate",
+      "x": 3460,
+      "y": 360,
+      "name": "flip-1b",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 3700,
+      "y": 360,
+      "name": "pan-to-1b",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 3940,
+      "y": 360,
+      "name": "pan-1b",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/unipolar-to-bipolar",
+      "x": 2980,
+      "y": 720,
+      "name": "swing-2a",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 3220,
+      "y": 720,
+      "name": "spread-2a",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "70",
+          "logueFollow": {
+            "nts1mkii": 3
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/negate",
+      "x": 3460,
+      "y": 720,
+      "name": "flip-2a",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 3700,
+      "y": 720,
+      "name": "pan-to-2a",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 3940,
+      "y": 720,
+      "name": "pan-2a",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/unipolar-to-bipolar",
+      "x": 2980,
+      "y": 1080,
+      "name": "swing-2b",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 3220,
+      "y": 1080,
+      "name": "spread-2b",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "70",
+          "logueFollow": {
+            "nts1mkii": 3
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/add",
+      "x": 3700,
+      "y": 1080,
+      "name": "pan-to-2b",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 3940,
+      "y": 1080,
+      "name": "pan-2b",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 4200,
+      "y": 200,
+      "name": "diffuse-l1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "35.4441"
+        },
+        {
+          "name": "GAIN",
+          "value": "60",
+          "logueParamIndex": {
+            "nts1mkii": 7
+          },
+          "label": "DIFFUSE"
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 4460,
+      "y": 200,
+      "name": "diffuse-l2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "53.5194"
+        },
+        {
+          "name": "GAIN",
+          "value": "60",
+          "logueFollow": {
+            "nts1mkii": 7
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 4200,
+      "y": 760,
+      "name": "diffuse-r1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "40.7221"
+        },
+        {
+          "name": "GAIN",
+          "value": "60",
+          "logueFollow": {
+            "nts1mkii": 7
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 4460,
+      "y": 760,
+      "name": "diffuse-r2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "60.5668"
+        },
+        {
+          "name": "GAIN",
+          "value": "60",
+          "logueFollow": {
+            "nts1mkii": 7
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/width",
+      "x": 4720,
+      "y": 480,
+      "name": "width",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "WIDTH",
+          "value": "100",
+          "logueParamIndex": {
+            "nts1mkii": 10
+          },
+          "label": "WIDTH"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/crossfader",
+      "x": 4980,
+      "y": 300,
+      "name": "mix-l",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "mix",
+            "minilogue-xd": "mix"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/crossfader",
+      "x": 4980,
+      "y": 660,
+      "name": "mix-r",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "50",
+          "logueKnob": {
+            "nts1mkii": "mix",
+            "minilogue-xd": "mix"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/io/audio-out",
+      "x": 5240,
+      "y": 480,
+      "name": "audio-out",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 4720,
+      "y": 1100,
+      "name": "fb-sum",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/filter/highpass-cheap",
+      "x": 4980,
+      "y": 1100,
+      "name": "fb-dc",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "CUTOFF",
+          "value": "15"
+        }
+      ]
+    },
+    {
+      "type": "logue/shape/soft-clip",
+      "x": 5240,
+      "y": 1100,
+      "name": "fb-clip",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/sense/control",
+      "x": 4720,
+      "y": 1400,
+      "name": "depth",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "40",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 4980,
+      "y": 1400,
+      "name": "fb-range",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "32"
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 5500,
+      "y": 1100,
+      "name": "feedback",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "mono"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "att-fast",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "mono"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "att-slow",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "att-fast",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "attack",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "att-slow",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "att-slow-x1.6",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "att-slow-x1.6",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "attack",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "attack",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "attack-0..1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "attack-0..1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "soften",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "one",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "duck-gain",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "soften",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "duck-gain",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "mono"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "duck",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "duck-gain",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "duck",
+          "inlet": "gain"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "duck",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "in+fb",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "in+fb",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tone",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "tone",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "buffer",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "size-1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "size-2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "size-1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "rev-1",
+          "inlet": "size"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "size-2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "rev-2",
+          "inlet": "size"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "rev-1",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "rev-2",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "motion-2-offset",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "motion-2",
+          "inlet": "rate"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "motion-1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "motion-amt-1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "motion-2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "motion-amt-2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-1",
+          "outlet": "phaseA"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "swing-1a",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "swing-1a",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spread-1a",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spread-1a",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-1a",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "motion-amt-1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-1a",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-to-1a",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-1a",
+          "inlet": "pan"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-1",
+          "outlet": "a"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-1a",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-1",
+          "outlet": "phaseB"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "swing-1b",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "swing-1b",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spread-1b",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spread-1b",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "flip-1b",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "flip-1b",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-1b",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "motion-amt-2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-1b",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-to-1b",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-1b",
+          "inlet": "pan"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-1",
+          "outlet": "b"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-1b",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-1a",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-1b",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-1a",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-1b",
+          "inlet": "r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-2",
+          "outlet": "phaseA"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "swing-2a",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "swing-2a",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spread-2a",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spread-2a",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "flip-2a",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "flip-2a",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-2a",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "motion-amt-1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-2a",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-to-2a",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2a",
+          "inlet": "pan"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-2",
+          "outlet": "a"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2a",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-1b",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2a",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-1b",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2a",
+          "inlet": "r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-2",
+          "outlet": "phaseB"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "swing-2b",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "swing-2b",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spread-2b",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spread-2b",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-2b",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "motion-amt-2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-to-2b",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-to-2b",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2b",
+          "inlet": "pan"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "rev-2",
+          "outlet": "b"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2b",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-2a",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2b",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-2a",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2b",
+          "inlet": "r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-2b",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse-l1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse-l1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse-l2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "pan-2b",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse-r1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse-r1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "diffuse-r2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse-l2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "width",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse-r2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "width",
+          "inlet": "r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-l",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "width",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-l",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-r",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "width",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix-r",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix-l",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "mix-r",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse-l2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-sum",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "diffuse-r2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-sum",
+          "inlet": "b"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-sum",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-dc",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-dc",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-clip",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "depth",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb-range",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-clip",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "feedback",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb-range",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "feedback",
+          "inlet": "gain"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "feedback",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "in+fb",
+          "inlet": "b"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "module": "delfx"
+    },
+    "unitName": "LP RevWash"
+  },
+  "notes": "A stereo reverse delay: the input plays back backwards in overlapping segments, each sweeping across the stereo field as it swells, diffused into a wash. TIME = segment length, DEPTH = feedback, MIX = dry/wet. SOFTEN turns down the attacks before they are reversed, so a reversed pluck fades out instead of stopping dead. NTS-1 mkII menu: SPREAD, MOTION, MOTION SPEED, SOFTEN, DIFFUSE, TONE, WINDOW, WIDTH. For the minilogue xd use reverse-wash-xd: this one is too heavy for its CPU."
+}

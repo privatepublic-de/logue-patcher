@@ -1,0 +1,3388 @@
+@import './base.css';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  user-select: none;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+code {
+  font-weight: 600;
+  padding: 3px 5px;
+  border-radius: 2px;
+  background-color: var(--color-background-mute);
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Consolas,
+    Liberation Mono,
+    monospace;
+  font-size: 85%;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+@keyframes connection-pill-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.app-status {
+  font-size: 12px;
+  color: var(--ev-c-text-3);
+}
+
+.app-status--error {
+  color: var(--color-status-error);
+}
+
+.app-status--success {
+  color: var(--color-status-success);
+}
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--ev-c-gray-3);
+  background-color: var(--color-background);
+  flex-shrink: 0;
+}
+
+.tab-bar__tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* The status message, Settings and Help (the old header row's contents). */
+.tab-bar__trailing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tab-bar__trailing .app-status {
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.tab-bar__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-2);
+  border-radius: 6px;
+  padding: 5px;
+}
+
+.tab-bar__icon-button:hover {
+  color: var(--color-text);
+  background-color: var(--ev-c-gray-3);
+}
+
+.tab-bar__tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--ev-c-text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tab-bar__tab:hover {
+  background-color: var(--color-background-soft);
+}
+
+.tab-bar__tab--active {
+  background-color: var(--color-background-mute);
+  color: var(--color-text);
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
+.tab-bar__kind {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tab-bar__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.6;
+  border-radius: 4px;
+}
+
+.tab-bar__close:hover {
+  opacity: 1;
+  background-color: var(--ev-c-gray-3);
+}
+
+.tab-bar__new {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  cursor: pointer;
+  border: none;
+  color: var(--ev-c-text-2);
+  background: none;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.tab-bar__new:hover {
+  color: var(--ev-button-alt-hover-text);
+  background-color: var(--ev-button-alt-hover-bg);
+}
+
+/* PatchCanvas.tsx's undo/redo/arrange under React Flow's own zoom/fit/lock buttons: a line
+   separates the two groups, and a disabled one dims (it stays hoverable for its tooltip). */
+.react-flow__controls-button.canvas-controls__group-start {
+  border-top: 1px solid var(--ev-c-text-3);
+}
+
+/* React Flow fills its buttons' icons; lucide's are stroked, and filled they turn into blobs. */
+.react-flow__controls-button svg.lucide {
+  fill: none;
+  max-width: 14px;
+  max-height: 14px;
+}
+
+.react-flow__controls-button[aria-disabled='true'] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.app-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--ev-c-text-3);
+}
+
+.app-empty-state__mascot {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 8px;
+  /* The current artwork is a full-bleed colorful square (unlike the previous glow-on-
+     transparent version), which read as a stark hard-edged block against this near-black
+     canvas without it -- matches the same rounded-corner language as the app icon. */
+  border-radius: 28px;
+}
+
+.app-empty-state__buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* App.tsx: no tab open. Hidden rather than unmounted (BuildPanel owns the backup dialogs). */
+.app-body--start > .app-sidebar-left,
+.app-body--start > .app-sidebar-right,
+.app-body--start > .app-resize-handle {
+  display: none;
+}
+
+.app-empty-state__recent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(520px, 90%);
+  margin-top: 16px;
+}
+
+.app-empty-state__recent-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-section-label);
+  margin-bottom: 4px;
+}
+
+.app-empty-state .app-empty-state__recent-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  padding: 5px 8px;
+  text-align: left;
+  color: var(--ev-c-text-1);
+}
+
+.app-empty-state .app-empty-state__recent-item:hover {
+  background-color: var(--ev-c-gray-3);
+}
+
+.app-empty-state__recent-name {
+  white-space: nowrap;
+}
+
+.app-empty-state__recent-folder {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 12px;
+  color: var(--ev-c-text-3);
+}
+
+.app-empty-state button {
+  cursor: pointer;
+  border: 1px solid var(--ev-button-alt-border);
+  color: var(--ev-button-alt-text);
+  background-color: var(--ev-button-alt-bg);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 13px;
+}
+
+.app-empty-state button:hover {
+  color: var(--ev-button-alt-hover-text);
+  background-color: var(--ev-button-alt-hover-bg);
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* The middle slot of .app-body -- hosts PatchWorkspace/ObjectEditorPanel/the empty state,
+   whichever is active, alongside the always-visible .app-sidebar-left/.app-sidebar-right either
+   side of it (see App.tsx). A column flex container so a mounted PatchWorkspace's own toolbar
+   (fixed height) and canvas (fills the rest) stack correctly within it. */
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.app-canvas {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  /* Anchors .view-mode-pill's absolute positioning to the canvas area itself, not the page. */
+  position: relative;
+}
+
+.view-mode-pill__option {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-2);
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.view-mode-pill__option:hover {
+  color: var(--color-text);
+}
+
+.view-mode-pill__option--active {
+  background-color: var(--color-accent-strong);
+  color: var(--ev-button-alt-hover-text);
+}
+
+/* Drag-to-resize divider between each sidebar and .app-main (App.tsx's useSidebarResize) --
+   a slim hit target, transparent until hovered/dragged so it doesn't read as a permanent
+   border when the user isn't interacting with it. */
+.app-resize-handle {
+  flex-shrink: 0;
+  width: 6px;
+  cursor: col-resize;
+  background-color: transparent;
+}
+
+.app-resize-handle:hover,
+.app-resize-handle--dragging {
+  background-color: var(--color-accent);
+  opacity: 0.5;
+}
+
+.canvas-placeholder {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ev-c-text-3);
+  font-size: 14px;
+}
+
+/* --- shared: section headlines + toggles (both sidebars) ---
+   One "blue" (accent-tinted, uppercase, 11px) headline convention for every labeled section
+   across the left inspector/library stack and the right build panel, and one neutral,
+   "standard" color for every collapse/expand toggle (native <details> markers and this app's
+   own custom chevron buttons) -- kept deliberately separate from the headline color so a
+   toggle never competes visually with the blue label it sits next to. */
+.library-panel__section-title,
+.inspector__title,
+.inspector__params-title,
+.build-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-section-label);
+}
+
+/* Every collapsible <summary> in the app supplies its own Lucide ChevronRight (".details-chevron"
+   below) instead of the native disclosure triangle -- this replaces the marker entirely (both the
+   standard and WebKit-prefixed forms) rather than just recoloring it, since the two chevron
+   glyphs this project used to render (SD panel's own text-glyph toggle vs. every native <details>
+   marker elsewhere) never actually matched in size to begin with. */
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary.library-panel__section-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* One neutral, "standard" color for every toggle chevron -- decoupled from whatever color its
+   own summary text uses (several above are the blue section-label accent), and the same rotate
+   transition on every one of them so open/close feels identical everywhere. */
+.details-chevron {
+  flex-shrink: 0;
+  color: var(--ev-c-text-2);
+  transition: transform 0.15s ease;
+}
+
+/* Category color swatch, shared by both primitive browsers (LoguePrimitivePalette.tsx's own
+   collapsible tree, ObjectInsertPopup.tsx's flat list) -- see loguePrimitiveCatalog.ts's
+   `colorForCategory` for what picks the color painted here via inline style. */
+.logue-category-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+details[open] > summary .details-chevron {
+  transform: rotate(90deg);
+}
+
+summary.library-panel__section-title:hover {
+  background-color: var(--ev-c-gray-3);
+  border-radius: 4px;
+}
+
+/* --- left sidebar (the primitive palette) --- */
+
+.app-sidebar-left {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* --- library panel --- */
+
+.library-panel {
+  /* Width/flex-shrink live on .app-sidebar-left; this panel fills it, scrolling internally. */
+  flex: 1 1 0;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--ev-c-gray-3);
+  border-top: 1px solid var(--ev-c-gray-3);
+  background-color: var(--color-background-soft);
+  overflow-y: auto;
+}
+
+/* The add-root .library-panel__scan rows sit inside .library-panel__add-root, which supplies
+   their horizontal inset; this filter row is a bare child of .library-panel instead, so its
+   input sat flush against the panel edge -- .library-panel's own overflow-y:auto forces its
+   computed overflow-x to auto too, which was clipping the focus-visible ring rather than just
+   letting it draw past the input's own box. */
+.library-panel__filter-row {
+  position: relative;
+  display: flex;
+  padding: 2px 8px 8px;
+}
+
+.library-panel__path-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 6px;
+  color: var(--color-text);
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+/* --- logue primitive palette (shown instead of .library-panel when the active document is
+   logue-target) --- */
+
+.logue-primitive-palette__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px 6px 10px;
+}
+
+/* Same small-caps label as INSPECTOR/BUILD on the right. */
+.logue-primitive-palette__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-section-label);
+}
+
+.logue-primitive-palette__header-button,
+.logue-primitive-palette__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-2);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.logue-primitive-palette__header-button:hover,
+.logue-primitive-palette__clear:hover {
+  color: var(--color-text);
+  background-color: var(--ev-c-gray-2);
+}
+
+/* Inside the filter field's right end. */
+.logue-primitive-palette__clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(calc(-50% - 3px));
+}
+
+.logue-primitive-palette .library-panel__path-input {
+  padding-right: 22px;
+}
+
+/* Category rows: the dot carries the category's colour, so the name stays quiet -- 13 headings
+   in accent capitals read as a wall of titles. */
+.logue-primitive-palette__group > summary.library-panel__section-title {
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ev-c-text-1);
+}
+
+/* The annotate group as a single insert row (LoguePrimitivePalette.tsx's `isSingle`): the
+   category row's look, a "+" where the chevron would be, and the entry named after it. */
+.logue-primitive-palette__single {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  cursor: pointer;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--ev-c-text-1);
+}
+
+.logue-primitive-palette__single:hover {
+  background-color: var(--ev-c-gray-3);
+  border-radius: 4px;
+}
+
+.logue-primitive-palette__single-icon {
+  flex-shrink: 0;
+  color: var(--ev-c-text-2);
+}
+
+.logue-primitive-palette__single-entry {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ev-c-text-3);
+}
+
+.logue-primitive-palette__count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ev-c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.logue-primitive-palette__list {
+  list-style: none;
+  margin: 0;
+  /* Left inset lines an entry's text up with its category's label: the summary's 8px padding +
+     12px chevron + 8px dot + two 4px gaps, minus the item's own 6px padding. */
+  padding: 0 4px 4px 30px;
+  overflow-y: auto;
+}
+
+.logue-primitive-palette__item {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--ev-c-text-2);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.logue-primitive-palette__item:hover {
+  color: var(--color-text);
+  background-color: var(--ev-c-gray-3);
+}
+
+/* --- patch canvas nodes --- */
+
+.patch-node {
+  background-color: var(--ev-c-black-soft);
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 6px;
+  min-width: 140px;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.patch-node--selected {
+  border-color: var(--color-accent);
+}
+
+/* The drag-alignment guides (PatchCanvas.tsx/AlignmentGuideLine.tsx) -- absolutely positioned
+   within the canvas wrapper div (not fixed to the window, unlike GlobalTooltip), so they're
+   confined to the canvas area and track pan/zoom via the live viewport transform. --h is the
+   horizontal (Y-snap) line, --v the vertical (X-snap) line; either or both can render at once. */
+.alignment-guide-line {
+  position: absolute;
+  background-color: var(--canvas-guide-line);
+  pointer-events: none;
+  z-index: 500;
+}
+
+.alignment-guide-line--h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.alignment-guide-line--v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.patch-node__header {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--ev-c-gray-3);
+}
+
+.patch-node__title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  /* The node's only header row: a category tint is set inline over this. */
+  background-color: var(--color-background-mute);
+  border-radius: 5px 5px 0 0;
+  /* Anchors the DeviceControlPicker. */
+  position: relative;
+}
+
+.patch-node__title {
+  font-weight: 700;
+  cursor: text;
+  white-space: nowrap;
+}
+
+/* The type, after the name. A zero basis with flex-grow: it takes only the space left over, so
+   it never widens a node, and it's what gives way (ellipsis) when the badges need room. */
+.patch-node__type {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 10px;
+  color: var(--ev-c-text-3);
+}
+
+/* An advisory-only "this primitive has no equivalent on the currently viewed platform" badge,
+   pushed to the row's own far edge (`.patch-node__title-row`
+   is a flex row for exactly this) same as `.patch-node__port-badge`'s `margin-left: auto` trick.
+   Warning-tinted (not the neutral gray port badge) since, unlike a port's track-gate note, this
+   one really can mean an active instance will fail to build. */
+.patch-node__platform-badge {
+  margin-left: auto;
+  font-size: 10px;
+  line-height: 1.3;
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+  color: var(--color-status-warning);
+  background-color: color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+}
+
+/* `logue/sense/control`: which device control it is on the build target. Unbound, the node is
+   dimmed (it outputs a constant there) and the badge takes the warning tint. */
+.patch-node__control-badge {
+  margin-left: auto;
+  font-size: 10px;
+  line-height: 1.3;
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+  color: var(--ev-c-text-2);
+  background-color: var(--ev-c-gray-3);
+}
+
+button.patch-node__control-badge {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button.patch-node__control-badge:hover:not(:disabled) {
+  color: var(--color-accent-strong);
+}
+
+button.patch-node__control-badge:disabled {
+  cursor: default;
+}
+
+.patch-node__control-anchor {
+  margin-left: auto;
+}
+
+/* DeviceControlPicker: under the node's title row, from its left edge; the node is raised while
+   it's open so neighbouring nodes can't cover it. */
+.react-flow__node:has(.device-control-picker) {
+  z-index: 1000 !important;
+}
+
+.device-control-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: -8px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  min-width: 300px;
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 6px;
+  background-color: var(--ev-c-black-soft);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  font-size: 11px;
+}
+
+.device-control-picker__row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.device-control-picker__device {
+  color: var(--ev-c-text-2);
+  white-space: nowrap;
+}
+
+.device-control-picker select {
+  font-size: 11px;
+  min-width: 0;
+}
+
+.device-control-picker__matrix {
+  align-self: flex-start;
+  font-size: 11px;
+}
+
+.patch-node__control-badge--unbound {
+  color: var(--color-status-warning);
+  background-color: color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+}
+
+.patch-node--unbound-control .patch-node__ports {
+  opacity: 0.55;
+}
+
+/* `unresolvedReferences.ts`'s own findings -- see that module's doc comment for the incident
+   (a renamed/merged primitive id, or a param/inlet name a rename left behind, used to fail
+   completely silently with nothing shown on canvas at all). Same warning tint/position as
+   `.patch-node__platform-badge` for a REAL problem (a stale param/inlet whose value/wire is
+   doing nothing); `--info` is a muted, port-badge-style variant for the "renamed but still works"
+   case, so an entirely harmless old id doesn't visually compete with a genuine warning. Full
+   detail (one line per issue, `describeUnresolvedReference`) lives in the `title` tooltip and in
+   Inspector.tsx's own list -- this badge is only ever the at-a-glance count/label. */
+.patch-node__unresolved-badge {
+  margin-left: auto;
+  font-size: 10px;
+  line-height: 1.3;
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+  color: var(--color-status-warning);
+  background-color: color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+}
+
+.patch-node__unresolved-badge--info {
+  color: var(--ev-c-text-2);
+  background-color: var(--ev-c-gray-2);
+}
+
+.patch-node__title-input {
+  font-weight: 700;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  background: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 4px;
+  padding: 0 2px;
+  width: 100%;
+}
+
+/* `position: relative` makes this the anchor for the outlet column's own `position: absolute`
+   below -- outlets are pulled OUT of the normal flex flow entirely so the inlet column can claim
+   the full node width (needed for `.patch-node__port-badge`'s own right-alignment, see its own
+   doc comment) without the two columns fighting over horizontal space the way a plain two-column
+   flex row would. This used to assume every primitive has at least as many inlets as outlets
+   (true of the whole registry pre-2026-09-25, `logue/filter/svf`'s own 4-in/3-out being the
+   closest) -- an absolutely-positioned outlet column contributes nothing to its parent's auto
+   height, so a taller one used to overflow below `.patch-node__ports` uncontested. The
+   `logue/sense/*` `unipolar`/`bipolar` outlets (0 inlets, 2 outlets) hit exactly that case for
+   real -- ObjectNode.tsx's `.patch-node__port--spacer` rows now reserve the missing height
+   directly in the (still full-node-width) inlet column, real content-driven rows rather than a
+   hardcoded pixel guess at this file's own row height. */
+.patch-node__ports {
+  position: relative;
+  padding: 4px 0;
+}
+
+.patch-node__port-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.patch-node__port-col--outlets {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  align-items: flex-end;
+}
+
+.patch-node__port {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.patch-node__port--outlet {
+  justify-content: flex-end;
+}
+
+/* An invisible row appended to the INLET column (see `.patch-node__ports`'s own doc comment) --
+   reuses the real `.patch-node__handle`/`.patch-node__port-label` markup so its height matches a
+   genuine port row's by construction, not a guessed pixel value that could drift the moment this
+   file's own row sizing changes. `visibility: hidden` (not `display: none`) specifically so it
+   still occupies layout space instead of collapsing back to the original bug. */
+.patch-node__port--spacer {
+  visibility: hidden;
+}
+
+.patch-node__port-label {
+  font-size: 10px;
+  color: var(--ev-c-text-2);
+}
+
+/* What a wire into an inlet does to its dial (ObjectNode.tsx's InletModulationMarker). A fixed
+   width, so labels stay aligned whether or not a row has one. */
+.patch-node__inlet-mod {
+  display: inline-block;
+  width: 10px;
+  margin-right: 2px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ev-c-text-2);
+  cursor: help;
+}
+
+/* A wire whose signal shape doesn't suit this inlet (toFlowGraph.ts's `warning`); the same
+   badge sits on the wire itself (TypedEdge.tsx). Not amber: that's the bipolar wire colour. */
+.patch-node__inlet-mod--warn,
+.typed-edge__warning {
+  border-radius: 50%;
+  background: var(--color-status-error);
+  color: var(--ev-c-black);
+  font-weight: 700;
+}
+
+.patch-node__inlet-mod--warn {
+  height: 10px;
+  font-size: 10px;
+  line-height: 10px;
+}
+
+.typed-edge__warning {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  cursor: help;
+  pointer-events: all;
+}
+
+.patch-node__handle {
+  width: 10px;
+  height: 10px;
+  border: none;
+}
+
+/* The shape half of the audio/control inlet distinction (the hue half lives in portColors.ts,
+   applied inline by ObjectNode.tsx) -- React Flow's own default rounds every handle, so
+   squaring off the control variant is the whole rule. Not a hard 0: a hair of softening keeps
+   it reading as a deliberate shape rather than an unantialiased rendering artifact.
+   Qualified with `.react-flow__handle` deliberately: that rule sets `border-radius: 100%` at
+   the SAME specificity and its stylesheet loads after this one, so a single-class selector
+   here loses the tie and silently renders a circle (confirmed in the real app -- the class was
+   on the element, the computed radius was still 100%). */
+.react-flow__handle.patch-node__handle--control {
+  border-radius: 1px;
+}
+
+/* A third shape, for an OUTLET dot resolved to the `gate` bucket (`outletShapeClassForBucket`,
+   portColors.ts) -- a discrete 0/1 signal is categorically different (not continuous) from
+   either the round audio or the square unipolar/bipolar buckets, so it gets its own shape
+   rather than reusing the square one. `clip-path` rather than `transform: rotate(45deg)`
+   deliberately -- React Flow positions a handle with its own `transform` (translate to center
+   it on the node edge), so rotating via the same property would fight that positioning instead
+   of composing with it. Same specificity-qualification reasoning as the `--control` rule above. */
+.react-flow__handle.patch-node__handle--gate {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+/* A fourth shape, for a buffer wire's ends (`util/buffer`'s `buf` and every buffer-role inlet):
+   a ring, since what travels is a reference to a ring buffer, not a signal. A mask rather than a
+   border, so the inline background colour (portColors.ts) paints it like every other dot. */
+.react-flow__handle.patch-node__handle--buffer {
+  width: 12px;
+  height: 12px;
+  border-radius: 100%;
+  mask: radial-gradient(circle, transparent 32%, #000 36%);
+}
+
+/* Caps at 8 rows before starting a new column. Column-major auto-flow packs 8 rows deep per column with zero DOM change -- each
+   ParamDial (see ParamDial.tsx) stays a direct child, so a node with <=8 params renders as one
+   column (unused row tracks collapse to 0 height). */
+.patch-node__params {
+  border-top: 1px solid var(--ev-c-gray-3);
+  padding: 4px 8px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(8, min-content);
+  column-gap: 8px;
+}
+
+/* logue/env/multistage's breakpoint editor (EnvelopeGraph.tsx), above the node's dials. */
+.envelope-graph {
+  border-top: 1px solid var(--ev-c-gray-3);
+  padding: 6px 8px 2px;
+}
+.envelope-graph svg {
+  display: block;
+  background-color: var(--ev-c-black-mute);
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 4px;
+}
+.envelope-graph__axis {
+  stroke: var(--ev-c-gray-3);
+  stroke-width: 1;
+}
+.envelope-graph__curve {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+}
+.envelope-graph__loop {
+  fill: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  stroke: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  stroke-dasharray: 3 2;
+}
+.envelope-graph__hold {
+  stroke: var(--ev-c-text-3);
+  stroke-dasharray: 3 2;
+}
+.envelope-graph__point {
+  fill: var(--ev-c-black-soft);
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  cursor: grab;
+}
+.envelope-graph__point--active {
+  fill: var(--color-accent);
+}
+.envelope-graph__readout {
+  font-size: 10px;
+  color: var(--ev-c-text-2);
+  padding: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- interactive param widgets (canvas-embedded) --- */
+
+.param-widget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--ev-c-text-2);
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.param-widget + .param-widget,
+.param-widget + .patch-node__param-pair,
+.patch-node__param-pair + .param-widget,
+.patch-node__param-pair + .patch-node__param-pair {
+  border-top: 1px solid var(--ev-c-gray-3);
+}
+
+/* COARSE + FINE side by side (ObjectNode.tsx's `groupTuningPairs`); one grid row of
+   `.patch-node__params`. Equal columns so the two dials line up between nodes. */
+.patch-node__param-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+}
+
+.patch-node__param-pair > .param-widget + .param-widget {
+  border-top: none;
+}
+
+/* Name (above) + value (below) column, AFTER the control: canvas nodes stack several params in
+   one narrow column, and a variable-length label/value (e.g. "97.08 ms" vs "1.234 kHz") before
+   the control would make every row's control drift left/right
+   instead of lining up. min-width:0 lets the name/value ellipsis truncate instead of stretching
+   the row. `flex: 1` makes this column claim the FULL remaining node width (not just what its
+   own text needs) -- load-bearing for `.param-widget__value-row`'s own right-aligned wired badge
+   below, which would otherwise hug the value text instead of sitting at the node's own right
+   edge whenever the node is wider than this column's content (e.g. a long primitive id in the
+   titlebar above). */
+.param-widget__labels {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.param-widget__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* logue/sense/param's own free-typed label (ParamDial.tsx) -- a dashed underline hints it's
+   editable (double-click), unlike every other primitive's fixed, non-interactive name. */
+/* A free-label param on a menu slot with no name yet (Export fails) -- opens the Param Matrix. */
+.param-widget__needs-name {
+  margin-left: 4px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 1.4;
+  cursor: pointer;
+  color: var(--color-status-warning);
+  background-color: color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+}
+
+/* On-canvas indicator for a param's own logueParamIndex (ParamDial.tsx) -- a small chip rather
+   than plain text so it reads as a badge, not a third label line. One per platform that actually
+   has a slot (there's no single "currently viewed platform" left to resolve down to one badge),
+   sitting in `.param-widget__value-row-badges` alongside the wired-badge rather than its own row
+   below, as it did before. Same
+   dim-background-no-outline treatment as `.param-widget__wired-badge` below (an earlier outlined,
+   accent-coloured version read as too loud next to it) -- the two badge kinds sit right next to
+   each other on the same row, so they read as one quiet family rather than two competing looks. */
+.param-widget__slot-badge {
+  font-size: 10px;
+  line-height: 1.3;
+  border-radius: 3px;
+  padding: 0 3px;
+  white-space: nowrap;
+  color: var(--ev-c-text-2);
+  background-color: var(--ev-c-gray-2);
+}
+
+.param-widget__unit-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--color-accent);
+}
+
+/* Raw ±64 dial value (no real-unit converter available) -- dimmer + not a pointer cursor, signaling "not click-to-cycle" unlike the real-unit case above. */
+.param-widget__unit-value--raw {
+  cursor: default;
+  color: var(--ev-c-text-2);
+}
+
+/* A dial that currently has NO effect -- either a wired-`replace` inlet (see ParamDial.tsx's own
+   `caveat`/`@logue-codegen/paramModulation`) or an active track-gate (a SIBLING param's own state,
+   `@logue-codegen/paramTrackGate`) -- dims both the dial and its raw value, signaling "turning/
+   reading this does nothing right now". Wire-`additive` modulation (dial still applies, just also
+   modulated) has no dimming of its own -- only the amber ring ParamDial.tsx applies inline to
+   `.param-widget__knob-dial`, plus the `.param-widget__wired-badge` below, since the dial itself
+   is still live there. A track-gate is ALWAYS fully inert when active (there's no "additive"
+   track-gate shape), so it always dims. */
+.param-widget--dial-inert .param-widget__knob-dial,
+.param-widget--dial-inert .param-widget__unit-value--raw {
+  opacity: 0.4;
+}
+
+/* Same row as the value text (ParamDial.tsx's own `.param-widget__value-row`), value on the
+   left and the trailing badge group (`.param-widget__value-row-badges`) pinned to the right --
+   a full extra line per badge (the original layout) was too disruptive once more than one or two
+   params on a node had one. Also reused as the
+   checkbox variant's own label row (previously just a plain label with the slot badge on its own
+   line below it), so a boolean param's slot badges land in the exact same place a knob param's
+   do. */
+.param-widget__value-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* The trailing badge group on a param's own value/label row -- slot badges (0-2) plus the wired
+   badge (0-1), in that order, moving as one unit pinned to the row's right edge. `margin-left:
+   auto` lives HERE (not on each badge, as it did pre-phase-8) so an empty group -- nothing
+   exposed, no caveat, the common case -- costs nothing rather than leaving a stray auto-margin
+   on whichever badge happened to render first. */
+.param-widget__value-row-badges {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Text cue paired with the knob-dial's own inline amber ring (ParamDial.tsx) -- a soft
+   background tint, deliberately dimmer than a plain accent colour: this badge shows up on every
+   wired/gated param, on every node, so it needs to read as a quiet status cue, not a loud outline
+   competing with the dial's own ring. `.param-widget__slot-badge` above shares this exact look
+   (no outline, same dim background) now, so the two badge kinds read as one quiet family. This
+   class alone (no inline style) is the NEUTRAL/track-gate look -- ParamDial.tsx applies inline
+   `color`/`backgroundColor` (from the SAME amber `portColors.ts` uses for a control wire/port, at
+   reduced alpha) on top for the wire-modulation case instead, so that colour can't drift from the
+   ring's own. */
+/* ParamDial.tsx's track-gated marker (e.g. DENSITY while granular's SYNC is on): the reason
+   lives in the tooltip, so the dial row stays as compact as an ungated one. */
+.param-widget__gated-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ev-c-text-3);
+  cursor: help;
+}
+
+.param-widget__wired-badge {
+  font-size: 10px;
+  line-height: 1.3;
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+  color: var(--ev-c-text-2);
+  background-color: var(--ev-c-gray-2);
+}
+
+/* ParamDial.tsx's own double-click-to-type editor -- same footprint/font as the value text it
+   replaces so the row doesn't reflow the moment it opens. Wider than a bare raw number needs
+   (34px) now that a unit-bearing param (`@logue-codegen/paramUnits`) can show e.g. "+18.1 dB" or
+   "1995 ms" here, not just "100". */
+.param-widget__unit-value-input {
+  width: 58px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: var(--ev-c-text-1);
+  background: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.param-widget--knob {
+  cursor: ns-resize;
+}
+
+.param-widget--knob:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.param-widget__knob-dial {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--ev-c-black-mute);
+  border: 1px solid var(--ev-c-gray-2);
+  flex: none;
+}
+
+.param-widget--dragging .param-widget__knob-dial {
+  border-color: var(--color-accent);
+}
+
+.param-widget__knob-indicator {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  width: 2px;
+  height: 8px;
+  background-color: var(--color-accent);
+  transform-origin: 1px 8px;
+  margin-left: -1px;
+}
+
+/* ParamDial.tsx's centre-zero arc, only on a dial whose range crosses 0. Sized by the dial box
+   via its own viewBox, so it scales with any dial size. */
+.param-widget__knob-arc {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.param-widget__knob-arc-value {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  opacity: 0.6;
+}
+
+.param-widget__knob-arc-zero {
+  stroke: var(--ev-c-gray-1);
+  stroke-width: 1.5;
+}
+
+/* A param that renders as a checkbox instead of a rotary dial (ParamDial.tsx's own
+   `booleanWidget`, `@logue-codegen/paramTrackGate`'s `BooleanParamWidget`) -- a plain on/off mode
+   switch (e.g. comb/svf's own TRACK), not a continuous control, so a knob implying continuous
+   nuance would be dishonest: nothing audible changes until the underlying threshold is crossed,
+   then it snaps. A native `<input type="checkbox">` (restyled below) rather than a custom toggle -- free
+   keyboard (Space toggles, Tab focuses) and focus-visible styling, and this widget needs none of
+   ParamDial's own drag/fine-adjust/typed-entry machinery a real checkbox has no use for. */
+.param-widget--checkbox {
+  cursor: pointer;
+}
+
+/* Also the Inspector's and the Upload/Backup dialogs' checkboxes. The type selector outranks base.css's `input[type='checkbox']`
+   reset and `.inspector__field input`, which would otherwise strip or restyle the box. */
+input[type='checkbox'].param-widget__checkbox-input {
+  appearance: none;
+  flex: none;
+  position: relative;
+  /* Same footprint, fill and border as .param-widget__knob-dial, so a checkbox row lines up with
+     the dials above it and reads as the same family of control. */
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-radius: 4px;
+  background-color: var(--ev-c-black-mute);
+  border: 1px solid var(--ev-c-gray-2);
+  cursor: pointer;
+}
+
+input[type='checkbox'].param-widget__checkbox-input:hover {
+  border-color: var(--ev-c-gray-1);
+}
+
+input[type='checkbox'].param-widget__checkbox-input:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+input[type='checkbox'].param-widget__checkbox-input:checked {
+  border-color: color-mix(in srgb, var(--color-accent) 60%, var(--ev-c-gray-2));
+}
+
+/* The tick, drawn in the dial indicator's accent colour. */
+.param-widget__checkbox-input:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1.5px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--color-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.param-widget__checkbox-input:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.comment-node {
+  background-color: var(--color-comment-bg);
+  border: 1px solid var(--color-comment-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--color-comment-text);
+  max-width: 220px;
+  white-space: pre-wrap;
+}
+
+.comment-node--selected {
+  border-color: #d8c878;
+}
+
+.comment-node__textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-comment-border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  width: 100%;
+  resize: none;
+}
+
+.comment-node__textarea {
+  min-height: 3em;
+}
+
+/* --- inspector --- */
+
+.inspector {
+  /* Shrinks to what the Build panel (pinned below it) leaves and scrolls inside that, so a node
+     with many params (e.g. logue/osc/granular) never pushes Build off the bottom. */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* Transparent on every side (not just a plain border-right) so .inspector--selected below can
+     swap in the accent color on all four sides without shifting anything -- box-sizing:border-box
+     means this 1px reservation costs no layout space either way. */
+  border: 1px solid transparent;
+  background-color: var(--color-background-soft);
+  color: var(--color-text);
+  /* Horizontal inset matches LibraryPanel's own row padding (.library-panel__section-title
+     etc., 8px) instead of this panel's previous flat 10px -- Inspector and LibraryPanel stack
+     directly in .app-sidebar-left with no padding of their own, so their header rows'
+     chevron/title need the same left edge to read as one continuous list, not two. */
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Field/border/muted-text palette for the panel's own fields. See .inspector--selected
+     below for how selection itself is indicated. */
+  --inspector-title-color: var(--color-section-label);
+  --inspector-muted-color: var(--ev-c-text-3);
+  --inspector-border-color: var(--ev-c-gray-3);
+  --inspector-field-bg: var(--color-background-mute);
+  --inspector-well-bg: var(--color-background);
+}
+
+/* Same rounded, accent-bordered highlight a selected canvas node gets (.patch-node--selected)
+   -- reads as "this Inspector is bound to a selected node" via the one visual language the app
+   already uses for selection, rather than an Inspector-only filled-background treatment. A
+   filled/tinted version was tried first and walked back: it spent the app's one sparingly-used
+   accent color across the largest, longest-dwelled-in surface in the app and needed a whole
+   separate near-black text palette to keep the toolbar's own title readable on top of it. A
+   border avoids both problems outright -- normal text stays normal, and the app-wide accent
+   focus ring stays visible against it with no override needed. Applied to the whole panel
+   (not just the toolbar row) so the highlight reads the same as a selected canvas node: one
+   continuous rounded border around the whole box, not just its header. */
+.inspector--selected {
+  border-color: var(--color-accent);
+  border-radius: 6px;
+}
+
+.inspector__title,
+.inspector__params-title {
+  color: var(--inspector-title-color);
+}
+
+.inspector__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.inspector__description {
+  margin: 0;
+  color: var(--inspector-muted-color);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.inspector__description--warning {
+  color: var(--color-status-warning);
+}
+
+/* `findUnresolvedReferences` (logue-codegen/src/unresolvedReferences.ts) surfaced: one
+   `WarningLine` per issue, so each can name its own field. */
+.inspector__unresolved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Mirrors ObjectNode.tsx's own `.patch-node__type` (the type beside the node's name)
+   so the Inspector's row reads as the same piece of information, just restated in the panel. */
+.inspector__type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--inspector-muted-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector__field select,
+.inspector__field input {
+  background: var(--inspector-field-bg);
+  border: 1px solid var(--inspector-border-color);
+  border-radius: 6px;
+  color: inherit;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+/* SampleSection.tsx -- the sample players' (`granular`, `sample`) waveform preview and import
+   controls. The
+   waveform draws in `color`, so it follows the accent in both themes. */
+.inspector__sample {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.inspector__sample-waveform {
+  max-width: 100%;
+  color: var(--color-accent);
+  background: var(--inspector-field-bg);
+  border: 1px solid var(--inspector-border-color);
+  border-radius: 6px;
+}
+
+.inspector__sample-waveform--loop-edit {
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.inspector__sample-loop {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inspector__sample-clear-loop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--inspector-border-color);
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.inspector__sample-waveform-wrap {
+  position: relative;
+  max-width: 100%;
+  height: 50px;
+}
+
+.inspector__sample-playhead {
+  display: none;
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  width: 1px;
+  background: var(--color-text);
+  pointer-events: none;
+}
+
+.inspector__sample-play {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--inspector-field-bg);
+  border: 1px solid var(--inspector-border-color);
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.inspector__sample-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector__sample-meta {
+  color: var(--inspector-muted-color);
+  font-size: 11px;
+}
+
+.inspector__sample-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inspector__sample-size {
+  flex: 1 1 110px;
+}
+
+.inspector__sample-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--inspector-field-bg);
+  border: 1px solid var(--inspector-border-color);
+  border-radius: 6px;
+  color: inherit;
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.inspector__sample-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.inspector__params {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px auto;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
+  font-size: 12px;
+}
+
+/* Its cells sit in `.inspector__params`' grid, so every value column lines up. */
+.inspector__param-row {
+  display: contents;
+}
+
+.inspector__param-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ev-c-text-2);
+}
+
+.inspector__param-value {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.inspector__param-input {
+  width: 100%;
+  background: var(--inspector-field-bg);
+  border: 1px solid var(--inspector-border-color);
+  border-radius: 4px;
+  color: inherit;
+  padding: 2px 5px;
+  font-size: 12px;
+}
+
+/* The param's device control: the canvas dial's tags, or (none) a grid icon that only shows
+   while the row is hovered. Opens the Param Matrix. */
+.inspector__param-device {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 20px;
+  min-height: 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-3);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.inspector__param-device:hover {
+  background-color: var(--ev-c-gray-2);
+}
+
+.inspector__param-device--unset {
+  opacity: 0;
+}
+
+.inspector__params:hover .inspector__param-device--unset,
+.inspector__param-device--unset:focus-visible {
+  opacity: 0.7;
+}
+
+.inspector__param-device .param-widget__slot-badge {
+  font-size: 10px;
+}
+
+.inspector__param-device--active {
+  color: var(--color-accent);
+}
+
+/* A promoted param's outer name, on its own line under the row. */
+.inspector__promoted-name {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  color: var(--inspector-muted-color);
+}
+
+.inspector__promoted-name input {
+  flex: 1;
+  min-width: 0;
+  background: var(--inspector-field-bg);
+  border: 1px solid var(--inspector-border-color);
+  border-radius: 4px;
+  color: inherit;
+  padding: 2px 5px;
+  font-size: 12px;
+}
+
+.inspector__field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.inspector__field--inline > span {
+  color: var(--ev-c-text-2);
+}
+
+.inspector__field--inline > input {
+  flex: 1;
+  min-width: 0;
+}
+
+.inspector__description--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.inspector__description-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inspector .inspector__description-toggle {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--inspector-muted-color);
+}
+
+.inspector__toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  border-radius: 4px;
+  padding: 3px;
+}
+
+.inspector__toolbar-button:hover {
+  background-color: var(--ev-c-gray-2);
+}
+
+.inspector__toolbar-button[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* --- patch settings modal --- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background-color: var(--color-background-soft);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 8px;
+  min-width: 260px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* A full-bleed colored title bar: negative margins cancel .modal's own 12px padding, and the
+   radius is 1px smaller than .modal's so it sits flush inside the border. */
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 14px;
+  margin: -12px -12px 0;
+  padding: 6px 6px 6px 12px;
+  border-radius: 7px 7px 0 0;
+  background-color: var(--color-accent-strong);
+  color: var(--ev-c-text-1);
+  /* The drag handle for useDraggableModal. */
+  cursor: move;
+}
+
+.modal__header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.modal__header button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.modal__header button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* --- settings modal --- */
+
+.settings-modal {
+  width: 420px;
+  max-width: calc(100vw - 48px);
+}
+
+.settings-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.settings-modal__path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-modal__path {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--ev-c-text-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.settings-modal__path--tail {
+  direction: rtl;
+  text-align: left;
+}
+
+.settings-modal__path--placeholder {
+  color: var(--ev-c-text-3);
+  font-style: italic;
+}
+
+.settings-modal__hint {
+  align-self: flex-start;
+  color: var(--ev-c-text-3);
+  font-size: 11px;
+  cursor: help;
+}
+
+/* --- upload-to-device modal (device/UploadUnitDialog.tsx) --- */
+
+.upload-modal {
+  width: 440px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.upload-modal__unit {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.upload-modal__unit-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-modal__meta {
+  color: var(--ev-c-text-3);
+  font-size: 11px;
+}
+
+.upload-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.upload-modal__device {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-modal__device > select,
+.upload-modal__device-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.upload-modal__device-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Right-aligned even when no device name sits beside it (none found yet). */
+.upload-modal__rescan {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-3);
+  border-radius: 4px;
+  padding: 3px;
+}
+
+.upload-modal__rescan:hover:not(:disabled) {
+  color: var(--color-text);
+  background-color: var(--color-background-mute);
+}
+
+.upload-modal__rescan:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.upload-modal__slots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.upload-modal__slot {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 4px;
+  background: var(--color-background-mute);
+  text-align: left;
+}
+
+.upload-modal__slot--selected {
+  border-color: var(--color-status-success);
+  box-shadow: 0 0 0 1px var(--color-status-success);
+}
+
+.upload-modal__slot-index {
+  flex: 0 0 auto;
+  color: var(--ev-c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.upload-modal__slot-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-modal__slot--empty .upload-modal__slot-name {
+  color: var(--ev-c-text-3);
+  font-style: italic;
+}
+
+.upload-modal__success {
+  color: var(--color-status-success);
+}
+
+/* Two lines reserved: room for the overwrite notice or a typical error without a height change. */
+.upload-modal__status {
+  /* border-box: the two text lines plus padding and border. */
+  min-height: calc(2 * 1.4em + 2 * 6px + 2px);
+  padding: 6px 8px;
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ev-c-text-3);
+}
+
+.upload-modal__notice {
+  color: var(--color-status-warning);
+}
+
+.upload-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Same teal as the modal's title bar, so the one committing action stands out from Rescan. */
+.upload-modal__primary {
+  background-color: var(--color-accent-strong);
+  color: var(--ev-c-text-1);
+}
+
+.upload-modal__primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-accent-strong) 85%, white);
+  color: var(--ev-c-text-1);
+}
+
+.upload-modal__progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Pushed to the left edge so it reads as a setting, not a third action button. */
+.upload-modal__always-replace {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ev-c-text-2);
+  cursor: pointer;
+}
+
+.backup-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 4px;
+  padding: 4px 6px;
+  background: var(--color-background-mute);
+}
+
+.backup-modal__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.backup-modal__row .param-widget__checkbox-input {
+  align-self: center;
+}
+
+.backup-modal__slot {
+  flex: 0 0 64px;
+  color: var(--ev-c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- help modal (wire colors + keyboard shortcuts) --- */
+
+.help-modal {
+  width: 540px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+}
+
+.help-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 16px;
+}
+
+.help-modal__intro {
+  color: var(--ev-c-text-2);
+  font-size: 12px;
+}
+
+.help-modal__section-title {
+  color: var(--color-section-label);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.help-modal__section-note {
+  color: var(--ev-c-text-3);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.help-modal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.help-modal__keys {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.help-modal__key {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--ev-c-text-1);
+  background-color: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 4px;
+}
+
+.help-modal__description {
+  color: var(--ev-c-text-2);
+  font-size: 12px;
+  text-align: right;
+}
+
+.help-modal__heading {
+  color: var(--ev-c-text-1);
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: -8px;
+}
+
+.help-modal__heading:not(:first-child) {
+  border-top: 1px solid var(--ev-c-gray-3);
+  padding-top: 14px;
+}
+
+/* "Reading the canvas": the canvas's own badges and markers, a little larger and without the
+   node-layout margins they carry there. */
+.help-modal__symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 112px;
+}
+
+.help-modal__symbol > * {
+  margin: 0 !important;
+  font-size: 10px;
+}
+
+.help-modal__symbol > .patch-node__inlet-mod {
+  font-size: 14px;
+  color: var(--ev-c-text-1);
+}
+
+/* Fixed columns: the descriptions differ in length, so a flex row's spacing would move the
+   label column from row to row. */
+.help-modal__row--symbol {
+  display: grid;
+  grid-template-columns: 112px 110px 1fr;
+}
+
+.help-modal__row--symbol > .help-modal__legend-label {
+  width: auto;
+}
+
+.help-modal__row--symbol > .help-modal__description {
+  text-align: left;
+}
+
+.help-modal__muted-icon {
+  color: var(--ev-c-text-2);
+}
+
+.help-modal__subpatch-sample {
+  width: 26px;
+  height: 14px;
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 3px;
+  background-color: var(--ev-c-black-soft);
+  box-shadow:
+    0 0 0 3px var(--ev-c-black-soft, #222),
+    0 0 0 4px var(--ev-c-gray-1, #555);
+}
+
+.help-modal__wire-sample {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.help-modal__legend-label {
+  color: var(--ev-c-text-1);
+  font-size: 12px;
+  white-space: nowrap;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.help-modal__row:has(.help-modal__wire-sample) .help-modal__description {
+  flex: 1;
+  text-align: left;
+}
+
+/* Same 10px size and shapes as the canvas handles (.patch-node__handle and its --control/--gate
+   variants); those rules are qualified with .react-flow__handle, so they can't be reused here. */
+.help-modal__dot {
+  width: 10px;
+  height: 10px;
+  margin-left: -2px;
+  border-radius: 50%;
+}
+
+.help-modal__dot--square {
+  border-radius: 1px;
+}
+
+.help-modal__dot--diamond {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+/* The buffer outlet's ring (ports.ts): an outline in the wire's colour (set inline). */
+.help-modal__dot--ring {
+  border: 2px solid;
+}
+
+.help-modal__dot--stale {
+  border: 1px dashed var(--ev-c-text-2);
+}
+
+/* --- about modal --- */
+
+.about-modal {
+  width: 560px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+}
+
+.about-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 20px;
+}
+
+.about-modal__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.about-modal__app-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.about-modal__version {
+  font-weight: 400;
+  color: var(--ev-c-text-3);
+}
+
+.about-modal__copyright {
+  color: var(--ev-c-text-2);
+  font-size: 12px;
+}
+
+.about-modal__section-title {
+  color: var(--color-section-label);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.about-modal__section-note {
+  color: var(--ev-c-text-3);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.about-modal__table {
+  display: flex;
+  flex-direction: column;
+}
+
+.about-modal__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 1px solid var(--ev-c-gray-3);
+  font-size: 12px;
+}
+
+.about-modal__row:first-child {
+  border-top: none;
+}
+
+.about-modal__row-name {
+  color: var(--ev-c-text-1);
+}
+
+.about-modal__row-license {
+  color: var(--ev-c-text-2);
+}
+
+.about-modal__row-author {
+  color: var(--ev-c-text-3);
+  text-align: right;
+}
+
+/* --- right sidebar (inspector + build panel) --- */
+
+.app-sidebar-right {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--ev-c-gray-3);
+  background-color: var(--color-background-soft);
+}
+
+/* Pinned under the Inspector, which scrolls instead. */
+.app-sidebar-right > .build-panel {
+  flex-shrink: 0;
+  margin-top: auto;
+  max-height: 70%;
+  overflow-y: auto;
+}
+
+/* --- shared: collapsible panel toolbar (build/inspector) ---
+   One header-row convention for every collapsible panel in the right sidebar -- a toggle
+   chevron + title, optionally trailing a compact status summary when the panel itself is
+   folded. The row itself (not just the chevron) is the
+   click/keyboard target now -- matches LibraryPanel's native <summary> rows, where clicking
+   anywhere on the header toggles it, not just its disclosure triangle. */
+.build-panel__toolbar,
+.inspector__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.build-panel__toolbar:hover,
+.inspector__toolbar:hover {
+  background-color: var(--ev-c-gray-3);
+}
+
+.build-panel__title,
+.inspector__title {
+  flex: 1;
+}
+
+/* Purely decorative now (a <span>, not a <button>) -- the toolbar row above owns the actual
+   click/keyboard handling, same relationship LibraryPanel's chevrons already have to their
+   own <summary> row. No fixed width -- sized to the icon itself (size={12} in the .tsx, same
+   as .details-chevron's own size below), matching LibraryPanel's chevrons exactly, so its
+   title text starts at the same x as "Libraries"/every other chevron-prefixed header in the
+   sidebar; a wider box here (this used to be 16px against their 12px) shifted this panel's
+   title text 4px right of Library's. */
+.build-panel__toggle,
+.inspector__toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ev-c-text-2);
+}
+
+/* Inspector's toggle icon (unlike the build panel's) flips to the dark selected-state
+   color along with the rest of the panel -- .inspector--selected's --inspector-title-color
+   override already handles this, this just points the toggle at the same var. */
+.inspector__toggle {
+  color: var(--inspector-title-color);
+}
+
+/* Folded: only the toolbar row remains -- same "collapse to header only" convention as
+   .build-panel--collapsed. */
+.inspector--collapsed {
+  gap: 0;
+}
+
+.inspector__hint {
+  color: var(--inspector-muted-color);
+  font-size: 12px;
+}
+
+/* --- build panel --- */
+
+/* A faint accent tint and top line mark it as where the patch turns into a unit -- the result,
+   not another editor. Kept dim: it's a hint, and the Build button stays the loudest thing here. */
+.build-panel {
+  border-top: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--ev-c-gray-3));
+  background-color: color-mix(in srgb, var(--color-accent) 5%, var(--color-background-soft));
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+/* Folded: only the toolbar row remains -- same "collapse to header only" convention as
+   .inspector--collapsed. */
+.build-panel--collapsed {
+  gap: 0;
+}
+
+/* The device-visible unit name field -- same column-stacked label/input shape as
+   `.inspector__field`, deliberately reused rather than duplicated (same move this file already
+   makes elsewhere for repurposed classes). */
+.build-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.build-panel__field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.build-panel__field--inline > input {
+  flex: 1;
+  min-width: 0;
+}
+
+.build-panel__field input {
+  background: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 6px;
+  color: inherit;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+/* The build-target selector -- the same pill LOOK the
+   old canvas-toolbar viewing-platform toggle used (`.view-mode-pill__option`/`--active`,
+   repurposed dead CSS, reused again rather than duplicated), but no `margin-left: auto`: this
+   sits in the Build panel's own vertical stack, not an inline horizontal toolbar, so it's just a
+   plain block-level row, sized to its own content rather than pinned to a far edge. */
+.build-panel__platform-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  width: fit-content;
+  background-color: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 999px;
+}
+
+/* The panel's one primary action, full width so it reads as the end of the form above it. */
+.build-panel__build-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--ev-button-alt-border);
+  color: var(--ev-button-alt-text);
+  background-color: var(--ev-button-alt-bg);
+  border-radius: 6px;
+  padding: 6px 10px;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.build-panel__build-button:hover:not(:disabled) {
+  color: var(--ev-button-alt-hover-text);
+  background-color: var(--ev-button-alt-hover-bg);
+}
+
+.build-panel__build-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Smaller than the Param Matrix's pills: here they're a secondary choice under the name. */
+.build-panel .view-mode-pill__option {
+  padding: 3px 12px;
+}
+
+.build-panel__empty-hint {
+  color: var(--ev-c-text-3);
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.build-panel__hint-link {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* Overrides base.css's generic button:hover fallback (a solid gray-2 box), which otherwise
+   fights this link-styled button's plain-text appearance. */
+.build-panel__hint-link:hover {
+  background: none;
+}
+
+/* Advisory, not blocking (a real Build/Export can
+   still succeed while this shows), so it gets its own warning tint rather than reusing
+   `.build-panel__error`'s red. */
+.build-panel__warning {
+  color: var(--color-status-warning);
+  background-color: color-mix(in srgb, var(--color-status-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-status-warning) 35%, transparent);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.build-panel__error {
+  color: var(--color-status-error);
+}
+
+/* WarningLine.tsx: one line per warning, expanding to the explanation. Same warning hue as
+   `.build-panel__warning`, without its box, so a few of them stay a short list. */
+.warning-line {
+  color: var(--color-status-warning);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.warning-line__summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 0 -4px;
+  padding: 1px 4px;
+}
+
+.warning-line__summary:hover {
+  background-color: color-mix(in srgb, var(--color-status-warning) 12%, transparent);
+}
+
+.warning-line__icon {
+  flex-shrink: 0;
+}
+
+.warning-line__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warning-line__detail {
+  margin: 4px 0 2px 18px;
+  color: var(--ev-c-text-2);
+}
+
+.warning-line__list {
+  margin: 2px 0 4px;
+  padding-left: 14px;
+}
+
+.warning-line--info {
+  color: var(--ev-c-text-3);
+}
+
+.warning-line--info .warning-line__summary:hover {
+  background-color: var(--ev-c-gray-3);
+}
+
+/* UsageGauge.tsx's row: label, bar, short value. Muted by default -- a normal graph using a
+   sliver of the budget isn't worth an alarm; `.build-panel__warning` is added once over. */
+.build-panel__size-meter {
+  display: grid;
+  grid-template-columns: 3.6em 1fr auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--ev-c-text-2);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.build-panel__size-meter-label {
+  color: var(--ev-c-text-3);
+}
+
+.build-panel__size-meter-text {
+  min-width: 2.6em;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.build-panel__size-meter--idle {
+  opacity: 0.5;
+}
+
+/* UsageGauge.tsx: the Build panel's RAM and CPU bars -- a fill coloured from green to red, a
+   faint "reach" extension, and ticks (grey: a "fine" anchor, red: the limit). */
+.build-panel__usage-gauge {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background-color: var(--color-background-mute);
+}
+
+.build-panel__usage-gauge-reach {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  opacity: 0.35;
+}
+
+.build-panel__usage-gauge-fill {
+  position: relative;
+  height: 100%;
+  border-radius: 3px;
+  transition:
+    width 0.15s ease-out,
+    background-color 0.15s ease-out;
+}
+
+.build-panel__usage-gauge-mark {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 10px;
+  background-color: var(--ev-c-text-3);
+}
+
+.build-panel__usage-gauge-mark--limit {
+  background-color: var(--color-status-error);
+}
+
+.build-panel__results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* A sub-heading of the Build section: its small-caps look, quieter. */
+.build-panel__results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ev-c-text-3);
+}
+
+.build-panel__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-2);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.build-panel__icon-button:hover {
+  color: var(--color-text);
+  background-color: var(--ev-c-gray-2);
+}
+
+.build-panel__output-folder {
+  font-size: 11px;
+  color: var(--ev-c-text-3);
+}
+
+.build-panel__results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 11px;
+  user-select: none;
+}
+
+.build-panel__result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+/* The row a build/export just added: a short success flash in place of a "Built x" line. */
+.build-panel__result-row--new {
+  animation: build-panel-result-new 1.6s ease-out;
+}
+
+@keyframes build-panel-result-new {
+  0%,
+  30% {
+    background-color: color-mix(in srgb, var(--color-status-success) 25%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Everything shrinks, but the device label gives way long before the file name does. */
+.build-panel__result-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.build-panel__result-meta {
+  flex: 1 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ev-c-text-3);
+}
+
+.build-panel__result-upload {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.build-panel__result-upload:hover {
+  background-color: var(--ev-c-gray-2);
+}
+
+/* --- param matrix overlay ---
+   Replaces the old always-inline BuildPanel.tsx `ExposedParamsPanel.tsx` (a single platform's
+   slot list at a time) with a real cross-platform editor: one row per param, one column per
+   platform. Opened via `openParamMatrix` -- BuildPanel.tsx's own button (plain overview) or a
+   right-click on a param's value, in Inspector.tsx or on its canvas dial (focused to that row).
+   A `.modal`/`.modal-overlay` instance (see the settings modal section above) -- wider/taller
+   than that section's own examples since this one holds a real, potentially long table, same
+   "own modifier class + `max-height: calc(100vh - Npx)`" shape as `.help-modal`. */
+
+.param-matrix-modal {
+  width: 640px;
+  max-width: calc(100vw - 48px);
+  max-height: 100%;
+}
+
+/* Anchored by its top edge (about a third down) rather than centred, so a slot edit or a device
+   switch only grows or shrinks it downwards instead of shifting the whole modal. The top gap
+   shrinks on a short window so the list keeps some room. */
+.modal-overlay--top-anchored {
+  align-items: flex-start;
+  padding: min(30vh, max(24px, 100vh - 400px)) 24px 24px;
+}
+
+.param-matrix-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.param-matrix__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.param-matrix__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--ev-c-text-3);
+}
+
+/* How the slot list works, as a tooltip instead of a paragraph under it. */
+.param-matrix__info {
+  display: inline-flex;
+  cursor: help;
+  color: var(--ev-c-text-2);
+}
+
+.param-matrix__add-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: help;
+}
+
+.param-matrix__copy-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border: 1px solid var(--ev-button-alt-border);
+  color: var(--ev-button-alt-text);
+  background-color: var(--ev-button-alt-bg);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.param-matrix__copy-order:hover {
+  color: var(--ev-button-alt-hover-text);
+  background-color: var(--ev-button-alt-hover-bg);
+}
+
+.param-matrix__scroll {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  font-size: 12px;
+}
+
+.param-matrix__slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 6px;
+}
+
+.param-matrix__slot {
+  display: grid;
+  grid-template-columns: 16px 20px minmax(0, 1fr) minmax(0, 1.1fr) auto 22px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  position: relative;
+}
+
+.param-matrix__slot + .param-matrix__slot {
+  border-top: 1px solid var(--ev-c-gray-3);
+}
+
+.param-matrix__slot--fixed {
+  color: var(--ev-c-text-3);
+}
+
+.param-matrix__fixed-text {
+  grid-column: 3;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.param-matrix__routes {
+  grid-column: 4 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  font-size: 11px;
+}
+
+.param-matrix__routes--none {
+  font-style: italic;
+}
+
+.param-matrix__bound {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 3px 1px 6px;
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 8px;
+  color: var(--ev-c-text-2);
+  white-space: nowrap;
+  font-style: normal;
+}
+
+.param-matrix__bound--focused {
+  outline: 2px solid var(--color-accent-strong);
+}
+
+.param-matrix__bound-text {
+  cursor: pointer;
+}
+
+.param-matrix__bound-text:hover {
+  color: var(--color-accent-strong);
+}
+
+.param-matrix__bound-wires {
+  color: var(--ev-c-text-3);
+}
+
+.param-matrix__bound-remove {
+  display: inline-flex;
+  padding: 1px;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-3);
+  cursor: pointer;
+}
+
+.param-matrix__bound-remove:hover {
+  color: var(--ev-c-text-1);
+}
+
+/* A pool chip dragged over a knob (bind) or a menu param (follow). */
+.param-matrix__slot--drop-target {
+  background-color: color-mix(in srgb, var(--color-accent-strong) 10%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-accent-strong);
+}
+
+/* Params following this menu param, on their own line under it. */
+.param-matrix__followers {
+  grid-column: 3 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.param-matrix__slot--empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  color: var(--ev-c-text-3);
+}
+
+/* The slot this overlay was opened FOR (a right-click on a specific param). */
+.param-matrix__slot--focused {
+  background-color: color-mix(in srgb, var(--color-accent-strong) 14%, transparent);
+}
+
+.param-matrix__slot--dragging {
+  opacity: 0.4;
+}
+
+.param-matrix__slot--drop-before::before,
+.param-matrix__slot--drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-accent-strong);
+}
+
+.param-matrix__slot--drop-before::before {
+  top: -1px;
+}
+
+.param-matrix__slot--drop-after::after {
+  bottom: -1px;
+}
+
+.param-matrix__grip {
+  display: inline-flex;
+  color: var(--ev-c-text-3);
+  cursor: grab;
+}
+
+.param-matrix__slot--fixed .param-matrix__grip {
+  cursor: default;
+}
+
+.param-matrix__slot-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  color: var(--ev-c-text-2);
+}
+
+.param-matrix__source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.param-matrix__source:hover,
+.param-matrix__add-node-name:hover {
+  color: var(--color-accent-strong);
+}
+
+.param-matrix__name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.param-matrix__name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.param-matrix__name-input--invalid {
+  border-color: var(--color-status-error) !important;
+}
+
+.param-matrix__name-count {
+  font-size: 10px;
+  color: var(--color-status-error);
+  font-variant-numeric: tabular-nums;
+}
+
+.param-matrix__name-input--warn {
+  border-color: var(--color-status-warning) !important;
+}
+
+.param-matrix__name-count--warn {
+  color: var(--color-status-warning);
+}
+
+.param-matrix__other {
+  font-size: 10px;
+  color: var(--ev-c-text-3);
+  white-space: nowrap;
+}
+
+.param-matrix__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-3);
+  border-radius: 4px;
+  padding: 3px;
+}
+
+.param-matrix__icon-button:hover {
+  color: var(--color-text);
+  background-color: var(--color-background-mute);
+}
+
+.param-matrix__footnote {
+  margin: 6px 2px 0;
+  font-size: 11px;
+  color: var(--ev-c-text-3);
+}
+
+.param-matrix__add {
+  margin-top: 16px;
+}
+
+.param-matrix__add-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ev-c-text-2);
+}
+
+.param-matrix__filter {
+  flex: 1 1 auto;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: normal;
+}
+
+.param-matrix__add-node {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 2px;
+}
+
+.param-matrix__add-node + .param-matrix__add-node {
+  border-top: 1px solid var(--ev-c-gray-3);
+}
+
+.param-matrix__add-node-name {
+  flex: 0 0 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--ev-c-text-2);
+}
+
+.param-matrix__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.param-matrix__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--ev-button-alt-border);
+  color: var(--ev-button-alt-text);
+  background-color: var(--ev-button-alt-bg);
+}
+
+.param-matrix__chip:hover:not(:disabled) {
+  color: var(--ev-button-alt-hover-text);
+  background-color: var(--ev-button-alt-hover-bg);
+}
+
+/* Only draggable here: a subpatch definition, or every menu slot is used. */
+.param-matrix__chip--drag-only {
+  opacity: 0.55;
+  cursor: grab;
+}
+
+.param-matrix__chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Assigned on the other platform but not this one -- the gap worth noticing. */
+.param-matrix__chip--elsewhere {
+  border-color: var(--color-accent-strong);
+}
+
+.param-matrix__chip--focused {
+  outline: 2px solid var(--color-accent-strong);
+}
+
+.param-matrix__chip-label {
+  color: var(--ev-c-text-3);
+}
+
+.param-matrix__empty {
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--ev-c-text-3);
+}
+
+/* Shown in the toolbar only while collapsed, so the connection state (and DSP load, if
+   connected) stays visible without expanding the panel -- same convention reused by
+   .inspector__toolbar-status for the current selection. */
+.inspector__toolbar-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ev-c-text-3);
+}
+
+/* Overrides the shared muted color above -- when a node is selected, .inspector--selected
+   flips the whole panel to a bright accent fill, so this needs to follow that same palette
+   swap (like .inspector__hint does) instead of the plain muted text. */
+.inspector__toolbar-status {
+  color: var(--inspector-muted-color);
+}
+
+/* Spins the refresh icon while a listing is in flight -- replaces the old text-glyph swap
+   (🔄 -> ⏳) now that it's a real SVG icon that can just rotate in place. */
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-spin {
+  animation: icon-spin 1s linear infinite;
+}
+
+/* GlobalTooltip.tsx's single rendered instance -- see its own doc comment for why this exists
+   instead of the native `title` attribute (a real, reproduced re-display bug) and why plain
+   position:fixed is enough to escape every scrollable container's clipping without a portal. */
+.global-tooltip {
+  position: fixed;
+  z-index: 1000;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background-color: var(--ev-c-gray-2);
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  /* Short text stays on one line; long text wraps instead of running past the window. */
+  width: max-content;
+  max-width: min(480px, calc(100vw - 16px));
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.global-tooltip--multiline {
+  white-space: pre-line;
+  max-width: min(360px, calc(100vw - 16px));
+  padding: 6px 8px;
+  line-height: 1.4;
+}
+
+.global-tooltip--side {
+  white-space: normal;
+  max-width: 280px;
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.library-panel__section-title {
+  padding: 8px 8px 2px;
+}
+
+/* --- canvas context menu (node / jack / param) --- */
+
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-width: 160px;
+  background-color: var(--ev-c-black-soft);
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.context-menu__item {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.context-menu__item:hover:not(:disabled) {
+  background-color: var(--ev-c-gray-3);
+}
+
+.context-menu__item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.context-menu__check {
+  width: 12px;
+  display: inline-block;
+  color: var(--color-accent);
+}
+
+.context-menu__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* --- object insert popup (canvas double-click, see PatchCanvas.tsx's handlePaneDoubleClick) ---
+   Same fixed-position/clamped-to-viewport treatment as .context-menu above, wider to fit a
+   filter input and taller to fit a scrollable category list. */
+.object-insert-popup {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  width: 460px;
+  max-width: calc(100vw - 16px);
+  max-height: 320px;
+  background-color: var(--ev-c-black-soft);
+  border: 1px solid var(--ev-c-gray-2);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.object-insert-popup__input {
+  flex-shrink: 0;
+  margin: 6px;
+  background: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 6px;
+  color: var(--color-text);
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.object-insert-popup__body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.object-insert-popup__list {
+  flex: 0 0 210px;
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 4px;
+  overflow-y: auto;
+}
+
+.object-insert-popup__description {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 4px 10px 10px;
+  border-left: 1px solid var(--ev-c-gray-3);
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ev-c-text-2);
+}
+
+.object-insert-popup__category-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-section-label);
+  padding: 4px 6px 2px;
+}
+
+.object-insert-popup__category-items {
+  list-style: none;
+  margin: 0;
+  /* Lines an entry's text up with its category's label (past the 8px dot + 4px gap). */
+  padding: 0 0 0 12px;
+}
+
+.object-insert-popup__item {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 5px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.object-insert-popup__item:hover {
+  background-color: var(--ev-c-gray-3);
+}
+
+/* The keyboard highlight (↑/↓, Enter inserts it) -- the accent color keeps it distinct from a
+   mere mouse hover. */
+.object-insert-popup__item--active,
+.object-insert-popup__item--active:hover {
+  background-color: var(--color-accent-strong);
+}
+
+.object-insert-popup__empty {
+  padding: 8px 6px;
+  font-size: 12px;
+  color: var(--ev-c-text-3);
+}
+
+/* Inspector's "Expose on subpatch" toggle (subpatch definitions only) -- the same square button
+   as the Param Matrix one it replaces there, highlighted while the param is promoted. */
+.inspector__param-matrix-button--active {
+  border-color: var(--ev-c-text-2);
+  background: var(--ev-c-gray-2);
+}
+
+.inspector__edit-subpatch {
+  margin-left: 8px;
+}
+
+/* A subpatch instance's handle for a port its definition no longer declares -- kept so the wire
+   stays visible and removable (see ports.ts's `stale`). */
+.patch-node__handle--stale {
+  background-color: transparent !important;
+  border: 1px dashed var(--ev-c-text-2);
+}
+
+/* A subpatch instance reads as a container: a doubled border hints there's more inside. */
+.patch-node--subpatch {
+  box-shadow:
+    0 0 0 3px var(--ev-c-black-soft, #222),
+    0 0 0 4px var(--ev-c-gray-1, #555);
+}
+
+/* Shown in place of the Build controls while a subpatch definition tab is active. */
+.build-panel__hint {
+  font-size: 11px;
+  color: var(--ev-c-text-2);
+  padding: 4px 0;
+}

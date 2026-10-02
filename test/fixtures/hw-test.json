@@ -1,0 +1,11 @@
+{
+  "nodes": [],
+  "nets": [],
+  "settings": {
+    "logueTarget": {
+      "platform": "nts1mkii",
+      "module": "osc"
+    }
+  },
+  "notes": ""
+}

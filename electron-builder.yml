@@ -1,0 +1,30 @@
+appId: de.privatepublic.logue-patcher
+productName: Logue Patcher
+copyright: Copyright © 2026 Peter Witzel
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!CLAUDE.md'
+asarUnpack:
+  - resources/**
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: false
+# Registers both document kinds with macOS, so Finder double-click / "Open With" hands them to
+# the app (main/index.ts's 'open-file' handler; the renderer opens either the same way).
+fileAssociations:
+  - ext: loguepatch
+    name: Logue Patcher Document
+    role: Editor
+  - ext: loguesub
+    name: Logue Subpatch
+    role: Editor
+dmg:
+  artifactName: ${name}-${version}.${ext}
+npmRebuild: false

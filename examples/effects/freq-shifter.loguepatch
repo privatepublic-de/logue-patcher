@@ -1,0 +1,195 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/audio-in",
+      "x": 0,
+      "y": 200,
+      "name": "audio-in",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/util/freq-shift",
+      "x": 260,
+      "y": 20,
+      "name": "shift_l",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "SHIFT",
+          "value": "15",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "0",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100",
+          "logueParamIndex": {
+            "nts1mkii": 2
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/util/freq-shift",
+      "x": 260,
+      "y": 300,
+      "name": "shift_r",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "SHIFT",
+          "value": "15",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        },
+        {
+          "name": "FEEDBACK",
+          "value": "0",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        },
+        {
+          "name": "MIX",
+          "value": "100",
+          "logueFollow": {
+            "nts1mkii": 2
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/crossfader",
+      "x": 560,
+      "y": 320,
+      "name": "spread",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "100",
+          "logueParamIndex": {
+            "nts1mkii": 3
+          },
+          "label": "SPREAD"
+        }
+      ]
+    },
+    {
+      "type": "logue/io/audio-out",
+      "x": 820,
+      "y": 200,
+      "name": "audio-out",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "shift_l",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "shift_r",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "shift_l",
+          "outlet": "shifted"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "shift_r",
+          "outlet": "shifted"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spread",
+          "inlet": "in1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "shift_r",
+          "outlet": "mirror"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spread",
+          "inlet": "in2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spread",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "r"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "module": "modfx"
+    },
+    "unitName": "LP FreqShift"
+  },
+  "notes": "A stereo frequency shifter: every partial moves by the same number of Hz, for metallic, inharmonic sounds. TIME = shift (zero at the middle), DEPTH = feedback. SPREAD sends the right side the other way (50 = ring modulation). A few Hz at MIX 50 is a barber-pole phaser."
+}
