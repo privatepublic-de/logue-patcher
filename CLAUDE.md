@@ -11,6 +11,19 @@ source only) or **Build** (a real compiled, installable unit) for either platfor
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
 
+## Repository & licensing
+
+- Public at https://github.com/privatepublic-de/logue-patcher (`origin`), MIT. Published
+  2026-10-03 as one fresh commit: the pre-publication history (which contains axo-modern's
+  port of Axoloti's GPL-3.0 code generator and copied Axoloti object fixtures) lives only in the
+  local branch `archive/full-history`, linked to `main` by a local `git replace --graft` so
+  `git log`/`blame` still reach it here. Push `main` (and new feature branches) only -- never
+  `archive/full-history`, `--all`, `--mirror` or `refs/replace/*`.
+- Code taken from elsewhere must be permissively licensed and keep its notice: Korg's logue SDK
+  (BSD-3-Clause) is embedded in `logue-codegen/src/minilogue-xd/` and the harnesses, with the
+  notice in `THIRD_PARTY_NOTICES.md`. Regenerate that file after a dependency change
+  (`node scripts/write-third-party-notices.mjs`). Nothing GPL, including Axoloti objects.
+
 This file holds current rules only. Why a constant or workaround is what it is -- the user
 reports, measurements and reversals behind it -- is in `docs/HISTORY.md`; add new stories there,
 not here.
