@@ -1,16 +1,12 @@
 import type { LogueModule, PatchNode, Net } from '@shared/domain/patch'
-import type { LogueInletRole } from '@logue-codegen/primitives'
+import { resolveDeclaredOutletName, type LogueInletRole } from '@logue-codegen/primitives'
 import {
   LOGUE_AUDIO_IN_OUTLETS,
   LOGUE_AUDIO_IN_TYPE,
   LOGUE_AUDIO_OUT_TYPE
 } from '@logue-codegen/oscInstances'
 import { isEffectModule } from '@logue-codegen/unitKinds'
-import {
-  isSubpatchInstanceType,
-  LOGUE_SUBPATCH_INLET_TYPE,
-  LOGUE_SUBPATCH_OUTLET_TYPE
-} from '@logue-codegen/subpatches'
+import { LOGUE_SUBPATCH_INLET_TYPE, LOGUE_SUBPATCH_OUTLET_TYPE } from '@logue-codegen/subpatches'
 import { resolveNodePrimitive } from '../state/subpatchLibraryStore'
 
 /** No DataTypeKind domain survives Axoloti removal -- every logue signal is plain float
@@ -28,9 +24,9 @@ export interface PortInfo {
    * the neutral colour rather than guessing.
    */
   role?: LogueInletRole
-  /** A port a wire still references but the subpatch's definition no longer declares -- kept
-   *  as a handle (drawn broken) so the wire stays visible and can be disconnected, instead of
-   *  vanishing while Export still fails on it. */
+  /** A port a wire still references but the node no longer declares (a subpatch definition
+   *  that dropped it, a Replace with... onto a type without it) -- kept as a handle (drawn
+   *  broken) so the wire stays visible and can be disconnected, instead of vanishing. */
   stale?: boolean
 }
 
@@ -97,18 +93,16 @@ export function resolvePorts(
         inlets: (primitive.inlets ?? []).map((inlet) => ({ name: inlet.name, role: inlet.role })),
         outlets: (primitive.outlets ?? [{ name: 'out' }]).map((outlet) => ({ name: outlet.name }))
       }
-      if (!isSubpatchInstanceType(node.type)) return declared
       const wired = wiredPortNames(nodeName, nets)
-      const staleOf = (names: Set<string>, ports: PortInfo[]): PortInfo[] =>
-        [...names]
-          .filter((name) => !ports.some((p) => p.name === name))
-          .map((name) => ({ name, stale: true }))
-      // A single-outlet definition answers to any outlet name (see `resolveDeclaredOutletName`),
-      // so only a multi-outlet one can have a genuinely stale outlet wire.
-      const staleOutlets =
-        declared.outlets.length > 1 ? staleOf(wired.outlets, declared.outlets) : []
+      const staleInlets = [...wired.inlets]
+        .filter((name) => !declared.inlets.some((p) => p.name === name))
+        .map((name) => ({ name, stale: true }))
+      // Resolved the way codegen and the edges do: a single-outlet node answers to any name.
+      const staleOutlets = [...wired.outlets]
+        .filter((name) => resolveDeclaredOutletName(primitive, name) === undefined)
+        .map((name) => ({ name, stale: true }))
       return {
-        inlets: [...declared.inlets, ...staleOf(wired.inlets, declared.inlets)],
+        inlets: [...declared.inlets, ...staleInlets],
         outlets: [...declared.outlets, ...staleOutlets]
       }
     }

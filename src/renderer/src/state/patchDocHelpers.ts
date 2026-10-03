@@ -1,4 +1,4 @@
-import type { PatchDocument, PatchNode, ObjNode } from '@shared/domain/patch'
+import type { Net, PatchDocument, PatchNode, ObjNode } from '@shared/domain/patch'
 import type {
   ParamValue,
   LogueParamSlot,
@@ -354,4 +354,104 @@ export function dropOrphanedFollows(doc: PatchDocument): PatchDocument {
     return { ...n, params }
   })
   return changed ? withNodes(doc, nodes) : doc
+}
+
+/** Drops a net left with no source or no dest -- such a net draws nothing and builds nothing. */
+function withoutEmptyNets(nets: Net[]): Net[] {
+  return nets.filter((net) => net.sources.length > 0 && net.dests.length > 0)
+}
+
+/**
+ * Removes every wire into `inlets` and out of `outlets` of one node -- the Inspector's way out of
+ * a stale wire (`findUnresolvedReferences`' `stale-inlet`/`stale-outlet`), matched by the raw
+ * stored name exactly as that check reports it.
+ */
+export function withoutNodeWires(
+  doc: PatchDocument,
+  nodeName: string,
+  ports: { inlets?: readonly string[]; outlets?: readonly string[] }
+): PatchDocument {
+  const inlets = new Set(ports.inlets ?? [])
+  const outlets = new Set(ports.outlets ?? [])
+  const nets = doc.nets.map((net) => ({
+    ...net,
+    sources: net.sources.filter(
+      (s) => !(s.obj === nodeName && s.outlet !== undefined && outlets.has(s.outlet))
+    ),
+    dests: net.dests.filter(
+      (d) => !(d.obj === nodeName && d.inlet !== undefined && inlets.has(d.inlet))
+    )
+  }))
+  return { ...doc, nets: withoutEmptyNets(nets) }
+}
+
+/** The new type's inlets a wire to `inlet` carries over to when a stereo node is replaced by its
+ *  mono sibling or the reverse -- the one family whose names line up without guessing (`l1`/`r1`
+ *  <-> `in1`, `l`/`r` <-> `in`). A mono wire feeds both sides. */
+function stereoMonoCounterparts(inlet: string, newInlets: ReadonlySet<string>): string[] {
+  const side = /^[lr](\d*)$/.exec(inlet)
+  if (side) return newInlets.has(`in${side[1]}`) ? [`in${side[1]}`] : []
+  const mono = /^in(\d*)$/.exec(inlet)
+  if (mono) {
+    const pair = [`l${mono[1]}`, `r${mono[1]}`]
+    return pair.every((name) => newInlets.has(name)) ? pair : []
+  }
+  return []
+}
+
+/**
+ * After Replace with... (`replaceNode`): moves wires into inlets the new type lacks onto their
+ * stereo/mono counterparts (`stereoMonoCounterparts`). An inlet takes one source, so `l` wins over
+ * `r`; an `r` wire from the same source as the `l` one it lost to is redundant and dropped, one
+ * from another source stays as a visible stale wire, like any other unmatched inlet.
+ */
+export function remapStereoMonoInlets(
+  nets: Net[],
+  nodeName: string,
+  newInlets: ReadonlySet<string>
+): Net[] {
+  const owner = new Map<string, number>()
+  nets.forEach((net, netIndex) =>
+    net.dests.forEach((d) => {
+      if (d.obj === nodeName && d.inlet !== undefined && newInlets.has(d.inlet)) {
+        owner.set(d.inlet, netIndex)
+      }
+    })
+  )
+  const stale: Array<{ netIndex: number; destIndex: number; inlet: string }> = []
+  nets.forEach((net, netIndex) =>
+    net.dests.forEach((d, destIndex) => {
+      if (d.obj === nodeName && d.inlet !== undefined && !newInlets.has(d.inlet)) {
+        stale.push({ netIndex, destIndex, inlet: d.inlet })
+      }
+    })
+  )
+  // `l*` before `r*`, so the left side is the one a mono inlet keeps.
+  stale.sort((a, b) => Number(a.inlet.startsWith('r')) - Number(b.inlet.startsWith('r')))
+
+  const replacement = new Map<string, string[]>()
+  for (const { netIndex, destIndex, inlet } of stale) {
+    const targets = stereoMonoCounterparts(inlet, newInlets)
+    if (targets.length === 0) continue
+    const free = targets.filter((t) => !owner.has(t))
+    if (free.length === 0) {
+      if (targets.every((t) => owner.get(t) === netIndex)) {
+        replacement.set(`${netIndex}:${destIndex}`, [])
+      }
+      continue
+    }
+    for (const t of free) owner.set(t, netIndex)
+    replacement.set(`${netIndex}:${destIndex}`, free)
+  }
+  if (replacement.size === 0) return nets
+
+  return withoutEmptyNets(
+    nets.map((net, netIndex) => ({
+      ...net,
+      dests: net.dests.flatMap((d, destIndex) => {
+        const targets = replacement.get(`${netIndex}:${destIndex}`)
+        return targets === undefined ? [d] : targets.map((inlet) => ({ ...d, inlet }))
+      })
+    }))
+  )
 }

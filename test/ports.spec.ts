@@ -178,3 +178,32 @@ describe('outletShapeClassForBucket', () => {
     expect(outletShapeClassForBucket('gate')).toBe('patch-node__handle--gate')
   })
 })
+
+describe('resolvePorts stale ports', () => {
+  it("keeps a wire into an inlet a primitive doesn't declare as a stale handle", () => {
+    const nets: Net[] = [
+      { sources: [{ obj: 'n', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'l2' }] },
+      { sources: [{ obj: 'n', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'in2' }] }
+    ]
+    const ports = resolvePorts(objNode('logue/mix/mix2', 'mx'), 'mx', nets)
+    expect(ports.inlets).toEqual([
+      { name: 'in1', role: 'audio' },
+      { name: 'in2', role: 'audio' },
+      { name: 'l2', stale: true }
+    ])
+  })
+
+  it('marks an unknown outlet stale only on a multi-outlet primitive (one outlet answers to any name)', () => {
+    const nets: Net[] = [
+      { sources: [{ obj: 'f', outlet: 'notch' }], dests: [{ obj: 'x', inlet: 'in' }] },
+      { sources: [{ obj: 'v', outlet: 'l' }], dests: [{ obj: 'x', inlet: 'in' }] }
+    ]
+    expect(resolvePorts(objNode('logue/filter/svf', 'f'), 'f', nets).outlets).toContainEqual({
+      name: 'notch',
+      stale: true
+    })
+    expect(resolvePorts(objNode('logue/gain/vca', 'v'), 'v', nets).outlets).toEqual([
+      { name: 'out' }
+    ])
+  })
+})

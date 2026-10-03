@@ -335,6 +335,7 @@ function Inspector(): React.JSX.Element {
   const openParamMatrix = useOptionalPatchStore((s) => s.openParamMatrix)
   const setSubpatchExpose = useOptionalPatchStore((s) => s.setSubpatchExpose)
   const removeParamValue = useOptionalPatchStore((s) => s.removeParamValue)
+  const removeNodeWires = useOptionalPatchStore((s) => s.removeNodeWires)
   const setNodeSample = useOptionalPatchStore((s) => s.setNodeSample)
   useSubpatchLibraryStore((s) => s.version)
   const inSubpatch = rootDoc?.settings.subpatch === true
@@ -383,6 +384,9 @@ function Inspector(): React.JSX.Element {
     rootDoc && selectedNode?.kind === 'obj'
       ? findUnresolvedReferences(rootDoc, selectedNode, resolveNodePrimitive)
       : []
+  const staleWireRefs = unresolvedReferences.filter(
+    (ref) => ref.kind === 'stale-inlet' || ref.kind === 'stale-outlet'
+  )
   // `logue/io/audio-out` is a pseudo-object with no LoguePrimitive registry entry of its own
   // (see LOGUE_AUDIO_OUT_DESCRIPTION's own doc comment) -- special-cased here rather than
   // adding a fake registry entry just to carry one string.
@@ -488,6 +492,25 @@ function Inspector(): React.JSX.Element {
               tone={ref.kind === 'renamed-type' ? 'info' : 'warning'}
             >
               {describeUnresolvedReference(ref)}
+              {(ref.kind === 'stale-inlet' || ref.kind === 'stale-outlet') && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="build-panel__hint-link"
+                    onClick={() =>
+                      removeNodeWires(
+                        selectedNodeId!,
+                        ref.kind === 'stale-inlet'
+                          ? { inlets: [ref.rawName] }
+                          : { outlets: [ref.rawName] }
+                      )
+                    }
+                  >
+                    Remove wire
+                  </button>
+                </>
+              )}
               {ref.kind === 'stale-param' && (
                 <>
                   {' '}
@@ -502,6 +525,24 @@ function Inspector(): React.JSX.Element {
               )}
             </WarningLine>
           ))}
+          {staleWireRefs.length > 1 && (
+            <button
+              type="button"
+              className="build-panel__hint-link inspector__remove-stale-wires"
+              onClick={() =>
+                removeNodeWires(selectedNodeId!, {
+                  inlets: staleWireRefs
+                    .filter((r) => r.kind === 'stale-inlet')
+                    .map((r) => r.rawName),
+                  outlets: staleWireRefs
+                    .filter((r) => r.kind === 'stale-outlet')
+                    .map((r) => r.rawName)
+                })
+              }
+            >
+              Remove all stale wires
+            </button>
+          )}
         </div>
       )}
       {!collapsed && showNameField && selectedNode && (

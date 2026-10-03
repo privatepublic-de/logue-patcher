@@ -945,6 +945,62 @@ describe('patchStore.replaceNode', () => {
     store.getState().undo()
     expect(store.getState().rootDoc).toBe(before)
   })
+
+  it('moves stereo wires onto the mono sibling, dropping an r wire that only repeats its l one', () => {
+    const doc = freshLogueDoc(
+      [
+        { kind: 'obj', type: 'logue/osc/saw', name: 'a', x: 0, y: 0, params: [] },
+        { kind: 'obj', type: 'logue/osc/noise', name: 'n', x: 0, y: 0, params: [] },
+        { kind: 'obj', type: 'logue/osc/sine', name: 's', x: 0, y: 0, params: [] },
+        { kind: 'obj', type: 'logue/mix/stereo-mix2', name: 'mx', x: 0, y: 0, params: [] }
+      ],
+      [
+        // l1 and r1 from the same source, l2 and r2 from two different ones
+        {
+          sources: [{ obj: 'a', outlet: 'out' }],
+          dests: [
+            { obj: 'mx', inlet: 'l1' },
+            { obj: 'mx', inlet: 'r1' }
+          ]
+        },
+        { sources: [{ obj: 's', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'r2' }] },
+        { sources: [{ obj: 'n', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'l2' }] }
+      ]
+    )
+    store.setState({ rootDoc: doc })
+
+    store.getState().replaceNode('mx', 'logue/mix/mix2')
+
+    expect(store.getState().rootDoc!.nets).toEqual([
+      { sources: [{ obj: 'a', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'in1' }] },
+      // lost to l2: stays as a visible stale wire, not guessed elsewhere
+      { sources: [{ obj: 's', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'r2' }] },
+      { sources: [{ obj: 'n', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'in2' }] }
+    ])
+  })
+
+  it('feeds both sides of the stereo sibling from a mono wire', () => {
+    const doc = freshLogueDoc(
+      [
+        { kind: 'obj', type: 'logue/osc/saw', name: 'a', x: 0, y: 0, params: [] },
+        { kind: 'obj', type: 'logue/mix/mix2', name: 'mx', x: 0, y: 0, params: [] }
+      ],
+      [{ sources: [{ obj: 'a', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'in2' }] }]
+    )
+    store.setState({ rootDoc: doc })
+
+    store.getState().replaceNode('mx', 'logue/mix/stereo-mix2')
+
+    expect(store.getState().rootDoc!.nets).toEqual([
+      {
+        sources: [{ obj: 'a', outlet: 'out' }],
+        dests: [
+          { obj: 'mx', inlet: 'l2' },
+          { obj: 'mx', inlet: 'r2' }
+        ]
+      }
+    ])
+  })
 })
 
 describe('patchStore undo/redo', () => {
@@ -1508,5 +1564,35 @@ describe('pasting the fixed io nodes', () => {
     expect(types.filter((t) => t === 'logue/io/audio-in')).toHaveLength(1)
     expect(types.filter((t) => t === LOGUE_AUDIO_OUT_TYPE)).toHaveLength(1)
     expect(types.filter((t) => t === 'logue/util/long-delay')).toHaveLength(2)
+  })
+})
+
+describe('patchStore.removeNodeWires', () => {
+  it("removes a node's stale wires by raw name, dropping a net left without dests", () => {
+    const doc: PatchDocument = {
+      nodes: [
+        { kind: 'obj', type: 'logue/osc/saw', name: 'a', x: 0, y: 0, params: [] },
+        { kind: 'obj', type: 'logue/mix/mix2', name: 'mx', x: 0, y: 0, params: [] }
+      ],
+      nets: [
+        {
+          sources: [{ obj: 'a', outlet: 'out' }],
+          dests: [
+            { obj: 'mx', inlet: 'in1' },
+            { obj: 'mx', inlet: 'l1' }
+          ]
+        },
+        { sources: [{ obj: 'a', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'r2' }] }
+      ],
+      settings: { logueTarget: { module: 'modfx' } },
+      notes: ''
+    }
+    store.setState({ rootDoc: doc })
+
+    store.getState().removeNodeWires('mx', { inlets: ['l1', 'r2'] })
+
+    expect(store.getState().rootDoc!.nets).toEqual([
+      { sources: [{ obj: 'a', outlet: 'out' }], dests: [{ obj: 'mx', inlet: 'in1' }] }
+    ])
   })
 })

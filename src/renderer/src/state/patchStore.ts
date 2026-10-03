@@ -36,6 +36,8 @@ import {
   logueParamSlotsEqual,
   uniqueNodeName,
   withNodes,
+  withoutNodeWires,
+  remapStereoMonoInlets,
   type DeviceParamRef,
   serializeSelectionForClipboard,
   type PlatformControlLayout
@@ -208,9 +210,10 @@ export interface PatchStoreState {
    * gap in the xd's contiguous slots; it isn't compacted behind the user's back -- the Param Matrix
    * shows it and closes it on the next edit there, and Export rejects it until then.
    *
-   * Inlets are matched by exact name only (the families this targets share inlet names); an
-   * unmatched one stays as a dashed invalid edge rather than being guessed onto another port by
-   * role or position. An outlet name the new primitive lacks is remapped to its first outlet --
+   * Inlets are matched by exact name (the families this targets share inlet names), plus the
+   * stereo/mono siblings' `l1`/`r1` <-> `in1` (`remapStereoMonoInlets`); any other unmatched one
+   * stays as a dashed stale wire (`ports.ts`) rather than being guessed onto another port by role
+   * or position -- visible, and removable from the Inspector. An outlet name the new primitive lacks is remapped to its first outlet --
    * unambiguous for single-outlet primitives, a visible, reversible guess otherwise.
    *
    * No-op for a non-`obj` node, an unknown id or `newType`, the same type, or `logue/io/audio-out`
@@ -226,6 +229,9 @@ export interface PatchStoreState {
   /** Drops one stored `ParamValue` -- the way out of a stale one (Inspector's unresolved list),
    *  e.g. an instance value for a promoted param its subpatch no longer exposes. */
   removeParamValue: (id: string, paramName: string) => void
+  /** Removes a node's wires into `inlets` / out of `outlets` (raw stored names) -- the way out of
+   *  a stale wire in the Inspector's unresolved list. One undo step. */
+  removeNodeWires: (id: string, ports: { inlets?: string[]; outlets?: string[] }) => void
   /**
    * Spreads the document's nodes apart to fit their real rendered size, without changing their
    * relative position-sort rank -- see autoArrange.ts's module doc comment for why that
@@ -697,6 +703,13 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
     )
   },
 
+  removeNodeWires: (id, ports) => {
+    const target = get().rootDoc?.nodes.find((n, i) => nodeId(n, i) === id)
+    if (!target || target.kind !== 'obj' || target.name === undefined) return
+    const name = target.name
+    commitDoc(get, set, {}, (doc) => withoutNodeWires(doc, name, ports))
+  },
+
   setEffectModule: (module) => {
     const activeDoc = get().rootDoc
     const current = activeDoc?.settings.logueTarget?.module
@@ -796,10 +809,8 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
         return { ...n, type: newType, params }
       })
 
-      // Dests (inlet references) are deliberately left untouched -- no safe fallback exists for
-      // an unmatched inlet, so a stale name just renders as `toFlowGraph.ts`'s existing invalid/
-      // dashed edge (see this action's own doc comment).
-      const nets = doc.nets.map((net) => ({
+      const newInletNames = new Set((newPrimitive.inlets ?? []).map((i) => i.name))
+      const nets = remapStereoMonoInlets(doc.nets, id, newInletNames).map((net) => ({
         ...net,
         sources: net.sources.map((s) =>
           s.obj === id && s.outlet !== undefined && !newOutletNames.has(s.outlet)

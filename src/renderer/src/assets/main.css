@@ -1410,6 +1410,10 @@ input[type='checkbox'].param-widget__checkbox-input:checked {
   gap: 2px;
 }
 
+.inspector__remove-stale-wires {
+  align-self: flex-start;
+}
+
 /* Mirrors ObjectNode.tsx's own `.patch-node__type` (the type beside the node's name)
    so the Inspector's row reads as the same piece of information, just restated in the panel. */
 .inspector__type {
