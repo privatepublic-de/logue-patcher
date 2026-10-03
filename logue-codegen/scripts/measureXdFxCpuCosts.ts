@@ -49,7 +49,7 @@ import {
 } from '../src/primitives'
 import { LOGUE_AUDIO_IN_TYPE, LOGUE_AUDIO_OUT_TYPE } from '../src/oscInstances'
 import type { LogueEffectModule, Net, ObjNode, PatchDocument } from '../../src/shared/domain/patch'
-import { FX_CPU_COST_TABLE } from '../src/fxCpuCostTable'
+import { FX_CPU_COST_TABLE, FX_CPU_DOES_NOT_FIT } from '../src/fxCpuCostTable'
 import { bufferPartners } from './bufferPartners'
 import { sample, snapshotHash, variants, type UnitBuilder } from './cpuVariants'
 import { measureXdFx, TooBigError, type FxCycles } from './measureXdFxCycles'
@@ -332,6 +332,7 @@ function overhead(doc: PatchDocument): Cost {
 console.log(`sum            ${JSON.stringify(rounded(sumCost))}`)
 
 const table: Record<string, Entry> = { ...previous }
+const doesNotFit: Record<string, string> = only.length ? { ...FX_CPU_DOES_NOT_FIT } : {}
 const failures: string[] = []
 const tooBig: string[] = []
 for (const id of recognizedLoguePrimitiveIds()) {
@@ -341,6 +342,7 @@ for (const id of recognizedLoguePrimitiveIds()) {
   if (p.platforms && !p.platforms.includes('minilogue-xd')) continue
   if (p.modules && !p.modules.includes('delfx')) continue
   const measured: Record<string, Variant> = {}
+  let overflowed = false
   for (const job of variants(id, fxUnit)) {
     try {
       const twoDoc = withInstances(job.doc, id, 2)
@@ -357,12 +359,20 @@ for (const id of recognizedLoguePrimitiveIds()) {
     } catch (err) {
       if (err instanceof TooBigError) {
         tooBig.push(`${job.name}: ${err.message}`)
+        overflowed = true
         continue
       }
       failures.push(`${job.name}: ${(err as Error).message}`)
     }
   }
-  if (Object.keys(measured).length === 0) continue
+  if (Object.keys(measured).length === 0) {
+    if (overflowed) {
+      doesNotFit[id] = snapshotHash(id)
+      delete table[id]
+    }
+    continue
+  }
+  delete doesNotFit[id]
   table[id] = { variants: measured, snapshotHash: snapshotHash(id) }
   console.log(`${id.padEnd(32)} ${JSON.stringify(measured)}`)
 }
@@ -404,6 +414,16 @@ export const FX_CPU_BASELINE: Record<'modfx' | 'delfx' | 'revfx', FxCpuCost> = $
 
 /** The xd fx goldens the table was measured against (\`fxShellHash\`). */
 export const FX_CPU_SHELL_HASH = '${fxShellHash()}'
+
+/** Primitives no delfx can hold (its SRAM overflowed in every variant), with the snapshot hash
+ *  they were built from: they have no entry, and a codegen change may make them fit. */
+export const FX_CPU_DOES_NOT_FIT: Record<string, string> = ${literal(
+    Object.fromEntries(
+      Object.keys(doesNotFit)
+        .sort()
+        .map((id) => [id, doesNotFit[id]])
+    )
+  )}
 
 /**
  * Per primitive, above the delfx baseline, per measured variant (\`cpuVariants.ts\`: \`base\`,

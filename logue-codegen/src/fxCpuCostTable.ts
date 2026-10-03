@@ -19,6 +19,13 @@ export const FX_CPU_BASELINE: Record<'modfx' | 'delfx' | 'revfx', FxCpuCost> = {
 /** The xd fx goldens the table was measured against (`fxShellHash`). */
 export const FX_CPU_SHELL_HASH = '323c55ee855d1752'
 
+/** Primitives no delfx can hold (its SRAM overflowed in every variant), with the snapshot hash
+ *  they were built from: they have no entry, and a codegen change may make them fit. */
+export const FX_CPU_DOES_NOT_FIT: Record<string, string> = {
+  'logue/filter/string': 'd2fb4b7548c8393b',
+  'logue/osc/additive': '8ad6107dc41ce335'
+}
+
 /**
  * Per primitive, above the delfx baseline, per measured variant (`cpuVariants.ts`: `base`,
  * `control` -- control inlets fed a moving signal --, `<CHECKBOX>`, `<CHECKBOX>+control`,

@@ -455,7 +455,10 @@ penalty 8, SDRAM counts exact except the random-trigger grain-mill units (5-5.5 
 8: the deliberate overcount, +15/+22 %); without those -10..+18 %. `scripts/profileFxUnit.ts`
 attributes a unit's per-line profile (`PROFILE=1 PROFILE_LINES=0`, now with SDRAM per line) to
 instances, helpers and SDK headers next to the table -- how the misses above were found.
-`osc/additive` and `filter/string` don't fit an xd delfx, so have no entry.
+`osc/additive` and `filter/string` don't fit an xd delfx: they're listed in `FX_CPU_DOES_NOT_FIT`
+instead of the table. `logue-fxCpuCostTable.spec.ts` warns on a missing or stale entry (snapshot
+hash, or the fx goldens' shell hash for the whole table) like the oscillator one;
+`CPU_COST_STRICT=1` fails it.
 
 `logue-codegen/scripts/*.ts` are one-off, throwaway verification scripts (stage a generated
 project into a sibling logue-sdk checkout for a real Docker build + websim/hardware check) — not
