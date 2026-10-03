@@ -671,8 +671,20 @@ export const LEVEL_DB: ParamUnit = {
 
 // `logue/mix/mix2`/`stereo-mix2`'s GAIN1/GAIN2: raw * 0.01, so 100 is 0 dB and 1 is -40 dB.
 export const MIX_GAIN_DB = linearDbUnit(0, 0.01)
-// `logue/env/follower`'s GAIN: 1 + 0.15 * raw, so 0..100 is 0..+24 dB.
-export const FOLLOWER_GAIN_DB = linearDbUnit(1, 0.15)
+/** `logue/env/follower`'s SENS: a gain of 1 + 0.15 * raw (0..+24 dB) before the clamp to 1,
+ *  shown as what it decides -- the input level that reaches full output, 0 .. -24 dB. Typing
+ *  "-18" or "18" both mean full output at -18 dB. */
+export const FOLLOWER_SENS_DB: ParamUnit = {
+  toDisplay(raw) {
+    const db = -20 * Math.log10(1 + 0.15 * raw)
+    return `full at ${db.toFixed(1)} dB`
+  },
+  parseInput(text) {
+    const n = Number.parseFloat(text.replace(/^\s*full\s*at\s*/i, ''))
+    if (!Number.isFinite(n)) return undefined
+    return (10 ** (Math.abs(n) / 20) - 1) / 0.15
+  }
+}
 // `driveGainExpr(..., 0.07)` -- primitives.ts:1738 (`wavefolderPrimitive`'s own call site).
 export const WAVEFOLDER_DRIVE_DB = linearDbUnit(1, 0.07)
 // `driveGainExpr(..., 0.09)` -- primitives.ts:1789 (`saturatorPrimitive`'s own call site).

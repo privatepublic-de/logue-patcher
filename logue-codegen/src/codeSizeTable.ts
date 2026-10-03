@@ -574,7 +574,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 152,
       helpers: [],
       unwired: { first: 192, extra: 144, helpers: [] },
-      snapshotHash: 'ecfd9702000ca1e0'
+      snapshotHash: 'f7893e7c4cfddfe4'
     },
     'logue/filter/hilbert': {
       first: 334,
@@ -1176,7 +1176,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 136,
       helpers: [],
       unwired: { first: 232, extra: 104, helpers: [] },
-      snapshotHash: 'ecfd9702000ca1e0'
+      snapshotHash: 'f7893e7c4cfddfe4'
     },
     'logue/sense/tempo': { first: 120, extra: 52, helpers: [], snapshotHash: '0410106efe6cce20' },
     'logue/filter/hilbert': {
@@ -1799,7 +1799,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 140,
       helpers: [],
       unwired: { first: 204, extra: 128, helpers: [] },
-      snapshotHash: '2da06564ae8ff614'
+      snapshotHash: 'eca79cd82627972c'
     },
     'logue/filter/hilbert': {
       first: 391,
@@ -2401,7 +2401,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 136,
       helpers: [],
       unwired: { first: 220, extra: 124, helpers: [] },
-      snapshotHash: '2da06564ae8ff614'
+      snapshotHash: 'eca79cd82627972c'
     },
     'logue/sense/tempo': { first: 209, extra: 56, helpers: [], snapshotHash: 'e88ae0f82b4156d9' },
     'logue/filter/hilbert': {

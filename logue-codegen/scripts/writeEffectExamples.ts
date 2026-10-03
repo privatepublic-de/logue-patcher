@@ -8,7 +8,7 @@
  *   the right side 23 samples longer (Freeverb's stereo spread). TIME = decay (every comb's
  *   FEEDBACK), DEPTH = damping (every comb's DAMPING), MIX = dry/wet.
  * - auto-wah (modfx): the input's level (logue/env/follower) opens an svf lowpass; TIME = the
- *   filter's resonance, DEPTH = the follower's gain.
+ *   filter's resonance, DEPTH = the follower's SENS.
  * - tempo-swell (modfx): each beat division (logue/sense/tempo) fades the input in (a VCA on
  *   the tempo ramp); TIME picks the division.
  * - freq-shifter (modfx): a stereo Bode frequency shifter (logue/util/freq-shift per side).
@@ -145,7 +145,7 @@ function autoWah(): PatchDocument {
       obj('level', 'logue/env/follower', 260, 40, [
         { name: 'ATTACK', value: '20' },
         { name: 'RELEASE', value: '30' },
-        { name: 'GAIN', value: '60', ...onKnob('depth') }
+        { name: 'SENS', value: '60', ...onKnob('depth') }
       ]),
       obj('wah', 'logue/filter/svf', 560, 160, [
         { name: 'CUTOFF', value: '0' },
@@ -706,12 +706,12 @@ function reverseWash(xd = false): PatchDocument {
     obj('att-fast', 'logue/env/follower', 260, 0, [
       { name: 'ATTACK', value: '0' },
       { name: 'RELEASE', value: '15' },
-      { name: 'GAIN', value: '40' }
+      { name: 'SENS', value: '40' }
     ]),
     obj('att-slow', 'logue/env/follower', 260, 240, [
       { name: 'ATTACK', value: '100' },
       { name: 'RELEASE', value: '31.55' },
-      { name: 'GAIN', value: '40' }
+      { name: 'SENS', value: '40' }
     ]),
     obj('att-slow-x1.6', 'logue/gain/vca', 520, 240, [{ name: 'GAIN', value: '40' }]),
     obj('attack', 'logue/math/subtract', 760, 120),

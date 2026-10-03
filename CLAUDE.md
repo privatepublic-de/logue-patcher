@@ -972,8 +972,12 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   sweeps (xd: leaf calls only). xd emulator 105 / 285 (322 wired). Example `examples/effects/freq-shifter.loguepatch`.
   No hardware pass yet.
 - **`env/follower`** (2026-09-30): rectify x gain, one-pole up at ATTACK (0.1-100 ms) and down
-  at RELEASE (1 ms-2 s), clamped 0..1. GAIN goes to +24 dB because an effect's input is quiet
-  (~0.18 peak for a saw on NTS-1 mkII). Coefficients are block constants. Harness: attack within
+  at RELEASE (1 ms-2 s), clamped 0..1. The gain goes to +24 dB because an effect's input is quiet
+  (~0.18 peak for a saw on NTS-1 mkII). It is `SENS` since 2026-10-03 (was `GAIN`, a
+  value-preserving `renamedParams` alias; user's call: what it decides is where the output tops
+  out, the Radio patch's follower sat at 1), shown as the input level that reaches full output
+  (`FOLLOWER_SENS_DB`, "full at -18.6 dB" at the default 50); below it the output stays
+  proportional, so it is no gate threshold. Only the exposed device name changed. Coefficients are block constants. Harness: attack within
   1 ms, RELEASE exactly its time constant. xd emulator 20 cycles.
 - **`sense/tempo`** (2026-09-30, effects only): `clock` (a one-sample gate each DIVISION of a
   beat at `tempo_`) and `ramp` (0..1 across it). Counts samples against the period (a phase

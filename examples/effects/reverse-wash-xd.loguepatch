@@ -25,7 +25,7 @@
           "value": "15"
         },
         {
-          "name": "GAIN",
+          "name": "SENS",
           "value": "40"
         }
       ]
@@ -46,7 +46,7 @@
           "value": "31.55"
         },
         {
-          "name": "GAIN",
+          "name": "SENS",
           "value": "40"
         }
       ]

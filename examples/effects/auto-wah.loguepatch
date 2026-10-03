@@ -25,7 +25,7 @@
           "value": "30"
         },
         {
-          "name": "GAIN",
+          "name": "SENS",
           "value": "60",
           "logueKnob": {
             "nts1mkii": "depth",

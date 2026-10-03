@@ -2,7 +2,7 @@ import {
   ENV_MS,
   EXP_DECAY_WIDGET,
   FOLLOWER_ATTACK_MS,
-  FOLLOWER_GAIN_DB,
+  FOLLOWER_SENS_DB,
   FOLLOWER_RELEASE_MS,
   KNOB_ENV_SHAPE,
   KNOB_ENV_SHAPE_DEVICE_STRINGS,
@@ -940,9 +940,12 @@ function onePoleCoeffExpr(msExpr: string): string {
 /**
  * `logue/env/follower`: the level of an audio signal as a unipolar control -- for a ducker (a
  * VCA's gain from 1 minus the follower of the input), an auto-wah (a filter cutoff), dynamics-
- * driven anything. ATTACK 0.1-100 ms and RELEASE 1 ms-2 s (both squared); GAIN 0..+24 dB before
- * the clamp to 1, since an effect's input sits well below full scale (a saw peaks near 0.18 on
- * the NTS-1 mkII, docs/PLAN-effects.md) -- +15 dB brings that to about full. Works in
+ * driven anything. ATTACK 0.1-100 ms and RELEASE 1 ms-2 s (both squared); SENS is a gain of
+ * 0..+24 dB before the clamp to 1, shown as the input level that reaches full output (0 .. -24
+ * dB), since an effect's input sits well below full scale (a saw peaks near 0.18 on the NTS-1
+ * mkII, docs/PLAN-effects.md). Below that level the output follows the input proportionally,
+ * so it is no gate threshold. It was GAIN until 2026-10-03 (a gain, but what it decides is where
+ * the output tops out: the Radio patch's follower sat at 1 the whole time). Works in
  * oscillators too (following another oscillator's output). The two coefficients are per block.
  */
 export const followerPrimitive: LoguePrimitive = {
@@ -951,7 +954,7 @@ export const followerPrimitive: LoguePrimitive = {
   // env_, attackPercent_, releasePercent_, gainPercent_ (4 x 4 B).
   stateBytesPerInstance: 16,
   description:
-    "An envelope follower: the input's level (0..1) with ATTACK, RELEASE and GAIN (up to +24 dB, as an effect's input is quiet). For ducking, auto-wah, dynamics.",
+    "An envelope follower: the input's level (0..1) with ATTACK and RELEASE. SENS sets the input level that gives full output (0 to -24 dB, as an effect's input is quiet); louder input stays at 1. For ducking, auto-wah, dynamics.",
   inlets: [{ name: 'in', role: 'audio' }],
   memberDecls: (suffix) =>
     `  float env_${suffix};\n  float attackPercent_${suffix};\n  float releasePercent_${suffix};\n  float gainPercent_${suffix};\n`,
@@ -981,14 +984,15 @@ export const followerPrimitive: LoguePrimitive = {
       setStatement: (suffix, valueExpr) => `releasePercent_${suffix} = ${valueExpr};`
     },
     {
-      name: 'GAIN',
-      unit: FOLLOWER_GAIN_DB,
+      name: 'SENS',
+      unit: FOLLOWER_SENS_DB,
       min: 0,
       max: 100,
       default: 50,
       setStatement: (suffix, valueExpr) => `gainPercent_${suffix} = ${valueExpr};`
     }
-  ]
+  ],
+  renamedParams: [{ from: 'GAIN', to: 'SENS', valuePreserving: true }]
 }
 
 function followerValues(suffix: string): Record<'attack' | 'release', BlockValue> {

@@ -30,7 +30,7 @@ export const CPU_COST_TABLE: Record<
     worst: 26,
     snapshotHash: 'e0f896dd954801b1'
   },
-  'logue/env/follower': { variants: { base: 20 }, worst: 20, snapshotHash: 'ecfd9702000ca1e0' },
+  'logue/env/follower': { variants: { base: 20 }, worst: 20, snapshotHash: 'f7893e7c4cfddfe4' },
   'logue/env/multistage': {
     variants: { base: 123, control: 47, 'heavy-cycle': 113 },
     worst: 123,
