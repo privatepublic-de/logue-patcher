@@ -234,7 +234,19 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 144, extra: 112, helpers: [] },
       snapshotHash: '001bad58241c33a2'
     },
-    'logue/osc/noise': { first: 36, extra: 12, helpers: [], snapshotHash: '5a89f4e26fcb83e1' },
+    'logue/osc/noise': {
+      first: 246,
+      extra: 176,
+      helpers: ['memset'],
+      snapshotHash: '9e2146f56cc83727'
+    },
+    'logue/osc/lfsr': {
+      first: 505,
+      extra: 328,
+      helpers: [],
+      unwired: { first: 445, extra: 268, helpers: [] },
+      snapshotHash: 'e50f889d5c828e71'
+    },
     'logue/shape/wavefolder': {
       first: 116,
       extra: 104,
@@ -816,7 +828,19 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 180, extra: 96, helpers: [] },
       snapshotHash: '001bad58241c33a2'
     },
-    'logue/osc/noise': { first: 64, extra: 16, helpers: [], snapshotHash: '5a89f4e26fcb83e1' },
+    'logue/osc/noise': {
+      first: 290,
+      extra: 188,
+      helpers: ['memset'],
+      snapshotHash: '9e2146f56cc83727'
+    },
+    'logue/osc/lfsr': {
+      first: 405,
+      extra: 296,
+      helpers: ['Fx::note_w0(float)'],
+      unwired: { first: 349, extra: 212, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: 'e50f889d5c828e71'
+    },
     'logue/shape/wavefolder': {
       first: 124,
       extra: 124,
@@ -1437,7 +1461,19 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 160, extra: 92, helpers: [] },
       snapshotHash: '54ebeef1bdb03998'
     },
-    'logue/osc/noise': { first: 48, extra: 12, helpers: [], snapshotHash: '5f58a027056a30c2' },
+    'logue/osc/noise': {
+      first: 291,
+      extra: 184,
+      helpers: ['memset'],
+      snapshotHash: 'ad837690c95b15f4'
+    },
+    'logue/osc/lfsr': {
+      first: 624,
+      extra: 410,
+      helpers: [],
+      unwired: { first: 564, extra: 350, helpers: [] },
+      snapshotHash: '2ff6579ce863a873'
+    },
     'logue/shape/wavefolder': {
       first: 124,
       extra: 100,
@@ -2017,7 +2053,19 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 200, extra: 112, helpers: [] },
       snapshotHash: '54ebeef1bdb03998'
     },
-    'logue/osc/noise': { first: 72, extra: 20, helpers: [], snapshotHash: '5f58a027056a30c2' },
+    'logue/osc/noise': {
+      first: 359,
+      extra: 220,
+      helpers: ['memset'],
+      snapshotHash: 'ad837690c95b15f4'
+    },
+    'logue/osc/lfsr': {
+      first: 551,
+      extra: 308,
+      helpers: ['Fx::note_w0(float)'],
+      unwired: { first: 499, extra: 224, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '2ff6579ce863a873'
+    },
     'logue/shape/wavefolder': {
       first: 124,
       extra: 104,

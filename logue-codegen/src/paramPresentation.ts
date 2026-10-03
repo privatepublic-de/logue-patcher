@@ -466,6 +466,12 @@ export const SYNC_SHAPE_NAME = namedChoiceUnit(['Saw', 'Pulse', 'Tri', 'Sine'])
 /** `logue/mix/stereo-crossfader`'s LAW choices, in select order. */
 export const STEREO_XFADE_LAWS = ['Power', 'Linear']
 export const STEREO_XFADE_LAW_NAME = namedChoiceUnit(STEREO_XFADE_LAWS)
+/** `logue/osc/noise`'s COLOR choices, in select order. */
+export const NOISE_COLOR_NAMES = ['White', 'Pink', 'Brown', 'Violet']
+export const NOISE_COLOR_NAME = namedChoiceUnit(NOISE_COLOR_NAMES)
+/** `logue/osc/lfsr`'s MODE choices, in select order. */
+export const LFSR_MODE_NAMES = ['Long', 'Short']
+export const LFSR_MODE_NAME = namedChoiceUnit(LFSR_MODE_NAMES)
 /** `logue/osc/sample`'s LOOP and INTERP choices (NTS-1 mkII: 7 characters at most). */
 export const SAMPLE_LOOP_NAMES = ['Off', 'Forward', 'PingPng']
 export const SAMPLE_LOOP_NAME = namedChoiceUnit(['Off', 'Forward', 'Ping-pong'])
@@ -659,6 +665,8 @@ export const PITCH_TRACKED_GATE = gate('TRACK', 0, 'inert-when-on', 'Pitch-track
 export const NEEDS_TRACK_GATE = gate('TRACK', 0, 'inert-when-off', 'Needs Track')
 /** `logue/osc/sample`'s ROOT: TRACK defaults on there (every key is ROOT while it's off). */
 export const NEEDS_TRACK_ON_BY_DEFAULT_GATE = gate('TRACK', 100, 'inert-when-off', 'Needs Track')
+/** `logue/osc/lfsr`'s free RATE, replaced by the note while `TRACK` (default on) is on. */
+export const PITCH_TRACKED_ON_BY_DEFAULT_GATE = gate('TRACK', 100, 'inert-when-on', 'Pitch-tracked')
 /** `logue/osc/granular`'s free-running-grain controls, unused while `SYNC` (default on) is on. */
 export const UNUSED_WHILE_SYNC_GATE = gate('SYNC', 100, 'inert-when-on', 'Off while Sync')
 /** `logue/util/long-delay`'s free time, replaced by DIVISION while `SYNC` (default off) is on. */

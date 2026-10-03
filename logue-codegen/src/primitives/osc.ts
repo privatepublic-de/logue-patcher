@@ -2,6 +2,12 @@ import {
   BASS_GLIDE_MS,
   BASS_TONE_MULTIPLE,
   NEEDS_TRACK_ON_BY_DEFAULT_GATE,
+  NOISE_COLOR_NAME,
+  NOISE_COLOR_NAMES,
+  LFSR_MODE_NAME,
+  LFSR_MODE_NAMES,
+  FAST_LFO_HZ,
+  PITCH_TRACKED_ON_BY_DEFAULT_GATE,
   NOTE_NAME,
   PD_WAVE2_NAME,
   PD_WAVE2_NAMES,
@@ -34,6 +40,7 @@ import {
   COARSE_PARAM,
   CUTOFF_WARP_HELPER,
   ENV_RATE_HELPER,
+  FAST_LFO_RATE_HELPER,
   FINE_PARAM,
   FM_DEPTH_INLET_DEPTH,
   FM_DEPTH_PARAM,
@@ -44,6 +51,7 @@ import {
   PM_WRAP_HELPER,
   POLYBLEP_SAW_HELPER,
   POLYBLEP_SQUARE_HELPER,
+  RATE_INLET_DEPTH,
   TRACK_ON_RAW_THRESHOLD,
   WIDTH_INLET_DEPTH,
   additiveInletExpr,
@@ -620,16 +628,253 @@ export const additiveOscPrimitive: LoguePrimitive = {
   ]
 }
 
+/**
+ * COLOR's coloured noises come out at an RMS of 1/3 (white's, uniform, is 0.577): pink and
+ * brown are near-Gaussian, and at white's RMS ~8% of their samples would sit past +-1. At 1/3
+ * pink and brown pass 1 in under 0.2% of samples; there's no clamp (it cost ~8 xd cycles a
+ * sample), and violet peaks at 0.82. Checked by `scripts/runNoiseHarness.ts`.
+ */
+const NOISE_COLOR_RMS = 1 / 3
+/**
+ * Pink is Voss-McCartney (Gardner's trailing-zero order): row k of NOISE_PINK_ROWS is redrawn
+ * every 2^(k+1) samples, one row a sample, plus a fresh white term. Integer only -- Kellet's
+ * economy filter (`PINK_NOISE_STEP_HELPER`) reloaded its seven coefficients every sample and
+ * cost ~55 xd cycles. 12 rows reach down to ~6 Hz.
+ */
+const NOISE_PINK_ROWS = 12
+/** Rows and the white term are int32 >> 5, so the sum of 13 can't overflow. */
+const NOISE_PINK_SHIFT = 5
+/** Each term is uniform over +-2^(31-shift): variance 2^(2(31-shift))/3, NOISE_PINK_ROWS + 1 terms. */
+const NOISE_PINK_SCALE =
+  NOISE_COLOR_RMS / (2 ** (31 - NOISE_PINK_SHIFT) * Math.sqrt((NOISE_PINK_ROWS + 1) / 3))
+/** Brown's leak is `b >> 9`, i.e. 1 - 2^-9: a ~15 Hz corner, so the integrator can't wander
+ *  off. Its input is the white int32 >> 9 too; RMS = 2^22 * sqrt(1/3) / sqrt(1 - leak^2). */
+const NOISE_BROWN_SHIFT = 9
+const NOISE_BROWN_LEAK = 1 - 2 ** -NOISE_BROWN_SHIFT
+const NOISE_BROWN_SCALE =
+  NOISE_COLOR_RMS /
+  ((2 ** (31 - NOISE_BROWN_SHIFT) * Math.sqrt(1 / 3)) / Math.sqrt(1 - NOISE_BROWN_LEAK ** 2))
+/** Violet is `(x >> 1) - (previous >> 1)`: RMS 2^30 * sqrt(2/3). */
+const NOISE_VIOLET_SCALE = NOISE_COLOR_RMS / (2 ** 30 * Math.sqrt(2 / 3))
+
+/**
+ * Pink, brown (a leaky integrator, -6 dB/oct) and violet (a first difference, +6 dB/oct), on
+ * the instance's own LCG, all in integers with one conversion to float at the end (float
+ * coefficients were reloaded from the literal pool every sample). Brown and violet share `s`
+ * (only one colour plays at a time; a switch clicks anyway). White never gets here (see
+ * `noisePrimitive`).
+ */
+const NOISE_COLOR_STEP_HELPER: HelperBlock = {
+  key: 'noise_color_step',
+  code: `  static inline __attribute__((always_inline)) float noise_color_step(uint32_t *seed, int32_t *s, uint32_t *pinkCount, int32_t *pinkRows, int32_t *pinkSum, int32_t color)
+  {
+    if (color == 1)
+    {
+      uint32_t c = *pinkCount + 1u;
+      *pinkCount = c;
+      uint32_t k = (uint32_t)__builtin_ctz(c | (1u << ${NOISE_PINK_ROWS - 1}));
+      uint32_t x = *seed * 1664525u + 1013904223u;
+      int32_t row = (int32_t)x >> ${NOISE_PINK_SHIFT};
+      x = x * 1664525u + 1013904223u;
+      *seed = x;
+      int32_t sum = *pinkSum - pinkRows[k] + row;
+      pinkRows[k] = row;
+      *pinkSum = sum;
+      return (float)(sum + ((int32_t)x >> ${NOISE_PINK_SHIFT})) * ${NOISE_PINK_SCALE.toExponential(7)}f;
+    }
+    uint32_t x = *seed * 1664525u + 1013904223u;
+    *seed = x;
+    int32_t prev = *s;
+    if (color == 2)
+    {
+      int32_t b = prev - (prev >> ${NOISE_BROWN_SHIFT}) + ((int32_t)x >> ${NOISE_BROWN_SHIFT});
+      *s = b;
+      return (float)b * ${NOISE_BROWN_SCALE.toExponential(7)}f;
+    }
+    *s = (int32_t)x;
+    return (float)(((int32_t)x >> 1) - (prev >> 1)) * ${NOISE_VIOLET_SCALE.toExponential(7)}f;
+  }
+`
+}
+
 export const noisePrimitive: LoguePrimitive = {
   id: 'logue/osc/noise',
   outletPolarity: 'audio',
-  stateBytesPerInstance: 4, // seed_(uint32_t), 1 word
-  description: 'A white noise source, independent of the played note.',
-  memberDecls: (suffix) => `  uint32_t seed_${suffix};\n`,
-  initStatement: (suffix) => `    seed_${suffix} = ${hashSuffixToSeed(suffix)}u;\n`,
-  renderExpr: (suffix) => `noise_step(&seed_${suffix})`,
+  // seed_, noiseColor_, noiseState_, pinkCount_, pinkSum_, pinkRows_[NOISE_PINK_ROWS]
+  stateBytesPerInstance: 4 * (5 + NOISE_PINK_ROWS),
+  description:
+    'A noise source, independent of the played note. COLOR: White (flat), Pink (-3 dB/oct, softer), Brown (-6 dB/oct, a rumble) or Violet (+6 dB/oct, a bright hiss). The coloured ones are about 5 dB quieter than White, so their peaks stay near +-1.',
+  searchTerms: ['white', 'pink', 'brown', 'red', 'violet', 'purple', 'hiss'],
+  memberDecls: (suffix) =>
+    `  uint32_t seed_${suffix};\n  int32_t noiseColor_${suffix};\n  int32_t noiseState_${suffix};\n` +
+    `  uint32_t pinkCount_${suffix};\n  int32_t pinkSum_${suffix};\n  int32_t pinkRows_${suffix}[${NOISE_PINK_ROWS}];\n`,
+  initStatement: (suffix) =>
+    `    seed_${suffix} = ${hashSuffixToSeed(suffix)}u;\n` +
+    `    noiseState_${suffix} = 0;\n    pinkCount_${suffix} = 0u;\n    pinkSum_${suffix} = 0;\n` +
+    `    for (int k = 0; k < ${NOISE_PINK_ROWS}; ++k) pinkRows_${suffix}[k] = 0;\n`,
+  renderExpr: (suffix) =>
+    `(noiseColor_${suffix} == 0 ? noise_step(&seed_${suffix}) : noise_color_step(&seed_${suffix}, &noiseState_${suffix}, &pinkCount_${suffix}, pinkRows_${suffix}, &pinkSum_${suffix}, noiseColor_${suffix}))`,
   advanceStatement: () => '',
-  helpers: NOISE_STEP_HELPER
+  helpers: [NOISE_STEP_HELPER, NOISE_COLOR_STEP_HELPER],
+  params: [
+    {
+      name: 'COLOR',
+      unit: NOISE_COLOR_NAME,
+      select: { count: 4, scale: 1, label: 'Color', names: NOISE_COLOR_NAMES },
+      min: 0,
+      max: 3,
+      default: 0,
+      step: 1,
+      // An int, so the per-sample colour test is an integer compare, not a float one plus vmrs.
+      setStatement: (suffix, valueExpr) =>
+        `noiseColor_${suffix} = (int32_t)((${valueExpr}) + 0.5f);`
+    }
+  ]
+}
+
+/**
+ * The Game Boy's 7-bit noise mode: its 15-bit register with each feedback bit also written into
+ * bit 6, which leaves a 127-step loop -- a pitched, metallic buzz. Built at generation time and
+ * read as a table (`lfsr_step`), so the loop can play any note: stepping the register at 127x the
+ * note would need several steps per sample above ~380 Hz.
+ */
+export function lfsrShortSequence(): number[] {
+  let r = 0x7fff
+  const step = (): number => {
+    const fb = (r ^ (r >> 1)) & 1
+    r = (r >> 1) | (fb << 14)
+    r = (r & ~0x40) | (fb << 6)
+    return r & 1
+  }
+  for (let i = 0; i < 256; i++) step() // into the loop: the start state isn't on it
+  return Array.from({ length: LFSR_SHORT_STEPS }, step)
+}
+export const LFSR_SHORT_STEPS = 127
+/** Steps per sample at most, so Short's one `if` wrap holds (B6 tracked is ~5). */
+const LFSR_MAX_STEPS = 64
+
+/** Fraction bits of the step accumulator: 127 << 24 plus a 64-step increment still fits 32 bits,
+ *  and even RATE's 0.1 Hz (2.6e-4 steps a sample) keeps its pitch to 0.02%. */
+const LFSR_FRAC_BITS = 24
+
+const LFSR_STEP_HELPER: HelperBlock = {
+  key: 'lfsr_step',
+  sharedBytes: LFSR_SHORT_STEPS,
+  code: `  static inline __attribute__((always_inline)) float lfsr_step(uint32_t *reg, uint32_t *pos, float inc, int32_t mode)
+  {
+    static const int8_t kShort[${LFSR_SHORT_STEPS}] = {${lfsrShortSequence()
+      .map((b) => (b ? '1' : '-1'))
+      .join(',')}};
+    // Integer 8.${LFSR_FRAC_BITS} steps (inc is pre-scaled): no float compare (and vmrs) a sample.
+    uint32_t p = *pos + (uint32_t)inc;
+    if (mode != 0)
+    {
+      if (p >= (${LFSR_SHORT_STEPS}u << ${LFSR_FRAC_BITS})) p -= (${LFSR_SHORT_STEPS}u << ${LFSR_FRAC_BITS});
+      *pos = p;
+      return (float)kShort[p >> ${LFSR_FRAC_BITS}];
+    }
+    uint32_t r = *reg;
+    if (p >= (1u << ${LFSR_FRAC_BITS}))
+    {
+      // At most one step a sample: a faster clock only decimates what is already white.
+      p &= (1u << ${LFSR_FRAC_BITS}) - 1u;
+      r = (r >> 1) | (((r ^ (r >> 1)) & 1u) << 14);
+      *reg = r;
+    }
+    *pos = p;
+    return (r & 1u) ? 1.f : -1.f;
+  }
+`
+}
+
+/**
+ * `logue/osc/lfsr`: the NES/Game Boy noise channel. A shift register stepped by a clock of 127x
+ * the pitch (the note with TRACK, else RATE): Long is the 15-bit, 32767-step register (grainy
+ * hiss whose colour follows the pitch; once the clock passes the sample rate, plain 1-bit white),
+ * Short the 127-step loop (`lfsrShortSequence`), which sounds at the pitch itself. Both share the
+ * clock, so switching MODE keeps the brightness, as on the hardware. Naive +-1 output, aliasing
+ * included: that is the sound.
+ */
+export const lfsrPrimitive: LoguePrimitive = {
+  id: 'logue/osc/lfsr',
+  outletPolarity: 'audio',
+  stateBytesPerInstance: 28, // reg, pos, mode, ratePercent, coarse, fine, track: 7 words
+  description:
+    'NES/Game Boy-style 1-bit noise from a shift register. Long: hiss that gets brighter with the pitch. Short: a 127-step loop, a pitched metallic buzz. TRACK plays the note; off, RATE sets the pitch.',
+  searchTerms: ['noise', 'nes', 'gameboy', 'chiptune', '8bit', 'digital', 'metallic'],
+  inlets: [
+    { name: 'rate', trackGate: PITCH_TRACKED_ON_BY_DEFAULT_GATE, role: 'control' },
+    { name: 'pitch', trackGate: NEEDS_TRACK_ON_BY_DEFAULT_GATE, role: 'control' }
+  ],
+  memberDecls: (suffix) =>
+    `  uint32_t lfsrReg_${suffix};\n` +
+    `  uint32_t lfsrPos_${suffix};\n` +
+    `  int32_t lfsrMode_${suffix};\n` +
+    `  float ratePercent_${suffix};\n` +
+    `  float coarse_${suffix};\n` +
+    `  float fine_${suffix};\n` +
+    `  float track_${suffix};\n`,
+  initStatement: (suffix) => {
+    const reg = hashSuffixToSeed(suffix) & 0x7fff || 1
+    return `    lfsrReg_${suffix} = ${reg}u;\n    lfsrPos_${suffix} = 0u;\n`
+  },
+  blockConstants: (suffix, inlets) => blockDecls({ steps: lfsrSteps(suffix, inlets) }),
+  renderExpr: (suffix, inlets) =>
+    `lfsr_step(&lfsrReg_${suffix}, &lfsrPos_${suffix}, ${lfsrSteps(suffix, inlets).ref}, lfsrMode_${suffix})`,
+  advanceStatement: () => '',
+  helpers: [LFSR_STEP_HELPER, FAST_LFO_RATE_HELPER, NOTE_W0_HELPER, CLAMPF_HELPER],
+  params: [
+    {
+      name: 'MODE',
+      unit: LFSR_MODE_NAME,
+      select: { count: 2, scale: 1, label: 'Mode', names: LFSR_MODE_NAMES },
+      min: 0,
+      max: 1,
+      default: 0,
+      step: 1,
+      setStatement: (suffix, valueExpr) => `lfsrMode_${suffix} = (int32_t)((${valueExpr}) + 0.5f);`
+    },
+    {
+      name: 'RATE',
+      unit: FAST_LFO_HZ,
+      modulatedBy: {
+        inlet: 'rate',
+        shape: 'additive',
+        note: 'only applies in free-running mode (TRACK off)'
+      },
+      trackGate: PITCH_TRACKED_ON_BY_DEFAULT_GATE,
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `ratePercent_${suffix} = ${valueExpr};`
+    },
+    { ...COARSE_PARAM, trackGate: NEEDS_TRACK_ON_BY_DEFAULT_GATE },
+    { ...FINE_PARAM, trackGate: NEEDS_TRACK_ON_BY_DEFAULT_GATE },
+    {
+      name: 'TRACK',
+      booleanWidget: TRACK_WIDGET,
+      min: 0,
+      max: 100,
+      default: 100,
+      setStatement: (suffix, valueExpr) => `track_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/** Register steps per sample (127x the pitch's cycles per sample) in `lfsr_step`'s 8.24 fixed
+ *  point, per block unless an input moves. */
+function lfsrSteps(suffix: string, inlets: Record<string, string | undefined>): BlockValue {
+  const rate =
+    inlets.rate !== undefined
+      ? additiveInletExpr('ratePercent', suffix, inlets.rate, RATE_INLET_DEPTH)
+      : `ratePercent_${suffix}`
+  const cyclesPerSample = `(track_${suffix} >= ${TRACK_ON_RAW_THRESHOLD}.f ? ${transposedW0Expr(suffix, inlets)} : fast_lfo_rate_from_percent(${rate}))`
+  return blockValue(
+    'blkLfsrSteps',
+    suffix,
+    `clampf(${cyclesPerSample} * ${LFSR_SHORT_STEPS * 2 ** LFSR_FRAC_BITS}.f, 0.f, ${LFSR_MAX_STEPS * 2 ** LFSR_FRAC_BITS}.f)`,
+    [inlets.rate, inlets.pitch]
+  )
 }
 
 /**

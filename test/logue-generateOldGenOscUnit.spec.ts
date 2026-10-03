@@ -2579,7 +2579,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
   })
 
   describe('logue/osc/noise', () => {
-    it('emits a plain LCG step reading/mutating its own per-instance seed, no inlets/params', () => {
+    it('emits a plain LCG step for White, the coloured noises behind a COLOR branch', () => {
       const doc: PatchDocument = {
         nodes: [
           { kind: 'obj', type: 'logue/osc/noise', name: 'noise1', x: 0, y: 0, params: [] },
@@ -2592,7 +2592,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'noise test' })
-      expect(result.oscCpp).toContain('float y_noise1 = noise_step(&seed_noise1);')
+      expect(result.oscCpp).toContain(
+        'float y_noise1 = (noiseColor_noise1 == 0 ? noise_step(&seed_noise1) : noise_color_step(&seed_noise1, &noiseState_noise1, &pinkCount_noise1, pinkRows_noise1, &pinkSum_noise1, noiseColor_noise1));'
+      )
       expect(result.oscCpp).toContain('static float noise_step(uint32_t *seed)')
       expect(result.oscCpp).toContain('*seed = *seed * 1664525u + 1013904223u;')
       expect(result.oscCpp).toContain('uint32_t seed_noise1;')

@@ -241,7 +241,23 @@ export const CPU_COST_TABLE: Record<
     worst: 474,
     snapshotHash: '287537a0ffee7fe9'
   },
-  'logue/osc/noise': { variants: { base: 6 }, worst: 6, snapshotHash: '5a89f4e26fcb83e1' },
+  'logue/osc/lfsr': {
+    variants: {
+      base: 28,
+      control: 30,
+      TRACK: 26,
+      'TRACK+control': 29,
+      'heavy-short': 17,
+      'heavy-short-control': 17
+    },
+    worst: 30,
+    snapshotHash: 'e50f889d5c828e71'
+  },
+  'logue/osc/noise': {
+    variants: { base: 9, 'heavy-pink': 34, 'heavy-brown': 27, 'heavy-violet': 27 },
+    worst: 34,
+    snapshotHash: '9e2146f56cc83727'
+  },
   'logue/osc/phase-dist': {
     variants: {
       base: 85,

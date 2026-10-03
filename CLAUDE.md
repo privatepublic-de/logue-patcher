@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 91 primitives, 5 of them superseded and hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 92 primitives, 5 of them superseded and hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -96,9 +96,9 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-91 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
-history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (13:
-sine/saw/square/pulse/triangle/additive/granular/sample/noise/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (8:
+92 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (14:
+sine/saw/square/pulse/triangle/additive/granular/sample/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (8:
 lowpass-cheap/highpass-cheap/comb/string/svf/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (14: constant/unipolar-to-bipolar/bipolar-to-unipolar/
@@ -529,6 +529,26 @@ Current rules only. The round-by-round reports, measurements and reversals behin
     after their first peaks (0.18 vs 0.24 RMS after 1 s). xd emulator: 368 base, 554 wired.
     Confirmed improved on both devices (user, 2026-09-28).
   - RAM: 8300 B bss on the xd (~25% of 32 KB), 8344 B on NTS-1 mkII, both measured.
+- **`osc/noise` `COLOR`** (2026-10-03): White / Pink / Brown / Violet, a select (one device
+  control switches it). White is the old LCG and stays the fall-through of an integer
+  `noiseColor_ == 0` test (xd emulator 9 cycles, was 6). The coloured ones are all integer math
+  with one float conversion: pink is Voss-McCartney (12 rows, Gardner's trailing-zero order via
+  `__builtin_ctz`, two LCG steps a sample), brown a `b - (b >> 9) + (x >> 9)` leak (~15 Hz
+  corner), violet `(x >> 1) - (prev >> 1)`. Float versions reloaded their coefficients from the
+  literal pool every sample: Kellet pink cost 74, now 34; brown/violet 27. All three come out at
+  RMS 1/3 (white's is 0.577), unclamped: pink/brown pass +-1 in ~0.2% of samples. Harness
+  (`scripts/runNoiseHarness.ts`): slopes -3.11/-5.99/+5.98 dB/oct over 25 Hz-12.8 kHz, octave
+  ripple <= 0.4 dB. State 68 B (the pink rows), = the xd bss. The exciter keeps its own Kellet
+  pink (`PINK_NOISE_STEP_HELPER`). No hardware pass yet.
+- **`osc/lfsr`** (2026-10-03): the NES/Game Boy noise channel. Clock = 127x the pitch (the note
+  with TRACK, default on; else RATE on `fast-square`'s 0.1 Hz-2 kHz curve). MODE Long: the
+  15-bit register (period 32767, harness-exact), at most one step a sample, so past the sample
+  rate it's plain 1-bit white. MODE Short: the Game Boy 7-bit loop (127 steps,
+  `lfsrShortSequence`, baked at generation) read as a table, so it plays any note exactly
+  (harness: 0.00-0.05 ct, 55 Hz-2 kHz) -- stepping a register at 127x the note would need
+  several steps a sample above ~380 Hz. Position is integer 8.24 (no float compare a sample);
+  the block constant is already the fixed-point increment. Naive +-1 output. xd emulator: 28
+  base, 17 Short. No hardware pass yet.
 - **`osc/exciter`**: one `BOW` knob from pluck to bow, built for `string`/`comb`.
   `pluck_exciter_step` is `ahd`'s 4-stage machine with a BOW-dependent decay while held (0 at
   BOW=100). Attack is always the fast `env_rate_from_percent(0)`; softness comes from a decaying
@@ -1430,6 +1450,9 @@ Mechanics (`logue-codegen/src/subpatches.ts`, dependency-free, definitions alway
   full patch 857/969 cycles -- past the ~750 clean anchor, so the xd gets `reverse-wash-xd` (one
   line, one allpass a side): 606/670. SOFTEN's detector constants are from a simulation and the
   harness, not ears.
+- `osc/noise`'s COLOR and `osc/lfsr` (2026-10-03) are harness-, link- and emulator-checked
+  only: no listening pass. Staged: `lp-xd-noise`/`lp-xd-lfsr`/`lp-xd-lfsr-lfo` and the
+  `lp-nts1-*` equivalents (`scripts/stageNoiseTypes.ts`; COLOR/MODE/TRACK as menu params).
 - `env/adsr`/`env/one-knob-adsr` (2026-10-02) are harness-, link- and emulator-checked only:
   no listening pass, and the NTS-1 mkII SHAPE name display (a 101-entry `strings` row) hasn't
   been seen on a device. Staged: `lp-xd-oneknob`(`-lfo`), `lp-nts1-oneknob`(`-lfo`).

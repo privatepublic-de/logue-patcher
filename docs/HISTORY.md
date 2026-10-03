@@ -2693,3 +2693,24 @@ found DCW's first default of 50 left an envelope from the default only half the 
 100 clamps at 100); it defaults to 0 now.
 Both staged units (`lp-*-pd`: DCW on Shape; `lp-*-pd-env`: an ADSR into `dcw`) worked as
 designed on a real minilogue xd and a real NTS-1 mkII (user, 2026-10-02).
+
+### Noise colours and `osc/lfsr` (2026-10-03)
+
+The user asked for more noise types at the lowest possible CPU, and whether they should be new
+primitives or a select on `osc/noise`. Decided: the spectral colours (White/Pink/Brown/Violet)
+share no params and one meaning, so they became a COLOR select (one device control switches
+them); the NES/Game Boy shift register needs its own clock, pitch tracking and mode, which would
+sit dead on a colour, so it's a separate primitive. A dust/velvet source was offered and left
+for later.
+CPU went through three rounds on the xd emulator. The first version reused the exciter's Kellet
+filter behind a float colour compare: white 6 -> 17, pink 74. Making the colour an int member
+(the float compare needed a `vmrs` a sample) and dropping the +-1 clamps brought white to 9; pink
+stayed ~55 because GCC at `-Os` reloaded Kellet's seven coefficients from the literal pool every
+sample. Voss-McCartney (integer rows, `ctz` picks the one to redraw) cut pink to 34 with octave
+ripple under 0.3 dB, and integer brown/violet went 33/27 -> 27/27. `lfsr` first stepped a float
+accumulator (32 base); an integer 8.24 one with the fixed-point increment as the block constant
+made it 28 (Short 17). An early Short mode stepped the register itself, which caps the pitch at
+48000/127 = 378 Hz; reading the 127-step loop as a table plays any note exactly.
+The level target (RMS 1/3 for the colours) came from a 10M-sample simulation: at white's RMS
+~8% of pink/brown samples sat past +-1.
+

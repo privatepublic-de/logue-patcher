@@ -404,6 +404,9 @@ export function resolveHelperChain(direct: HelperBlock[]): HelperBlock[] {
  */
 export const WIDTH_INLET_DEPTH = 50
 
+/** A `rate` inlet's depth on a 0-100 RATE: a full `+-1` swing is `+-50` points. */
+export const RATE_INLET_DEPTH = 50
+
 export const ONEPOLE_HELPER: HelperBlock = {
   key: 'onepole_step',
   code: `  static float onepole_step(float *z1, float x, float a)
@@ -464,8 +467,9 @@ export function hashSuffixToSeed(suffix: string): number {
  * inside `noise_step`, called from `renderExpr` (`advanceStatement` a no-op), like `onepole_step`:
  * there is no independently advanceable state, just a value that changes each time it's read.
  * `logue/osc/noise` lives in `osc` because a zero-input source reads as an oscillator in the
- * palette, even with no pitch/phase machinery. No params or inlets; level control is a
- * `logue/gain/vca`. History: docs/HISTORY.md.
+ * palette, even with no pitch/phase machinery. Its COLOR select builds the coloured noises on the
+ * same LCG (`NOISE_COLOR_STEP_HELPER`); level control is a `logue/gain/vca`. History:
+ * docs/HISTORY.md.
  */
 export const NOISE_STEP_HELPER: HelperBlock = {
   key: 'noise_step',
@@ -473,6 +477,24 @@ export const NOISE_STEP_HELPER: HelperBlock = {
   {
     *seed = *seed * 1664525u + 1013904223u;
     return (float)(int32_t)(*seed) * (1.f / 2147483648.f);
+  }
+`
+}
+
+// `t^4` rather than `lfo_rate_from_percent`'s `t^3`: 0.1Hz-2kHz is ~14 octaves, and a linear
+// dial would put everything below ~20Hz into the first 1% of travel. A power curve (not
+// `exp_approx`) keeps it divide-free and lets `paramUnits.ts`'s `fastLfoHzUnit` mirror it exactly
+// -- keep the two in sync.
+export const FAST_LFO_RATE_HELPER: HelperBlock = {
+  key: 'fast_lfo_rate_from_percent',
+  code: `  static float fast_lfo_rate_from_percent(float percent)
+  {
+    float t = percent * 0.01f;
+    float t2 = t * t;
+    float hz = 0.1f + t2 * t2 * 1999.9f;
+    // Not "hz / 48000.f": without -ffast-math GCC keeps that as a real divide (14 cycles on
+    // the xd's M4), and this runs per sample per LFO per voice.
+    return hz * (1.f / 48000.f);
   }
 `
 }

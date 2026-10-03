@@ -10,9 +10,11 @@ import type { HelperBlock, LoguePrimitive } from './types'
 import {
   CLAMPF_HELPER,
   COARSE_PARAM,
+  FAST_LFO_RATE_HELPER,
   FINE_PARAM,
   NOISE_STEP_HELPER,
   NOTE_W0_HELPER,
+  RATE_INLET_DEPTH,
   TRACK_ON_RAW_THRESHOLD,
   WIDTH_INLET_DEPTH,
   additiveInletExpr,
@@ -67,7 +69,6 @@ const LFO_RATE_HELPER: HelperBlock = {
  * `trig` inlet: resets the phase to 0 (see `lfoTrigResetStatement`) -- sine at its rising zero
  * crossing, triangle/ramp-up at -1, square/ramp-down at +1. History: docs/HISTORY.md.
  */
-const RATE_INLET_DEPTH = 50
 
 /**
  * An LFO's per-sample phase increment: once per block while `rate` is unwired (a block constant,
@@ -198,24 +199,6 @@ export const lfoRampDownPrimitive = makeLfoPrimitive(
   'A free-running falling ramp LFO for modulation, independent of the played note. A rising edge on trig (e.g. from sense/gate) restarts it from the top of its cycle.',
   (suffix) => `(1.f - phase_${suffix} * 2.f)`
 )
-
-// `t^4` rather than `lfo_rate_from_percent`'s `t^3`: 0.1Hz-2kHz is ~14 octaves, and a linear
-// dial would put everything below ~20Hz into the first 1% of travel. A power curve (not
-// `exp_approx`) keeps it divide-free and lets `paramUnits.ts`'s `fastLfoHzUnit` mirror it exactly
-// -- keep the two in sync.
-const FAST_LFO_RATE_HELPER: HelperBlock = {
-  key: 'fast_lfo_rate_from_percent',
-  code: `  static float fast_lfo_rate_from_percent(float percent)
-  {
-    float t = percent * 0.01f;
-    float t2 = t * t;
-    float hz = 0.1f + t2 * t2 * 1999.9f;
-    // Not "hz / 48000.f": without -ffast-math GCC keeps that as a real divide (14 cycles on
-    // the xd's M4), and this runs per sample per LFO per voice.
-    return hz * (1.f / 48000.f);
-  }
-`
-}
 
 /**
  * A naive (deliberately NOT PolyBLEP-corrected) pulse from `-1` to `+1`, meant as a fast

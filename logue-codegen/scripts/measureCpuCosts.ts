@@ -144,6 +144,23 @@ function variants(id: string): Array<MeasureJob & { key: string }> {
     doc.nets.push({ sources: [{ obj: 'src', outlet: 'out' }], dests: [{ obj: 'n', inlet: 'in' }] })
     jobs.push({ key: 'heavy-moving-input', name: `${tag}-moving`, doc })
   }
+  if (id === 'logue/osc/noise') {
+    // COLOR is a select: White is `base`, each coloured noise its own heavy case.
+    ;['pink', 'brown', 'violet'].forEach((name, k) => {
+      const color = [{ name: 'COLOR', value: String(k + 1) }]
+      jobs.push({ key: `heavy-${name}`, name: `${tag}-${name}`, doc: unit(id, color, 'audio') })
+    })
+  }
+  if (id === 'logue/osc/lfsr') {
+    // MODE Short (a select) reads the table instead of stepping the register.
+    const short = [{ name: 'MODE', value: '1' }]
+    jobs.push({ key: 'heavy-short', name: `${tag}-short`, doc: unit(id, short, 'audio') })
+    jobs.push({
+      key: 'heavy-short-control',
+      name: `${tag}-short-control`,
+      doc: unit(id, short, 'all')
+    })
+  }
   if (id === 'logue/osc/phase-dist') {
     // WAVE/WAVE2 are selects, which `variants` doesn't vary: a resonance wave at full DCW, line
     // 1+2, and DCW and the pitch from a moving source (the per-sample coefficient path, LFO
