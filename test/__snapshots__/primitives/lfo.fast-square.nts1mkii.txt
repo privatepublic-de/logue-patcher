@@ -111,11 +111,12 @@ public:
   {
     (void)in;
     const float blkLfoRate_n = fast_lfo_rate_from_percent(ratePercent_n);
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
       float y_n = (phase_n < width_n * 0.01f ? 1.f : -1.f);
       out[i] = clip1m1f(y_n);
-      phase_n += (track_n >= 1.f ? note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n) : blkLfoRate_n);
+      phase_n += (track_n >= 1.f ? blkW0_n : blkLfoRate_n);
       if (phase_n >= 1.f) phase_n -= 1.f;
     }
   }
@@ -294,11 +295,12 @@ public:
       float y_c_width = value_c_width;
       float y_c_trig = value_c_trig;
     const float blkLfoRate_n = fast_lfo_rate_from_percent(clampf(ratePercent_n + (y_c_rate) * 50.f, 0.f, 100.f));
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f);
     for (uint32_t i = 0; i < frames; ++i)
     {
       float y_n = (phase_n < clampf(width_n + (y_c_width) * 50.f, 0.f, 100.f) * 0.01f ? 1.f : -1.f);
       out[i] = clip1m1f(y_n);
-      phase_n += (track_n >= 1.f ? note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f) : blkLfoRate_n);
+      phase_n += (track_n >= 1.f ? blkW0_n : blkLfoRate_n);
       if (phase_n >= 1.f) phase_n -= 1.f;
       float trigOpen_n = (y_c_trig >= 0.5f) ? 1.f : 0.f;
       if (trigOpen_n > prevTrig_n) phase_n = 0.f;
@@ -476,11 +478,12 @@ public:
   {
     (void)in;
     const float blkLfoRate_n = fast_lfo_rate_from_percent(ratePercent_n);
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
       float y_n = (phase_n < width_n * 0.01f ? 1.f : -1.f);
       out[i] = clip1m1f(y_n);
-      phase_n += (track_n >= 1.f ? note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n) : blkLfoRate_n);
+      phase_n += (track_n >= 1.f ? blkW0_n : blkLfoRate_n);
       if (phase_n >= 1.f) phase_n -= 1.f;
     }
   }
@@ -659,11 +662,12 @@ public:
       float y_c_width = value_c_width;
       float y_c_trig = value_c_trig;
     const float blkLfoRate_n = fast_lfo_rate_from_percent(clampf(ratePercent_n + (y_c_rate) * 50.f, 0.f, 100.f));
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f);
     for (uint32_t i = 0; i < frames; ++i)
     {
       float y_n = (phase_n < clampf(width_n + (y_c_width) * 50.f, 0.f, 100.f) * 0.01f ? 1.f : -1.f);
       out[i] = clip1m1f(y_n);
-      phase_n += (track_n >= 1.f ? note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f) : blkLfoRate_n);
+      phase_n += (track_n >= 1.f ? blkW0_n : blkLfoRate_n);
       if (phase_n >= 1.f) phase_n -= 1.f;
       float trigOpen_n = (y_c_trig >= 0.5f) ? 1.f : 0.f;
       if (trigOpen_n > prevTrig_n) phase_n = 0.f;
@@ -846,11 +850,12 @@ public:
   {
     (void)in;
     const float blkLfoRate_n = fast_lfo_rate_from_percent(ratePercent_n);
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
       float y_n = (phase_n < width_n * 0.01f ? 1.f : -1.f);
       out[i] = clip1m1f(y_n);
-      phase_n += (track_n >= 1.f ? note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n) : blkLfoRate_n);
+      phase_n += (track_n >= 1.f ? blkW0_n : blkLfoRate_n);
       if (phase_n >= 1.f) phase_n -= 1.f;
     }
   }

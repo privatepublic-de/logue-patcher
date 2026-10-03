@@ -2734,3 +2734,18 @@ gain still showed the bipolar warning. The fixes in code:
   glides while a gain is still moving: 9 / 15 (stereo) settled. Inlined, though, each instance
   carried ~350 B of code (an xd modfx has 6 KB in all); moving both helpers out of line cost 21
   cycles (a call in the loop), so only the per-block settle is out of line: 16 / 15, ~140-220 B.
+
+### Oscillator w0 per block (2026-10-03)
+
+Found while measuring xd effect CPU: a plain square cost 333 emulator cycles in an effect shell
+against 153 in an oscillator. Every oscillator recomputed its transposed `w0` every sample --
+twice for the polyBLEP ones (the BLEP's `dt` and the phase advance), each a `note_w0` call, and
+in effects that call's `osc_w0f_for_note` stand-in goes through `fastpow2f`. The note, COARSE and
+FINE only change between blocks, so it is now a `blockValue` (`transposedW0`) unless
+`pitch`/`harmonic` move. Oscillator table: sine 110 -> 50, saw 153 -> 86, square 153 -> 100,
+pulse 155 -> 97, triangle 90 -> 29, additive 231 -> 178, fast-square TRACK 69 -> 11. Effect table
+(new, `measureXdFxCpuCosts.ts`): square 333 -> 102. xd harness (117 renders: plain, COARSE/FINE,
+pitch from a constant and from an LFO, harmonic, fm/TZFM, notes 36/60/96): 107 bit-identical, the
+10 with `harmonic` wired within 1e-6 of full scale (the product is rounded once per block instead
+of contracted into the per-sample phase add). The code-size run linked every primitive on both
+platforms.

@@ -78,9 +78,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: '71e7c2874a2780a1'
   },
   'logue/lfo/fast-square': {
-    variants: { base: 25, control: 42, TRACK: 69, 'TRACK+control': 90 },
-    worst: 90,
-    snapshotHash: 'e860fab70fe00fdf'
+    variants: { base: 11, control: 28, TRACK: 11, 'TRACK+control': 28 },
+    worst: 28,
+    snapshotHash: '9023a42eadc26048'
   },
   'logue/lfo/ramp-down': {
     variants: { base: 15, control: 22 },
@@ -215,9 +215,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: 'e7cd1ca8a0645ebe'
   },
   'logue/osc/additive': {
-    variants: { base: 231, control: 255 },
-    worst: 255,
-    snapshotHash: 'df790ce19b9522ee'
+    variants: { base: 178, control: 176 },
+    worst: 178,
+    snapshotHash: '8ad6107dc41ce335'
   },
   'logue/osc/bass-support': {
     variants: { base: 265, control: 392, RETRIG: 265, 'RETRIG+control': 392 },
@@ -270,9 +270,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: '447d0e2b472a3a55'
   },
   'logue/osc/pulse': {
-    variants: { base: 155, control: 215 },
-    worst: 215,
-    snapshotHash: 'f53384feea514a5a'
+    variants: { base: 97, control: 124 },
+    worst: 124,
+    snapshotHash: '773b9bbd527f1576'
   },
   'logue/osc/sample': {
     variants: {
@@ -288,19 +288,19 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: '7cb41406b040b044'
   },
   'logue/osc/saw': {
-    variants: { base: 153, control: 204, TZFM: 144, 'TZFM+control': 194 },
-    worst: 204,
-    snapshotHash: '81830c88b5be65df'
+    variants: { base: 86, control: 99, TZFM: 76, 'TZFM+control': 94 },
+    worst: 99,
+    snapshotHash: '689d43e99e06ce9c'
   },
   'logue/osc/sine': {
-    variants: { base: 110, control: 150 },
-    worst: 150,
-    snapshotHash: 'f358df0a073705bf'
+    variants: { base: 50, control: 61 },
+    worst: 61,
+    snapshotHash: 'b34b1284af3c9ca7'
   },
   'logue/osc/square': {
-    variants: { base: 153, control: 199 },
-    worst: 199,
-    snapshotHash: '55b468fcf5383707'
+    variants: { base: 100, control: 114 },
+    worst: 114,
+    snapshotHash: '9a189b5fd7ef929c'
   },
   'logue/osc/sync': {
     variants: { base: 108, control: 112 },
@@ -308,9 +308,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: 'de6812a7e1beb6e4'
   },
   'logue/osc/triangle': {
-    variants: { base: 90, control: 130 },
-    worst: 130,
-    snapshotHash: '453b84fe7e7274bf'
+    variants: { base: 29, control: 43 },
+    worst: 43,
+    snapshotHash: 'c19162f9574d3fe7'
   },
   'logue/sense/control': { variants: { base: 0 }, worst: 0, snapshotHash: '550ef812bd56decd' },
   'logue/sense/cutoff': { variants: { base: 0 }, worst: 0, snapshotHash: '6bc89bcd79ffcb07' },

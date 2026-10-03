@@ -208,6 +208,22 @@ export function transposedW0Expr(
 }
 
 /**
+ * `transposedW0Expr` once per block while `pitch`/`harmonic` don't move: the note, COARSE and
+ * FINE only change between blocks, and an oscillator read it twice a sample (its polyBLEP's `dt`
+ * and the phase advance), each a `note_w0` call. A primitive using it lists the decl in
+ * `blockConstants`.
+ */
+export function transposedW0(
+  suffix: string,
+  inlets: Record<string, string | undefined>
+): BlockValue {
+  return blockValue('blkW0', suffix, transposedW0Expr(suffix, inlets), [
+    inlets.pitch,
+    inlets.harmonic
+  ])
+}
+
+/**
  * Linear FM is PHASE modulation (as on the DX7): `fmPhaseExpr` adds the `fm` inlet to the phase a
  * waveform reads and `pm_wrap` wraps it back into `[0,1)`. The accumulator itself is untouched,
  * so its increment stays non-negative and the single upward wrap in `advanceStatement` holds.

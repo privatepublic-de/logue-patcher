@@ -361,11 +361,17 @@ describe('buildOscBodyPieces', () => {
     expect(pieces.memberDecls).toContain('float phase_saw1;')
     expect(pieces.memberDecls).toContain('float phase_sq1;')
     // Both instances get their own compute statement (both cost cycles/state)...
-    expect(pieces.computeStatements).toContain(
-      'float y_saw1 = polyblep_saw(phase_saw1, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1));'
+    expect(pieces.blockStatements).toContain(
+      'const float blkW0_saw1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1);'
     )
     expect(pieces.computeStatements).toContain(
-      'float y_sq1 = polyblep_square(phase_sq1, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sq1 + fine_sq1));'
+      'float y_saw1 = polyblep_saw(phase_saw1, blkW0_saw1);'
+    )
+    expect(pieces.blockStatements).toContain(
+      'const float blkW0_sq1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sq1 + fine_sq1);'
+    )
+    expect(pieces.computeStatements).toContain(
+      'float y_sq1 = polyblep_square(phase_sq1, blkW0_sq1);'
     )
     // ...but outputExpr is ONLY the LAST (sink) instance's own computed variable, never a sum
     expect(pieces.outputExpr).toBe('y_sq1')

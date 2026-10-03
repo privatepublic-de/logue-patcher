@@ -35,46 +35,46 @@ export const CODE_SIZE_TABLE: Record<
 > = {
   'minilogue-xd:osc': {
     'logue/osc/sine': {
-      first: 552,
-      extra: 288,
+      first: 568,
+      extra: 260,
       helpers: [],
-      unwired: { first: 320, extra: 144, helpers: [] },
-      snapshotHash: 'f358df0a073705bf'
+      unwired: { first: 304, extra: 176, helpers: [] },
+      snapshotHash: 'b34b1284af3c9ca7'
     },
     'logue/osc/saw': {
-      first: 622,
-      extra: 644,
-      helpers: ['Osc::harmonic_ratio(float)', 'Osc::note_w0(float)'],
-      unwired: { first: 408, extra: 188, helpers: [] },
-      snapshotHash: '81830c88b5be65df'
+      first: 728,
+      extra: 296,
+      helpers: [],
+      unwired: { first: 396, extra: 192, helpers: [] },
+      snapshotHash: '689d43e99e06ce9c'
     },
     'logue/osc/square': {
       first: 552,
-      extra: 260,
+      extra: 204,
       helpers: ['Osc::polyblep(float, float)'],
-      unwired: { first: 312, extra: 96, helpers: ['Osc::polyblep(float, float)'] },
-      snapshotHash: '55b468fcf5383707'
+      unwired: { first: 288, extra: 112, helpers: ['Osc::polyblep(float, float)'] },
+      snapshotHash: '9a189b5fd7ef929c'
     },
     'logue/osc/pulse': {
-      first: 608,
-      extra: 332,
+      first: 612,
+      extra: 260,
       helpers: ['Osc::polyblep(float, float)'],
-      unwired: { first: 332, extra: 140, helpers: ['Osc::polyblep(float, float)'] },
-      snapshotHash: 'f53384feea514a5a'
+      unwired: { first: 308, extra: 128, helpers: ['Osc::polyblep(float, float)'] },
+      snapshotHash: '773b9bbd527f1576'
     },
     'logue/osc/triangle': {
-      first: 484,
-      extra: 232,
+      first: 496,
+      extra: 200,
       helpers: [],
-      unwired: { first: 256, extra: 60, helpers: [] },
-      snapshotHash: '453b84fe7e7274bf'
+      unwired: { first: 236, extra: 88, helpers: [] },
+      snapshotHash: 'c19162f9574d3fe7'
     },
     'logue/osc/additive': {
-      first: 412,
-      extra: 188,
+      first: 420,
+      extra: 140,
       helpers: ['Osc::additive_step(float, float, float)'],
-      unwired: { first: 252, extra: 88, helpers: ['Osc::additive_step(float, float, float)'] },
-      snapshotHash: 'df790ce19b9522ee'
+      unwired: { first: 228, extra: 92, helpers: ['Osc::additive_step(float, float, float)'] },
+      snapshotHash: '8ad6107dc41ce335'
     },
     'logue/osc/granular': {
       first: 1606,
@@ -221,11 +221,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '93415749054fe77d'
     },
     'logue/lfo/fast-square': {
-      first: 504,
-      extra: 272,
+      first: 468,
+      extra: 312,
       helpers: [],
-      unwired: { first: 340, extra: 172, helpers: [] },
-      snapshotHash: 'e860fab70fe00fdf'
+      unwired: { first: 320, extra: 160, helpers: [] },
+      snapshotHash: '9023a42eadc26048'
     },
     'logue/lfo/random-steps': {
       first: 200,
@@ -634,55 +634,55 @@ export const CODE_SIZE_TABLE: Record<
       first: 440,
       extra: 260,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 216, extra: 92, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: 'f358df0a073705bf'
+      unwired: { first: 204, extra: 100, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: 'b34b1284af3c9ca7'
     },
     'logue/osc/saw': {
       first: 858,
       extra: 620,
       helpers: ['Fx::harmonic_ratio(float)', 'Fx::note_w0(float)'],
-      unwired: { first: 324, extra: 160, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '81830c88b5be65df'
+      unwired: { first: 280, extra: 156, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '689d43e99e06ce9c'
     },
     'logue/osc/square': {
       first: 460,
       extra: 252,
       helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)'],
       unwired: {
-        first: 196,
-        extra: 96,
+        first: 164,
+        extra: 80,
         helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)']
       },
-      snapshotHash: '55b468fcf5383707'
+      snapshotHash: '9a189b5fd7ef929c'
     },
     'logue/osc/pulse': {
       first: 524,
       extra: 316,
       helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)'],
       unwired: {
-        first: 220,
-        extra: 116,
+        first: 188,
+        extra: 92,
         helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)']
       },
-      snapshotHash: 'f53384feea514a5a'
+      snapshotHash: '773b9bbd527f1576'
     },
     'logue/osc/triangle': {
       first: 360,
       extra: 208,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 112, extra: 64, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '453b84fe7e7274bf'
+      unwired: { first: 104, extra: 76, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: 'c19162f9574d3fe7'
     },
     'logue/osc/additive': {
       first: 324,
       extra: 184,
       helpers: ['Fx::additive_step(float, float, float)', 'Fx::note_w0(float)'],
       unwired: {
-        first: 128,
-        extra: 84,
+        first: 100,
+        extra: 64,
         helpers: ['Fx::additive_step(float, float, float)', 'Fx::note_w0(float)']
       },
-      snapshotHash: 'df790ce19b9522ee'
+      snapshotHash: '8ad6107dc41ce335'
     },
     'logue/osc/granular': {
       first: 1694,
@@ -818,8 +818,8 @@ export const CODE_SIZE_TABLE: Record<
       first: 376,
       extra: 268,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 208, extra: 140, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: 'e860fab70fe00fdf'
+      unwired: { first: 212, extra: 136, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '9023a42eadc26048'
     },
     'logue/lfo/random-steps': {
       first: 236,
@@ -1262,46 +1262,46 @@ export const CODE_SIZE_TABLE: Record<
   },
   'nts1mkii:osc': {
     'logue/osc/sine': {
-      first: 655,
-      extra: 440,
+      first: 671,
+      extra: 338,
       helpers: [],
-      unwired: { first: 427, extra: 218, helpers: [] },
-      snapshotHash: '6380d564564b0a1d'
+      unwired: { first: 431, extra: 226, helpers: [] },
+      snapshotHash: 'd07a2e163e11d947'
     },
     'logue/osc/saw': {
-      first: 801,
-      extra: 709,
-      helpers: ['Osc::harmonic_ratio(float)', 'Osc::note_w0(float)'],
-      unwired: { first: 465, extra: 283, helpers: [] },
-      snapshotHash: '8c0b56cbca0abd21'
+      first: 785,
+      extra: 435,
+      helpers: [],
+      unwired: { first: 453, extra: 287, helpers: [] },
+      snapshotHash: '3a9ffe3e3d2124b3'
     },
     'logue/osc/square': {
-      first: 669,
-      extra: 476,
+      first: 673,
+      extra: 346,
       helpers: ['Osc::polyblep(float, float)'],
-      unwired: { first: 429, extra: 266, helpers: ['Osc::polyblep(float, float)'] },
-      snapshotHash: '01bfaaf0a0d01ddb'
+      unwired: { first: 433, extra: 254, helpers: ['Osc::polyblep(float, float)'] },
+      snapshotHash: '4eac9e98563c8536'
     },
     'logue/osc/pulse': {
-      first: 725,
-      extra: 552,
+      first: 737,
+      extra: 398,
       helpers: ['Osc::polyblep(float, float)'],
-      unwired: { first: 449, extra: 294, helpers: ['Osc::polyblep(float, float)'] },
-      snapshotHash: '3f1384c55e42ccb9'
+      unwired: { first: 453, extra: 274, helpers: ['Osc::polyblep(float, float)'] },
+      snapshotHash: '90d83d49292969b8'
     },
     'logue/osc/triangle': {
-      first: 537,
-      extra: 372,
+      first: 549,
+      extra: 266,
       helpers: [],
-      unwired: { first: 309, extra: 150, helpers: [] },
-      snapshotHash: 'b6383a0b51a5c953'
+      unwired: { first: 313, extra: 158, helpers: [] },
+      snapshotHash: '84542d8e80e4b65c'
     },
     'logue/osc/additive': {
-      first: 618,
-      extra: 336,
+      first: 626,
+      extra: 210,
       helpers: ['Osc::additive_step(float, float, float)'],
-      unwired: { first: 458, extra: 170, helpers: ['Osc::additive_step(float, float, float)'] },
-      snapshotHash: '1953b19e388df085'
+      unwired: { first: 462, extra: 158, helpers: ['Osc::additive_step(float, float, float)'] },
+      snapshotHash: '4663861446fc5f05'
     },
     'logue/osc/granular': {
       first: 2102,
@@ -1448,11 +1448,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '785b4d8a503639cd'
     },
     'logue/lfo/fast-square': {
-      first: 557,
-      extra: 338,
+      first: 553,
+      extra: 346,
       helpers: [],
-      unwired: { first: 393, extra: 238, helpers: [] },
-      snapshotHash: 'bd775a61d88c588c'
+      unwired: { first: 401, extra: 230, helpers: [] },
+      snapshotHash: '802700d4e0a165bb'
     },
     'logue/lfo/random-steps': {
       first: 216,
@@ -1859,55 +1859,55 @@ export const CODE_SIZE_TABLE: Record<
       first: 559,
       extra: 337,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 335, extra: 112, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '6380d564564b0a1d'
+      unwired: { first: 327, extra: 116, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: 'd07a2e163e11d947'
     },
     'logue/osc/saw': {
       first: 994,
       extra: 692,
       helpers: ['Fx::harmonic_ratio(float)', 'Fx::note_w0(float)'],
-      unwired: { first: 389, extra: 192, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '8c0b56cbca0abd21'
+      unwired: { first: 345, extra: 184, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '3a9ffe3e3d2124b3'
     },
     'logue/osc/square': {
       first: 588,
       extra: 404,
       helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)'],
       unwired: {
-        first: 344,
-        extra: 175,
+        first: 312,
+        extra: 155,
         helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)']
       },
-      snapshotHash: '01bfaaf0a0d01ddb'
+      snapshotHash: '4eac9e98563c8536'
     },
     'logue/osc/pulse': {
       first: 652,
       extra: 472,
       helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)'],
       unwired: {
-        first: 368,
-        extra: 199,
+        first: 336,
+        extra: 171,
         helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)']
       },
-      snapshotHash: '3f1384c55e42ccb9'
+      snapshotHash: '90d83d49292969b8'
     },
     'logue/osc/triangle': {
       first: 417,
       extra: 285,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 193, extra: 60, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: 'b6383a0b51a5c953'
+      unwired: { first: 185, extra: 72, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '84542d8e80e4b65c'
     },
     'logue/osc/additive': {
       first: 540,
       extra: 257,
       helpers: ['Fx::additive_step(float, float, float)', 'Fx::note_w0(float)'],
       unwired: {
-        first: 368,
-        extra: 84,
+        first: 336,
+        extra: 64,
         helpers: ['Fx::additive_step(float, float, float)', 'Fx::note_w0(float)']
       },
-      snapshotHash: '1953b19e388df085'
+      snapshotHash: '4663861446fc5f05'
     },
     'logue/osc/granular': {
       first: 2181,
@@ -2043,8 +2043,8 @@ export const CODE_SIZE_TABLE: Record<
       first: 445,
       extra: 264,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 301, extra: 132, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: 'bd775a61d88c588c'
+      unwired: { first: 301, extra: 128, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '802700d4e0a165bb'
     },
     'logue/lfo/random-steps': {
       first: 252,
@@ -2506,7 +2506,6 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::env_rate_from_percent(float)': 76,
     'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1192,
     'Osc::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 728,
-    'Osc::harmonic_ratio(float)': 74,
     'Osc::knob_env_value(float, int)': 172,
     'Osc::mseg_rate_from_percent(float)': 68,
     'Osc::note_w0(float)': 164,
@@ -2544,7 +2543,6 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::env_rate_from_percent(float)': 76,
     'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1216,
     'Osc::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 744,
-    'Osc::harmonic_ratio(float)': 76,
     'Osc::knob_env_value(float, int)': 180,
     'Osc::mseg_rate_from_percent(float)': 68,
     'Osc::note_w0(float)': 176,

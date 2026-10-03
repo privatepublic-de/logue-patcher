@@ -214,6 +214,14 @@ matching when adding a new one):
   xd-crash `always_inline`/`formant_note_w0` workarounds), about 80+ cycles of per-block work;
   hoisting it means splitting that helper, which deserves its own change with a hardware check.
   The filter helpers' own `1/(1+g(g+k))` divides are per-block too but live inside the helpers.
+  Every oscillator's transposed `w0` (`transposedW0`, 2026-10-03: sine/saw/square/pulse/
+  triangle/additive, fast-square's TRACK) is one too while `pitch`/`harmonic` don't move -- they
+  called `note_w0` once or twice a sample. xd emulator base cycles: sine 110 -> 50, saw 153 -> 86,
+  square 153 -> 100, pulse 155 -> 97, triangle 90 -> 29, additive 231 -> 178, fast-square TRACK
+  69 -> 11. Harness renders identical except with `harmonic` wired (<= 1e-6 of full scale: the
+  `w0 * ratio` product is rounded per block instead of folded into the phase add per sample).
+  In an effect the stand-in `osc_w0f_for_note` (`fastpow2f`) is dearer still, so a moving
+  `pitch` there costs ~170-330 cycles more than a still one.
 - **Knob-only math is computed once per block** (2026-10-01, `oscBody.ts`' `hoistedSuffixes`): a
   `pure` primitive (stateless: `math/*`, `util/constant`, the polarity converters, `mix/mix2`, the
   stateless `logic/*`, `sense/control`) whose wired inlets all come from other such instances is

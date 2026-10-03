@@ -107,11 +107,12 @@ public:
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     (void)in;
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_square(phase_n, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n));
+      float y_n = polyblep_square(phase_n, blkW0_n);
       out[i] = clip1m1f(y_n);
-      phase_n += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
+      phase_n += blkW0_n;
       if (phase_n >= 1.f) phase_n -= 1.f;
     }
   }
@@ -314,11 +315,12 @@ public:
       float y_c_harmonic = value_c_harmonic;
       float y_c_fm = value_c_fm;
       float y_c_fmDepth = value_c_fmDepth;
+    const float blkW0_n = (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_square(pm_wrap(phase_n + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.02f)), (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f));
+      float y_n = polyblep_square(pm_wrap(phase_n + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.02f)), blkW0_n);
       out[i] = clip1m1f(y_n);
-      phase_n += (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f);
+      phase_n += blkW0_n;
       if (phase_n >= 1.f) phase_n -= 1.f;
     }
   }
@@ -520,11 +522,12 @@ public:
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     (void)in;
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_square(phase_n, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n));
+      float y_n = polyblep_square(phase_n, blkW0_n);
       out[i] = clip1m1f(y_n);
-      phase_n += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
+      phase_n += blkW0_n;
       if (phase_n >= 1.f) phase_n -= 1.f;
     }
   }

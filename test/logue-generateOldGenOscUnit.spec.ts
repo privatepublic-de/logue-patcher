@@ -1258,8 +1258,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       // exactly the same note_w0(note_ + noteFine_/255) this project's own osc_w0f_for_note
       // base-pitch computation always did -- a real regression check, not just a fixture.
       expect(result.oscCpp).toContain(
-        'phase_sine1 += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sine1 + fine_sine1);'
+        'const float blkW0_sine1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sine1 + fine_sine1);'
       )
+      expect(result.oscCpp).toContain('phase_sine1 += blkW0_sine1;')
     })
 
     it('a custom COARSE/FINE value is baked per instance', () => {
@@ -1329,9 +1330,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'harmonic inlet' })
-      expect(result.oscCpp).toContain(
-        'phase_sine1 += (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sine1 + fine_sine1)) * harmonic_ratio(clampf(y_harm1, -1.f, 1.f) * 16.f);'
-      )
+      expect(result.oscCpp).toContain('phase_sine1 += blkW0_sine1;')
       expect(result.oscCpp).toContain('static float harmonic_ratio(float raw)')
     })
 
@@ -1694,8 +1693,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       expect(result.oscCpp).toContain('static float pm_wrap(float p)')
       // the phase ACCUMULATOR itself is untouched by fm -- still the plain transposed increment
       expect(result.oscCpp).toContain(
-        'phase_carrier += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_carrier + fine_carrier);'
+        'const float blkW0_carrier = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_carrier + fine_carrier);'
       )
+      expect(result.oscCpp).toContain('phase_carrier += blkW0_carrier;')
     })
 
     it('FM_DEPTH defaults to 0 (no effect even once wired) and a custom value reaches init', () => {
@@ -1735,7 +1735,10 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(real, { name: 'square fm' })
       expect(result.oscCpp).toContain(
-        'float y_square1 = polyblep_square(pm_wrap(phase_square1 + (y_mod1) * (fmDepthPercent_square1 * 0.02f)), note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_square1 + fine_square1));'
+        'const float blkW0_square1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_square1 + fine_square1);'
+      )
+      expect(result.oscCpp).toContain(
+        'float y_square1 = polyblep_square(pm_wrap(phase_square1 + (y_mod1) * (fmDepthPercent_square1 * 0.02f)), blkW0_square1);'
       )
     })
 
@@ -1755,10 +1758,13 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(real, { name: 'saw fm' })
       expect(result.oscCpp).toContain(
-        'float y_saw1 = polyblep_saw((tzfm_saw1 >= 1.f ? phase_saw1 : pm_wrap(phase_saw1 + (y_mod1) * (fmDepthPercent_saw1 * 0.02f))), (tzfm_saw1 >= 1.f ? (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1)) * (1.f + (y_mod1) * (fmDepthPercent_saw1 * 0.04f)) : (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1))));'
+        'const float blkW0_saw1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1);'
       )
       expect(result.oscCpp).toContain(
-        'phase_saw1 += (tzfm_saw1 >= 1.f ? (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1)) * (1.f + (y_mod1) * (fmDepthPercent_saw1 * 0.04f)) : (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1)));'
+        'float y_saw1 = polyblep_saw((tzfm_saw1 >= 1.f ? phase_saw1 : pm_wrap(phase_saw1 + (y_mod1) * (fmDepthPercent_saw1 * 0.02f))), (tzfm_saw1 >= 1.f ? (blkW0_saw1) * (1.f + (y_mod1) * (fmDepthPercent_saw1 * 0.04f)) : (blkW0_saw1)));'
+      )
+      expect(result.oscCpp).toContain(
+        'phase_saw1 += (tzfm_saw1 >= 1.f ? (blkW0_saw1) * (1.f + (y_mod1) * (fmDepthPercent_saw1 * 0.04f)) : (blkW0_saw1));'
       )
       expect(result.oscCpp).toContain('while (phase_saw1 >= 1.f) phase_saw1 -= 1.f;')
       expect(result.oscCpp).toContain('while (phase_saw1 < 0.f) phase_saw1 += 1.f;')
@@ -4072,9 +4078,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'constant pitch offset' })
-      expect(result.oscCpp).toContain(
-        'phase_carrier += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_carrier + fine_carrier + (y_detune) * 24.f);'
-      )
+      expect(result.oscCpp).toContain('phase_carrier += blkW0_carrier;')
     })
   })
 
@@ -4187,11 +4191,12 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       // declared.
       expect(result.oscCpp.match(/additive_step\(/g)).toHaveLength(2)
       expect(result.oscCpp).toContain(
-        'float y_add1 = additive_step(phase_add1, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_add1 + fine_add1), (timbrePercent_add1 * 0.01f));'
+        'const float blkW0_add1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_add1 + fine_add1);'
       )
       expect(result.oscCpp).toContain(
-        'phase_add1 += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_add1 + fine_add1);'
+        'float y_add1 = additive_step(phase_add1, blkW0_add1, (timbrePercent_add1 * 0.01f));'
       )
+      expect(result.oscCpp).toContain('phase_add1 += blkW0_add1;')
     })
 
     it('bakes the exact non-decreasing per-frame max-harmonic ceiling the Nyquist clamp walks (pins the 6 hand-designed recipes)', () => {
@@ -4264,7 +4269,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(doc, { name: 'additive timbre inlet' })
       expect(result.oscCpp).toContain(
-        'additive_step(phase_add1, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_add1 + fine_add1), clampf(timbrePercent_add1 * 0.01f + (y_lfo1), 0.f, 1.f))'
+        'additive_step(phase_add1, blkW0_add1, clampf(timbrePercent_add1 * 0.01f + (y_lfo1), 0.f, 1.f))'
       )
     })
 
@@ -4286,9 +4291,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'additive pitch inlet' })
-      expect(result.oscCpp).toContain(
-        'phase_add1 += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_add1 + fine_add1 + (y_pitch1) * 24.f);'
-      )
+      expect(result.oscCpp).toContain('phase_add1 += blkW0_add1;')
     })
   })
 
@@ -4349,8 +4352,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       const src = result.oscCpp
       expect(src).toContain('float y_fs1 = (phase_fs1 < width_fs1 * 0.01f ? 1.f : -1.f);')
       expect(src).toContain(
-        'phase_fs1 += (track_fs1 >= 1.f ? note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_fs1 + fine_fs1) : blkLfoRate_fs1);'
+        'const float blkW0_fs1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_fs1 + fine_fs1);'
       )
+      expect(src).toContain('phase_fs1 += (track_fs1 >= 1.f ? blkW0_fs1 : blkLfoRate_fs1);')
       expect(src).toContain('static float fast_lfo_rate_from_percent(float percent)')
       expect(src).not.toContain('polyblep')
       expect(src).toContain('ratePercent_fs1 = 30;')

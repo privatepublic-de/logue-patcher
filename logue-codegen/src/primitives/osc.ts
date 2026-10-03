@@ -59,6 +59,7 @@ import {
   floatLit,
   hashSuffixToSeed,
   isBlockInvariant,
+  transposedW0,
   transposedW0Expr,
   EXP_APPROX_HELPER,
   LEVEL_PARAM,
@@ -87,8 +88,9 @@ export const sineOscPrimitive: LoguePrimitive = {
     `  float phase_${suffix};\n  float coarse_${suffix};\n  float fine_${suffix};\n  float fmDepthPercent_${suffix};\n`,
   initStatement: (suffix) => `    phase_${suffix} = 0.f;\n`,
   renderExpr: (suffix, inlets) => `osc_sinf(${fmPhaseExpr(suffix, inlets)})`,
+  blockConstants: (suffix, inlets) => blockDecls({ w0: transposedW0(suffix, inlets) }),
   advanceStatement: (suffix, inlets) =>
-    `      phase_${suffix} += ${transposedW0Expr(suffix, inlets)};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
+    `      phase_${suffix} += ${transposedW0(suffix, inlets).ref};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
   helpers: [NOTE_W0_HELPER, PM_WRAP_HELPER, CLAMPF_HELPER, HARMONIC_RATIO_HELPER],
   params: [COARSE_PARAM, FINE_PARAM, FM_DEPTH_PARAM]
 }
@@ -123,7 +125,7 @@ const TZFM_DEPTH_PER_PERCENT = 0.04
  * topologically earlier. History: docs/HISTORY.md.
  */
 function sawIncrementExpr(suffix: string, inlets: Record<string, string | undefined>): string {
-  const base = transposedW0Expr(suffix, inlets)
+  const base = transposedW0(suffix, inlets).ref
   if (inlets.fm === undefined) return base
   const depth =
     inlets.fmDepth !== undefined
@@ -146,12 +148,11 @@ function sawIncrementExpr(suffix: string, inlets: Record<string, string | undefi
  * (the antialiasing correction width) is recomputed via `transposedW0Expr`/`sawIncrementExpr` --
  * the SAME transposed increment `advanceStatement` uses -- rather than the shared, untransposed
  * `w0_`, since a detuned/pitch-modulated saw's own correction needs to match its ACTUAL
- * per-sample phase step. Deliberately recomputed independently in both places (a second
- * `note_w0` call per sample) -- simpler than caching it in a shared member, no ordering
- * dependency between `renderExpr`/`advanceStatement` FOR THE PLAIN PITCH-TRACKING CASE; once
- * `TZFM` is engaged, `sawIncrementExpr` does carry a real (satisfied-by-construction) ordering
- * dependency on an upstream inlet -- see that function's own doc comment, and `fmPhaseExpr`'s for
- * why this is the one oscillator with through-zero FM at all.
+ * per-sample phase step. Both read the same `transposedW0` (a block constant unless `pitch`/
+ * `harmonic` move, else the expression itself, evaluated twice a sample); once `TZFM` is engaged,
+ * `sawIncrementExpr` carries a real (satisfied-by-construction) ordering dependency on an
+ * upstream inlet -- see that function's own doc comment, and `fmPhaseExpr`'s for why this is the
+ * one oscillator with through-zero FM at all.
  */
 export const sawOscPrimitive: LoguePrimitive = {
   id: 'logue/osc/saw',
@@ -184,6 +185,7 @@ export const sawOscPrimitive: LoguePrimitive = {
   // and behaviorally unchanged when it can't (TZFM off or fm unwired, where sawIncrementExpr
   // reduces to the always-nonnegative transposedW0Expr, same as every other oscillator's own
   // increment) -- the downward loop simply never iterates in that case.
+  blockConstants: (suffix, inlets) => blockDecls({ w0: transposedW0(suffix, inlets) }),
   advanceStatement: (suffix, inlets) =>
     `      phase_${suffix} += ${sawIncrementExpr(suffix, inlets)};\n      while (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n      while (phase_${suffix} < 0.f) phase_${suffix} += 1.f;\n`,
   helpers: [
@@ -225,9 +227,10 @@ export const squareOscPrimitive: LoguePrimitive = {
   initStatement: (suffix) => `    phase_${suffix} = 0.f;\n`,
   // Same disclosed dt-vs-FM'd-phase simplification as saw's own renderExpr -- see its comment.
   renderExpr: (suffix, inlets) =>
-    `polyblep_square(${fmPhaseExpr(suffix, inlets)}, ${transposedW0Expr(suffix, inlets)})`,
+    `polyblep_square(${fmPhaseExpr(suffix, inlets)}, ${transposedW0(suffix, inlets).ref})`,
+  blockConstants: (suffix, inlets) => blockDecls({ w0: transposedW0(suffix, inlets) }),
   advanceStatement: (suffix, inlets) =>
-    `      phase_${suffix} += ${transposedW0Expr(suffix, inlets)};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
+    `      phase_${suffix} += ${transposedW0(suffix, inlets).ref};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
   helpers: [
     POLYBLEP_SQUARE_HELPER,
     NOTE_W0_HELPER,
@@ -286,10 +289,11 @@ export const pulseOscPrimitive: LoguePrimitive = {
       inlets.width !== undefined
         ? `${additiveInletExpr('width', suffix, inlets.width, WIDTH_INLET_DEPTH)} * 0.01f`
         : `width_${suffix} * 0.01f`
-    return `polyblep_pulse(${fmPhaseExpr(suffix, inlets)}, ${width}, ${transposedW0Expr(suffix, inlets)})`
+    return `polyblep_pulse(${fmPhaseExpr(suffix, inlets)}, ${width}, ${transposedW0(suffix, inlets).ref})`
   },
+  blockConstants: (suffix, inlets) => blockDecls({ w0: transposedW0(suffix, inlets) }),
   advanceStatement: (suffix, inlets) =>
-    `      phase_${suffix} += ${transposedW0Expr(suffix, inlets)};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
+    `      phase_${suffix} += ${transposedW0(suffix, inlets).ref};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
   helpers: [
     POLYBLEP_PULSE_HELPER,
     NOTE_W0_HELPER,
@@ -347,8 +351,9 @@ export const triangleOscPrimitive: LoguePrimitive = {
     `  float phase_${suffix};\n  float coarse_${suffix};\n  float fine_${suffix};\n  float fmDepthPercent_${suffix};\n`,
   initStatement: (suffix) => `    phase_${suffix} = 0.f;\n`,
   renderExpr: (suffix, inlets) => `(4.f * fabsf(${fmPhaseExpr(suffix, inlets)} - 0.5f) - 1.f)`,
+  blockConstants: (suffix, inlets) => blockDecls({ w0: transposedW0(suffix, inlets) }),
   advanceStatement: (suffix, inlets) =>
-    `      phase_${suffix} += ${transposedW0Expr(suffix, inlets)};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
+    `      phase_${suffix} += ${transposedW0(suffix, inlets).ref};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
   helpers: [NOTE_W0_HELPER, PM_WRAP_HELPER, CLAMPF_HELPER, HARMONIC_RATIO_HELPER],
   params: [COARSE_PARAM, FINE_PARAM, FM_DEPTH_PARAM]
 }
@@ -613,9 +618,10 @@ export const additiveOscPrimitive: LoguePrimitive = {
     `  float phase_${suffix};\n  float coarse_${suffix};\n  float fine_${suffix};\n  float timbrePercent_${suffix};\n`,
   initStatement: (suffix) => `    phase_${suffix} = 0.f;\n`,
   renderExpr: (suffix, inlets) =>
-    `additive_step(phase_${suffix}, ${transposedW0Expr(suffix, inlets)}, ${additiveTimbreExpr(suffix, inlets)})`,
+    `additive_step(phase_${suffix}, ${transposedW0(suffix, inlets).ref}, ${additiveTimbreExpr(suffix, inlets)})`,
+  blockConstants: (suffix, inlets) => blockDecls({ w0: transposedW0(suffix, inlets) }),
   advanceStatement: (suffix, inlets) =>
-    `      phase_${suffix} += ${transposedW0Expr(suffix, inlets)};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
+    `      phase_${suffix} += ${transposedW0(suffix, inlets).ref};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
   helpers: [ADDITIVE_STEP_HELPER, NOTE_W0_HELPER, CLAMPF_HELPER, HARMONIC_RATIO_HELPER],
   params: [
     COARSE_PARAM,

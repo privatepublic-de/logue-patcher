@@ -85,8 +85,9 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
     expect(result.oscH).toContain('float phase_sine1;')
     expect(result.oscH).toContain('osc_sinf(phase_sine1)')
     expect(result.oscH).toContain(
-      'phase_sine1 += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sine1 + fine_sine1);'
+      'const float blkW0_sine1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sine1 + fine_sine1);'
     )
+    expect(result.oscH).toContain('phase_sine1 += blkW0_sine1;')
 
     expect(result.unitCc).toContain('unit_render')
     expect(result.unitCc).toContain(
@@ -307,8 +308,9 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
     const result = generateOscUnit(doc, { name: 'saw test' })
 
     expect(result.oscH).toContain(
-      'polyblep_saw(phase_saw1, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1))'
+      'const float blkW0_saw1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_saw1 + fine_saw1);'
     )
+    expect(result.oscH).toContain('polyblep_saw(phase_saw1, blkW0_saw1)')
     expect(result.oscH).toContain('static float polyblep(float t, float dt)')
     expect(result.oscH).toContain('static float polyblep_saw(float phase, float dt)')
   })
@@ -320,8 +322,9 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
     const result = generateOscUnit(doc, { name: 'square test' })
 
     expect(result.oscH).toContain(
-      'polyblep_square(phase_sq1, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sq1 + fine_sq1))'
+      'const float blkW0_sq1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_sq1 + fine_sq1);'
     )
+    expect(result.oscH).toContain('polyblep_square(phase_sq1, blkW0_sq1)')
     expect(result.oscH).toContain('static float polyblep_square(float phase, float dt)')
   })
 
@@ -690,7 +693,10 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
       expect(result.oscH).toContain('static const float kAdditiveFrames[6][512] = {')
       expect(result.oscH).toContain('static const float kAdditiveFrameMaxHarmonic[6] = {')
       expect(result.oscH).toContain(
-        'float y_add1 = additive_step(phase_add1, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_add1 + fine_add1), (timbrePercent_add1 * 0.01f));'
+        'const float blkW0_add1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_add1 + fine_add1);'
+      )
+      expect(result.oscH).toContain(
+        'float y_add1 = additive_step(phase_add1, blkW0_add1, (timbrePercent_add1 * 0.01f));'
       )
       expect(result.oscH).toContain('out[i] = clip1m1f(y_add1);')
     })
@@ -1391,8 +1397,9 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
       const src = result.oscH
       expect(src).toContain('float y_fs1 = (phase_fs1 < width_fs1 * 0.01f ? 1.f : -1.f);')
       expect(src).toContain(
-        'phase_fs1 += (track_fs1 >= 1.f ? note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_fs1 + fine_fs1) : blkLfoRate_fs1);'
+        'const float blkW0_fs1 = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_fs1 + fine_fs1);'
       )
+      expect(src).toContain('phase_fs1 += (track_fs1 >= 1.f ? blkW0_fs1 : blkLfoRate_fs1);')
       expect(src).toContain('static float fast_lfo_rate_from_percent(float percent)')
       expect(src).not.toContain('polyblep')
       expect(src).toContain('ratePercent_fs1 = 30;')

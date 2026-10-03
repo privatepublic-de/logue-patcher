@@ -82,9 +82,10 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_saw(phase_n, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n));
+      float y_n = polyblep_saw(phase_n, blkW0_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -94,7 +95,7 @@ public:
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
       yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
-      phase_n += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
+      phase_n += blkW0_n;
       while (phase_n >= 1.f) phase_n -= 1.f;
       while (phase_n < 0.f) phase_n += 1.f;
     }
@@ -307,9 +308,10 @@ public:
       float y_c_harmonic = value_c_harmonic;
       float y_c_fm = value_c_fm;
       float y_c_fmDepth = value_c_fmDepth;
+    const float blkW0_n = (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_saw((tzfm_n >= 1.f ? phase_n : pm_wrap(phase_n + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.02f))), (tzfm_n >= 1.f ? ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f)) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f))));
+      float y_n = polyblep_saw((tzfm_n >= 1.f ? phase_n : pm_wrap(phase_n + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.02f))), (tzfm_n >= 1.f ? (blkW0_n) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : (blkW0_n)));
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -319,7 +321,7 @@ public:
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
       yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
-      phase_n += (tzfm_n >= 1.f ? ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f)) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f)));
+      phase_n += (tzfm_n >= 1.f ? (blkW0_n) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : (blkW0_n));
       while (phase_n >= 1.f) phase_n -= 1.f;
       while (phase_n < 0.f) phase_n += 1.f;
     }
@@ -528,9 +530,10 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_saw(phase_n, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n));
+      float y_n = polyblep_saw(phase_n, blkW0_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -540,7 +543,7 @@ public:
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
       yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
-      phase_n += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
+      phase_n += blkW0_n;
       while (phase_n >= 1.f) phase_n -= 1.f;
       while (phase_n < 0.f) phase_n += 1.f;
     }
@@ -753,9 +756,10 @@ public:
       float y_c_harmonic = value_c_harmonic;
       float y_c_fm = value_c_fm;
       float y_c_fmDepth = value_c_fmDepth;
+    const float blkW0_n = (note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_saw((tzfm_n >= 1.f ? phase_n : pm_wrap(phase_n + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.02f))), (tzfm_n >= 1.f ? ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f)) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f))));
+      float y_n = polyblep_saw((tzfm_n >= 1.f ? phase_n : pm_wrap(phase_n + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.02f))), (tzfm_n >= 1.f ? (blkW0_n) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : (blkW0_n)));
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -765,7 +769,7 @@ public:
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
       yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
-      phase_n += (tzfm_n >= 1.f ? ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f)) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : ((note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n + (y_c_pitch) * 24.f)) * harmonic_ratio(clampf(y_c_harmonic, -1.f, 1.f) * 16.f)));
+      phase_n += (tzfm_n >= 1.f ? (blkW0_n) * (1.f + (y_c_fm) * (clampf(fmDepthPercent_n + (y_c_fmDepth) * 50.f, 0.f, 100.f) * 0.04f)) : (blkW0_n));
       while (phase_n >= 1.f) phase_n -= 1.f;
       while (phase_n < 0.f) phase_n += 1.f;
     }
@@ -1020,9 +1024,10 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
+    const float blkW0_n = note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = polyblep_saw(phase_n, note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n));
+      float y_n = polyblep_saw(phase_n, blkW0_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -1032,7 +1037,7 @@ public:
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
       yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
-      phase_n += note_w0(note_ + noteFine_ * (1.f/255.f) + coarse_n + fine_n);
+      phase_n += blkW0_n;
       while (phase_n >= 1.f) phase_n -= 1.f;
       while (phase_n < 0.f) phase_n += 1.f;
     }

@@ -19,7 +19,7 @@ import {
   WIDTH_INLET_DEPTH,
   additiveInletExpr,
   hashSuffixToSeed,
-  transposedW0Expr,
+  transposedW0,
   blockDecls,
   blockValue
 } from './shared'
@@ -241,10 +241,13 @@ export const fastSquareLfoPrimitive: LoguePrimitive = {
     return `(phase_${suffix} < ${width} ? 1.f : -1.f)`
   },
   blockConstants: (suffix, inlets) =>
-    blockDecls({ rate: lfoRate('fast_lfo_rate_from_percent', suffix, inlets) }),
+    blockDecls({
+      rate: lfoRate('fast_lfo_rate_from_percent', suffix, inlets),
+      w0: transposedW0(suffix, inlets)
+    }),
   advanceStatement: (suffix, inlets) => {
     const rate = lfoRate('fast_lfo_rate_from_percent', suffix, inlets).ref
-    const increment = `(track_${suffix} >= ${TRACK_ON_RAW_THRESHOLD}.f ? ${transposedW0Expr(suffix, inlets)} : ${rate})`
+    const increment = `(track_${suffix} >= ${TRACK_ON_RAW_THRESHOLD}.f ? ${transposedW0(suffix, inlets).ref} : ${rate})`
     return (
       `      phase_${suffix} += ${increment};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n` +
       lfoTrigResetStatement(suffix, inlets.trig, '0.f')
