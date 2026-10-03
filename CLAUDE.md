@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 89 primitives, 5 of them superseded and hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 91 primitives, 5 of them superseded and hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -96,9 +96,9 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-89 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+91 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
 history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (13:
-sine/saw/square/pulse/triangle/additive/granular/sample/noise/exciter/sync/phase-dist/bass-support), `mix` (4: mix2/crossfader/pan/width), `filter` (8:
+sine/saw/square/pulse/triangle/additive/granular/sample/noise/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (8:
 lowpass-cheap/highpass-cheap/comb/string/svf/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (14: constant/unipolar-to-bipolar/bipolar-to-unipolar/
@@ -700,6 +700,20 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   wired from a per-block value it stays a block constant. **`mix/width`**:
   mid/side, WIDTH 0 = the mid on both sides (level-kept, unlike grain-mill's L+R), 100 = as is;
   not above 100 (the xd manifest's +-100 cap, found when a 0..200 range failed the manifest test).
+- **`mix/stereo-crossfader` + `mix/stereo-mix2`** (2026-10-03): `crossfader`/`mix2` for a stereo
+  pair (`l1`/`r1`, `l2`/`r2` in; `l`/`r` out), so an effect's dry/wet is one node with ONE FADE
+  (one device control) -- every effect example had a crossfader pair whose dials had to match,
+  and they all use the stereo one now (`stereo-reverb` also sums its combs with three
+  `stereo-mix2`s instead of six `mix2`s). The crossfader's `LAW` is Power (`crossfader`'s) or
+  Linear (unity for a wet signal correlated with the dry one, where Power swells +3 dB at the
+  centre); both sides share the gains, so a wired `fade` costs two square roots, not four. Both
+  crossfaders keep the fade in percent (`sqrt((100 - p)*0.01f)`) so both ends are exact:
+  `1 - 100*0.01f` isn't 0 in float, which let ~-72 dB of the first input through at FADE 100
+  (plain `crossfader` too, until 2026-10-03; the NTS-1 mkII lpmix harness check is exact now). Harness
+  (`runNts1FxHarness.ts`): FADE 0/100 bit-exact, Power centre 1.41421, Linear unity, a wired fade
+  identical on both sides; stereo-mix2's gains exact. Both fx sweeps link (xd: leaf calls only);
+  the changed examples build on both platforms. xd emulator 4 / 0 cycles, like their mono
+  siblings. No hardware pass yet.
 - **`logic/chance`** (a gate passes whole with CHANCE %, drawn at its rising edge; harness 0 /
   0.515 / 1 at 0/50/100) and **`logic/round-robin`** (each gate to the next of `o1`..`oVOICES`,
   the first to `o1`; the counter + demux8 of grain-mill) (2026-09-30).

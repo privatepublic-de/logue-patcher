@@ -59,7 +59,14 @@ import {
   scalePrimitive,
   subtractPrimitive
 } from './math'
-import { crossfaderPrimitive, mixer2Primitive, panPrimitive, widthPrimitive } from './mix'
+import {
+  crossfaderPrimitive,
+  mixer2Primitive,
+  panPrimitive,
+  stereoCrossfaderPrimitive,
+  stereoMixer2Primitive,
+  widthPrimitive
+} from './mix'
 import { demux2Primitive, mux2Primitive, mux4Primitive } from './mux'
 import {
   additiveOscPrimitive,
@@ -138,6 +145,8 @@ const PRIMITIVES: LoguePrimitive[] = [
   mixer2Primitive,
   multiplyPrimitive,
   crossfaderPrimitive,
+  stereoMixer2Primitive,
+  stereoCrossfaderPrimitive,
   lowpassCheapFilterPrimitive,
   highpassCheapFilterPrimitive,
   vcaPrimitive,

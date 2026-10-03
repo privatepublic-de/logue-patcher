@@ -1,4 +1,4 @@
-import { PERCENT } from '../paramPresentation'
+import { PERCENT, STEREO_XFADE_LAWS, STEREO_XFADE_LAW_NAME } from '../paramPresentation'
 import type { HelperBlock, LoguePrimitive } from './types'
 import {
   CLAMPF_HELPER,
@@ -85,18 +85,20 @@ const XFADE_SQRTF_HELPER: HelperBlock = {
 }
 
 /** The two square roots, once per block while `fade` is unwired (a dry/wet knob: two per
- *  crossfader per sample were ~3 % of grain-mill's xd CPU, 2026-10-01). */
+ *  crossfader per sample were ~3 % of grain-mill's xd CPU, 2026-10-01). In percent, so both ends
+ *  are exact: `1 - 100 * 0.01f` is not 0 in float, and its square root let ~-72 dB of `in1`
+ *  through at FADE 100 (harness, 2026-10-03). */
 function crossfaderGains(
   suffix: string,
   inlets: Record<string, string | undefined>
 ): Record<'a' | 'b', BlockValue> {
   const fade =
     inlets.fade !== undefined
-      ? `clampf(fadePercent_${suffix} * 0.01f + (${inlets.fade}), 0.f, 1.f)`
-      : `(fadePercent_${suffix} * 0.01f)`
+      ? additiveInletExpr('fadePercent', suffix, inlets.fade, 100)
+      : `fadePercent_${suffix}`
   return {
-    a: blockValue('blkFadeA', suffix, `xfade_sqrtf(1.f - (${fade}))`, [inlets.fade]),
-    b: blockValue('blkFadeB', suffix, `xfade_sqrtf(${fade})`, [inlets.fade])
+    a: blockValue('blkFadeA', suffix, `xfade_sqrtf((100.f - ${fade}) * 0.01f)`, [inlets.fade]),
+    b: blockValue('blkFadeB', suffix, `xfade_sqrtf((${fade}) * 0.01f)`, [inlets.fade])
   }
 }
 
@@ -140,6 +142,142 @@ export const crossfaderPrimitive: LoguePrimitive = {
       max: 100,
       default: 50,
       setStatement: (suffix, valueExpr) => `fadePercent_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/** Both sides' two gains, once per block while `fade` is unwired. LAW 1 is linear: with a wet
+ *  signal correlated to the dry one (a chorus, a filter) equal power swells ~3 dB at the centre. */
+function stereoCrossfaderGains(
+  suffix: string,
+  inlets: Record<string, string | undefined>
+): Record<'a' | 'b', BlockValue> {
+  // In percent, so both ends are exact (see `crossfaderGains`).
+  const fade =
+    inlets.fade !== undefined
+      ? additiveInletExpr('stxFadePercent', suffix, inlets.fade, 100)
+      : `stxFadePercent_${suffix}`
+  const gain = (percent: string): string =>
+    `(stxLaw_${suffix} >= 0.5f ? ${percent} * 0.01f : xfade_sqrtf(${percent} * 0.01f))`
+  return {
+    a: blockValue('blkStxA', suffix, gain(`(100.f - ${fade})`), [inlets.fade]),
+    b: blockValue('blkStxB', suffix, gain(`(${fade})`), [inlets.fade])
+  }
+}
+
+/**
+ * `logue/mix/stereo-crossfader`: `crossfader` for a stereo pair, so an effect's dry/wet is one
+ * node with one FADE (one device control) instead of two crossfaders whose dials must be kept
+ * equal -- every effect example had that pair. `l1`/`r1` at FADE 0, `l2`/`r2` at 100; `fade`
+ * additive at depth 100, as on `crossfader`. LAW Power is `crossfader`'s equal-power law,
+ * Linear sums to unity gain for correlated inputs. Both sides share the gains, so a wired `fade`
+ * costs two square roots per sample, not four.
+ */
+export const stereoCrossfaderPrimitive: LoguePrimitive = {
+  id: 'logue/mix/stereo-crossfader',
+  outletPolarity: 'inherit',
+  stateBytesPerInstance: 8, // stxFadePercent_, stxLaw_
+  description:
+    "Crossfades between two stereo pairs (l1/r1 at 0, l2/r2 at 100) with one FADE -- an effect's dry/wet in one node. LAW: equal power, or linear for a wet signal that is close to the dry one.",
+  searchTerms: ['xfade', 'dry', 'wet', 'blend'],
+  inlets: [
+    { name: 'l1', role: 'audio' },
+    { name: 'r1', role: 'audio' },
+    { name: 'l2', role: 'audio' },
+    { name: 'r2', role: 'audio' },
+    { name: 'fade', role: 'control' }
+  ],
+  outlets: [{ name: 'l' }, { name: 'r' }],
+  memberDecls: (suffix) => `  float stxFadePercent_${suffix};\n  float stxLaw_${suffix};\n`,
+  blockConstants: (suffix, inlets) => blockDecls(stereoCrossfaderGains(suffix, inlets)),
+  renderExpr: () => {
+    throw new Error(
+      'logue/mix/stereo-crossfader is multi-outlet -- use renderOutletStatements, not renderExpr'
+    )
+  },
+  renderOutletStatements: (suffix, inlets) => {
+    const g = stereoCrossfaderGains(suffix, inlets)
+    // Locals so a per-sample gain is worked out once for both sides.
+    return (
+      `      const float stxA_${suffix} = ${g.a.ref};\n` +
+      `      const float stxB_${suffix} = ${g.b.ref};\n` +
+      `      float y_${suffix}_l = stxA_${suffix} * (${inlets.l1 ?? '0.f'}) + stxB_${suffix} * (${inlets.l2 ?? '0.f'});\n` +
+      `      float y_${suffix}_r = stxA_${suffix} * (${inlets.r1 ?? '0.f'}) + stxB_${suffix} * (${inlets.r2 ?? '0.f'});\n` +
+      `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`
+    )
+  },
+  advanceStatement: () => '',
+  helpers: [CLAMPF_HELPER, XFADE_SQRTF_HELPER],
+  params: [
+    {
+      name: 'FADE',
+      unit: PERCENT,
+      modulatedBy: { inlet: 'fade', shape: 'additive' },
+      nts1mkiiType: 'percent',
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `stxFadePercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'LAW',
+      unit: STEREO_XFADE_LAW_NAME,
+      select: { count: 2, scale: 1, label: 'Law', names: STEREO_XFADE_LAWS },
+      min: 0,
+      max: 1,
+      default: 0,
+      step: 1,
+      setStatement: (suffix, valueExpr) => `stxLaw_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/**
+ * `logue/mix/stereo-mix2`: `mix2` for two stereo pairs -- GAIN1 on `l1`/`r1`, GAIN2 on
+ * `l2`/`r2`, the same gain on both sides of a pair, defaults averaging like `mix2`. For summing
+ * buses (a comb bank per side, a parallel effect under the dry signal); `stereo-reverb` summed
+ * its combs with six `mix2`s.
+ */
+export const stereoMixer2Primitive: LoguePrimitive = {
+  id: 'logue/mix/stereo-mix2',
+  pure: true,
+  outletPolarity: 'inherit',
+  stateBytesPerInstance: 8, // gain1_ + gain2_, 2 floats
+  description: 'Sums two stereo pairs, each pair with its own gain (both sides alike).',
+  searchTerms: ['sum', 'bus'],
+  inlets: [
+    { name: 'l1', role: 'audio' },
+    { name: 'r1', role: 'audio' },
+    { name: 'l2', role: 'audio' },
+    { name: 'r2', role: 'audio' }
+  ],
+  outlets: [{ name: 'l' }, { name: 'r' }],
+  memberDecls: (suffix) => `  float gain1_${suffix};\n  float gain2_${suffix};\n`,
+  renderExpr: () => {
+    throw new Error(
+      'logue/mix/stereo-mix2 is multi-outlet -- use renderOutletStatements, not renderExpr'
+    )
+  },
+  renderOutletStatements: (suffix, inlets) => {
+    const side = (s: 'l' | 'r'): string =>
+      `      float y_${suffix}_${s} = ((${inlets[`${s}1`] ?? '0.f'}) * gain1_${suffix}) + ((${inlets[`${s}2`] ?? '0.f'}) * gain2_${suffix});\n`
+    return side('l') + side('r') + `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`
+  },
+  advanceStatement: () => '',
+  params: [
+    {
+      name: 'GAIN1',
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `gain1_${suffix} = ${valueExpr} * 0.01f;`
+    },
+    {
+      name: 'GAIN2',
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `gain2_${suffix} = ${valueExpr} * 0.01f;`
     }
   ]
 }

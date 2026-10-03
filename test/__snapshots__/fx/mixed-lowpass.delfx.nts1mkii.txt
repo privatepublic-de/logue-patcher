@@ -86,8 +86,8 @@ public:
   void process(const float *in, float *out, uint32_t frames) override final
   {
     fadePercent_x = (0.f + mix01_ * 100.f);
-    const float blkFadeA_x = xfade_sqrtf(1.f - ((fadePercent_x * 0.01f)));
-    const float blkFadeB_x = xfade_sqrtf((fadePercent_x * 0.01f));
+    const float blkFadeA_x = xfade_sqrtf((100.f - fadePercent_x) * 0.01f);
+    const float blkFadeB_x = xfade_sqrtf((fadePercent_x) * 0.01f);
     for (uint32_t i = 0; i < frames; ++i)
     {
       const float y_in_l = in[2 * i];

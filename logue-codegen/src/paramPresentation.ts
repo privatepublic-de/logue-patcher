@@ -463,6 +463,9 @@ export const FOLLOWER_ATTACK_MS = squaredMsUnit(0.1, 99.9)
 export const FOLLOWER_RELEASE_MS = squaredMsUnit(1, 1999)
 export const MSEG_MODE_NAME = namedChoiceUnit(['Oneshot', 'Sustain', 'Loop', 'Cycle'])
 export const SYNC_SHAPE_NAME = namedChoiceUnit(['Saw', 'Pulse', 'Tri', 'Sine'])
+/** `logue/mix/stereo-crossfader`'s LAW choices, in select order. */
+export const STEREO_XFADE_LAWS = ['Power', 'Linear']
+export const STEREO_XFADE_LAW_NAME = namedChoiceUnit(STEREO_XFADE_LAWS)
 /** `logue/osc/sample`'s LOOP and INTERP choices (NTS-1 mkII: 7 characters at most). */
 export const SAMPLE_LOOP_NAMES = ['Off', 'Forward', 'PingPng']
 export const SAMPLE_LOOP_NAME = namedChoiceUnit(['Off', 'Forward', 'Ping-pong'])

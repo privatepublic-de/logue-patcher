@@ -13,6 +13,8 @@
  * - buffer + buffer-tap: two taps at their delays, an echo loop through the buffer (no
  *   sample-delay), FREEZE looping the content bit-exactly while the input goes on.
  * - pan: a chain places each input exactly; width: 0 is the mid on both sides, 100 the pair;
+ *   stereo-crossfader: FADE 0/100 exactly one pair, its LAWs' centre gain, one gain for both
+ *   sides when wired; stereo-mix2: GAIN1/GAIN2 per pair;
  *   chance: CHANCE 0/50/100 of the gates pass; round-robin: gates go to o1..oN in turn; env/ad
  *   EXP: DECAY is its time constant, silent after ~4.6x it.
  * - the grain-mill example (with its voice subpatch): finite, and its grains still sound a second
@@ -309,11 +311,11 @@ for (const aliased of [false, true]) {
     ],
     'sines'
   )
-  // Not exactly 0: FADE 100 * 0.01f is a hair under 1, and its square root lets ~1.5e-4 of the
-  // dry side through (-76 dB) -- the crossfader's own rounding, the same in an oscillator.
+  // What's left is the closed lowpass itself: the crossfader's ends are exact since 2026-10-03
+  // (FADE 100 used to let ~1.5e-4 of the dry side through, -76 dB).
   check(
-    'lpmix: MIX +1000 is the closed lowpass (below -60 dB)',
-    rms(wet.outL) < 1e-3 * rms(dry.inL),
+    'lpmix: MIX +1000 is the closed lowpass, exactly',
+    rms(wet.outL) === 0,
     `rms ${rms(wet.outL)}`
   )
   check(
@@ -1084,6 +1086,115 @@ const GRAIN_FULL: ParamValue[] = [
   const full = width('100')
   const d = Math.max(maxAbsDiff(full.outL, full.inL), maxAbsDiff(full.outR, full.inR))
   check('width: 100 leaves the pair as it is', d < 1e-6, `max diff ${d}`)
+}
+
+{
+  // stereo-crossfader: pair 1 is the input, pair 2 the input with its sides swapped (or, `same`,
+  // the input again, to read the law's centre gain).
+  const xfade = (params: ParamValue[], same = false): Run =>
+    render(
+      doc(
+        'delfx',
+        [IN, obj('x', 'logue/mix/stereo-crossfader', params), OUT],
+        [
+          wire('in', 'l', 'x', 'l1'),
+          wire('in', 'r', 'x', 'r1'),
+          wire('in', same ? 'l' : 'r', 'x', 'l2'),
+          wire('in', same ? 'r' : 'l', 'x', 'r2'),
+          wire('x', 'l', 'out', 'l'),
+          wire('x', 'r', 'out', 'r')
+        ]
+      ),
+      [],
+      'sines'
+    )
+  const at0 = xfade([{ name: 'FADE', value: '0' }])
+  const at100 = xfade([{ name: 'FADE', value: '100' }])
+  const d0 = Math.max(maxAbsDiff(at0.outL, at0.inL), maxAbsDiff(at0.outR, at0.inR))
+  const d100 = Math.max(maxAbsDiff(at100.outL, at100.inR), maxAbsDiff(at100.outR, at100.inL))
+  check(
+    'stereo-crossfader: FADE 0 is pair 1, 100 pair 2, exactly',
+    d0 === 0 && d100 === 0,
+    `max diff ${d0} / ${d100}`
+  )
+  const power = xfade([{ name: 'FADE', value: '50' }], true)
+  const linear = xfade(
+    [
+      { name: 'FADE', value: '50' },
+      { name: 'LAW', value: '1' }
+    ],
+    true
+  )
+  const powerGain = rms(power.outL) / rms(power.inL)
+  const dLinear = Math.max(maxAbsDiff(linear.outL, linear.inL), maxAbsDiff(linear.outR, linear.inR))
+  check(
+    'stereo-crossfader: centre of a correlated pair is +3 dB (Power), unity (Linear)',
+    Math.abs(powerGain - Math.SQRT2) < 1e-4 && dLinear < 1e-6,
+    `Power ${powerGain.toFixed(5)}, Linear max diff ${dLinear}`
+  )
+  // A wired fade: both sides must get the same gain at every sample.
+  const swept = render(
+    doc(
+      'delfx',
+      [
+        IN,
+        obj('lfo', 'logue/lfo/sine-lfo', [{ name: 'RATE', value: '60' }]),
+        obj('x', 'logue/mix/stereo-crossfader', [{ name: 'FADE', value: '50' }]),
+        OUT
+      ],
+      [
+        wire('in', 'l', 'x', 'l1'),
+        wire('in', 'l', 'x', 'r1'),
+        wire('lfo', 'out', 'x', 'fade'),
+        wire('x', 'l', 'out', 'l'),
+        wire('x', 'r', 'out', 'r')
+      ]
+    ),
+    [],
+    'dc'
+  )
+  check(
+    'stereo-crossfader: a wired fade moves both sides alike',
+    maxAbsDiff(swept.outL, swept.outR) === 0 &&
+      windowPeak(swept.outL, 64, swept.outL.length) > 0.49 &&
+      allFinite(swept),
+    `peak ${windowPeak(swept.outL, 64, swept.outL.length).toFixed(3)}`
+  )
+}
+
+{
+  const mix = (params: ParamValue[]): Run =>
+    render(
+      doc(
+        'delfx',
+        [IN, obj('m', 'logue/mix/stereo-mix2', params), OUT],
+        [
+          wire('in', 'l', 'm', 'l1'),
+          wire('in', 'r', 'm', 'r1'),
+          wire('in', 'l', 'm', 'l2'),
+          wire('in', 'r', 'm', 'r2'),
+          wire('m', 'l', 'out', 'l'),
+          wire('m', 'r', 'out', 'r')
+        ]
+      ),
+      [],
+      'sines'
+    )
+  const avg = mix([])
+  const half = mix([{ name: 'GAIN2', value: '0' }])
+  const dAvg = Math.max(maxAbsDiff(avg.outL, avg.inL), maxAbsDiff(avg.outR, avg.inR))
+  let dHalf = 0
+  for (let i = 0; i < FRAMES; i++)
+    dHalf = Math.max(
+      dHalf,
+      Math.abs(half.outL[i] - half.inL[i] * 0.5),
+      Math.abs(half.outR[i] - half.inR[i] * 0.5)
+    )
+  check(
+    'stereo-mix2: the defaults average, GAIN2 0 leaves half of pair 1',
+    dAvg < 1e-6 && dHalf < 1e-6,
+    `max diff ${dAvg} / ${dHalf}`
+  )
 }
 
 {

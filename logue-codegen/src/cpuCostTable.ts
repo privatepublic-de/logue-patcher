@@ -180,7 +180,7 @@ export const CPU_COST_TABLE: Record<
   'logue/mix/crossfader': {
     variants: { base: 4, control: 4 },
     worst: 4,
-    snapshotHash: 'd5e6f3c2854c7b1a'
+    snapshotHash: '1194ab4c27067353'
   },
   'logue/mix/mix2': { variants: { base: 0 }, worst: 0, snapshotHash: '996f8fc72e564aa8' },
   'logue/mix/pan': {
@@ -188,6 +188,12 @@ export const CPU_COST_TABLE: Record<
     worst: 4,
     snapshotHash: 'd139dc1b3b1c3b34'
   },
+  'logue/mix/stereo-crossfader': {
+    variants: { base: 4, control: 4 },
+    worst: 4,
+    snapshotHash: '3ba512337d3824a1'
+  },
+  'logue/mix/stereo-mix2': { variants: { base: 0 }, worst: 0, snapshotHash: 'a9fb88bd2914a2f3' },
   'logue/mix/width': {
     variants: { base: 6, control: 17 },
     worst: 17,

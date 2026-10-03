@@ -105,11 +105,25 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '422c16a247da8ec8'
     },
     'logue/mix/crossfader': {
-      first: 68,
-      extra: 64,
+      first: 84,
+      extra: 84,
       helpers: [],
-      unwired: { first: 40, extra: 16, helpers: [] },
-      snapshotHash: 'd5e6f3c2854c7b1a'
+      unwired: { first: 56, extra: 20, helpers: [] },
+      snapshotHash: '1194ab4c27067353'
+    },
+    'logue/mix/stereo-mix2': {
+      first: 24,
+      extra: 20,
+      helpers: [],
+      unwired: { first: 28, extra: 8, helpers: [] },
+      snapshotHash: 'a9fb88bd2914a2f3'
+    },
+    'logue/mix/stereo-crossfader': {
+      first: 156,
+      extra: 128,
+      helpers: [],
+      unwired: { first: 72, extra: 40, helpers: [] },
+      snapshotHash: '3ba512337d3824a1'
     },
     'logue/filter/lowpass-cheap': {
       first: 64,
@@ -680,11 +694,25 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '422c16a247da8ec8'
     },
     'logue/mix/crossfader': {
-      first: 84,
-      extra: 84,
+      first: 96,
+      extra: 92,
       helpers: [],
-      unwired: { first: 48, extra: 12, helpers: [] },
-      snapshotHash: 'd5e6f3c2854c7b1a'
+      unwired: { first: 60, extra: 16, helpers: [] },
+      snapshotHash: '1194ab4c27067353'
+    },
+    'logue/mix/stereo-mix2': {
+      first: 28,
+      extra: 20,
+      helpers: [],
+      unwired: { first: 32, extra: 4, helpers: [] },
+      snapshotHash: 'a9fb88bd2914a2f3'
+    },
+    'logue/mix/stereo-crossfader': {
+      first: 172,
+      extra: 128,
+      helpers: [],
+      unwired: { first: 76, extra: 36, helpers: [] },
+      snapshotHash: '3ba512337d3824a1'
     },
     'logue/filter/lowpass-cheap': {
       first: 92,
@@ -1280,11 +1308,25 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '0b26d1b6c51171af'
     },
     'logue/mix/crossfader': {
-      first: 80,
-      extra: 64,
+      first: 92,
+      extra: 72,
       helpers: [],
-      unwired: { first: 48, extra: 20, helpers: [] },
-      snapshotHash: '5dcb9dac87d4e96b'
+      unwired: { first: 60, extra: 24, helpers: [] },
+      snapshotHash: 'dd44b98bd10555cb'
+    },
+    'logue/mix/stereo-mix2': {
+      first: 24,
+      extra: 20,
+      helpers: [],
+      unwired: { first: 32, extra: 8, helpers: [] },
+      snapshotHash: '8dc968f7e941e464'
+    },
+    'logue/mix/stereo-crossfader': {
+      first: 152,
+      extra: 128,
+      helpers: [],
+      unwired: { first: 84, extra: 36, helpers: [] },
+      snapshotHash: '0b19f3f60d915157'
     },
     'logue/filter/lowpass-cheap': {
       first: 72,
@@ -1853,11 +1895,25 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '0b26d1b6c51171af'
     },
     'logue/mix/crossfader': {
-      first: 80,
-      extra: 72,
+      first: 92,
+      extra: 80,
       helpers: [],
-      unwired: { first: 48, extra: 12, helpers: [] },
-      snapshotHash: '5dcb9dac87d4e96b'
+      unwired: { first: 60, extra: 16, helpers: [] },
+      snapshotHash: 'dd44b98bd10555cb'
+    },
+    'logue/mix/stereo-mix2': {
+      first: 24,
+      extra: 20,
+      helpers: [],
+      unwired: { first: 28, extra: 0, helpers: [] },
+      snapshotHash: '8dc968f7e941e464'
+    },
+    'logue/mix/stereo-crossfader': {
+      first: 156,
+      extra: 128,
+      helpers: [],
+      unwired: { first: 80, extra: 32, helpers: [] },
+      snapshotHash: '0b19f3f60d915157'
     },
     'logue/filter/lowpass-cheap': {
       first: 92,
@@ -2386,9 +2442,9 @@ export const CODE_SIZE_TABLE: Record<
 /** The unit shell each context was measured in (`shellHash`, measureCodeSizes.ts). */
 export const CODE_SHELL_HASH: Record<CodeSizeContext, string> = {
   'minilogue-xd:osc': 'f3edec1a842e0630',
-  'minilogue-xd:fx': 'f4bbd2c41c99b7f0',
+  'minilogue-xd:fx': '253151d82c3efd66',
   'nts1mkii:osc': '2f68421838833402',
-  'nts1mkii:fx': '484da36874d604ab'
+  'nts1mkii:fx': '67e442371ca963a4'
 }
 
 /** Bytes of each out-of-line function (demangled name) per context. */

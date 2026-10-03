@@ -17,7 +17,8 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    fadePercent_n = 50;
+    stxFadePercent_n = 50;
+    stxLaw_n = 0;
   }
 
   // No longer precomputes a
@@ -78,11 +79,15 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
-    const float blkFadeA_n = xfade_sqrtf((100.f - fadePercent_n) * 0.01f);
-    const float blkFadeB_n = xfade_sqrtf((fadePercent_n) * 0.01f);
+    const float blkStxA_n = (stxLaw_n >= 0.5f ? (100.f - stxFadePercent_n) * 0.01f : xfade_sqrtf((100.f - stxFadePercent_n) * 0.01f));
+    const float blkStxB_n = (stxLaw_n >= 0.5f ? (stxFadePercent_n) * 0.01f : xfade_sqrtf((stxFadePercent_n) * 0.01f));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = (blkFadeA_n * (0.f) + blkFadeB_n * (0.f));
+      const float stxA_n = blkStxA_n;
+      const float stxB_n = blkStxB_n;
+      float y_n_l = stxA_n * (0.f) + stxB_n * (0.f);
+      float y_n_r = stxA_n * (0.f) + stxB_n * (0.f);
+      (void)y_n_l; (void)y_n_r;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -91,7 +96,7 @@ public:
       // most samples -- real, confirmed undefined behavior on nearly every sample of exactly
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
-      yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
+      yn[i] = f32_to_q31(clip1m1f(y_n_l) * 0.999f);
     }
   }
 
@@ -114,7 +119,8 @@ private:
   float shapeParam01_;
   float shape01_;
   float shape2_01_;
-  float fadePercent_n;
+  float stxFadePercent_n;
+  float stxLaw_n;
 
   static float clampf(float v, float lo, float hi)
   {
@@ -187,10 +193,13 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    value_c_in1 = 37 * 0.01f;
-    value_c_in2 = 37 * 0.01f;
+    value_c_l1 = 37 * 0.01f;
+    value_c_r1 = 37 * 0.01f;
+    value_c_l2 = 37 * 0.01f;
+    value_c_r2 = 37 * 0.01f;
     value_c_fade = 37 * 0.01f;
-    fadePercent_n = 50;
+    stxFadePercent_n = 50;
+    stxLaw_n = 0;
   }
 
   // No longer precomputes a
@@ -251,14 +260,20 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
-      float y_c_in1 = value_c_in1;
-      float y_c_in2 = value_c_in2;
+      float y_c_l1 = value_c_l1;
+      float y_c_r1 = value_c_r1;
+      float y_c_l2 = value_c_l2;
+      float y_c_r2 = value_c_r2;
       float y_c_fade = value_c_fade;
-    const float blkFadeA_n = xfade_sqrtf((100.f - clampf(fadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f);
-    const float blkFadeB_n = xfade_sqrtf((clampf(fadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f);
+    const float blkStxA_n = (stxLaw_n >= 0.5f ? (100.f - clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f : xfade_sqrtf((100.f - clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f));
+    const float blkStxB_n = (stxLaw_n >= 0.5f ? (clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f : xfade_sqrtf((clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = (blkFadeA_n * (y_c_in1) + blkFadeB_n * (y_c_in2));
+      const float stxA_n = blkStxA_n;
+      const float stxB_n = blkStxB_n;
+      float y_n_l = stxA_n * (y_c_l1) + stxB_n * (y_c_l2);
+      float y_n_r = stxA_n * (y_c_r1) + stxB_n * (y_c_r2);
+      (void)y_n_l; (void)y_n_r;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -267,7 +282,7 @@ public:
       // most samples -- real, confirmed undefined behavior on nearly every sample of exactly
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
-      yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
+      yn[i] = f32_to_q31(clip1m1f(y_n_l) * 0.999f);
     }
   }
 
@@ -290,10 +305,13 @@ private:
   float shapeParam01_;
   float shape01_;
   float shape2_01_;
-  float value_c_in1;
-  float value_c_in2;
+  float value_c_l1;
+  float value_c_r1;
+  float value_c_l2;
+  float value_c_r2;
   float value_c_fade;
-  float fadePercent_n;
+  float stxFadePercent_n;
+  float stxLaw_n;
 
   static float clampf(float v, float lo, float hi)
   {
@@ -347,7 +365,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
   s_osc.setParameter(index, (int32_t)value);
 }
 
-//// exposed FADE
+//// exposed FADE,LAW
 // manifest.json
 {
     "header": {
@@ -358,13 +376,19 @@ void OSC_PARAM(uint16_t index, uint16_t value)
         "prg_id": 0,
         "version": "1.0-0",
         "name": "snap",
-        "num_param": 1,
+        "num_param": 2,
         "params": [
             [
                 "FADE",
                 0,
                 100,
                 "%"
+            ],
+            [
+                "LAW",
+                0,
+                1,
+                ""
             ]
         ]
     }
@@ -388,7 +412,8 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    fadePercent_n = 50;
+    stxFadePercent_n = 50;
+    stxLaw_n = 0;
   }
 
   // No longer precomputes a
@@ -445,18 +470,23 @@ public:
   {
     switch (index)
     {
-    case 0: fadePercent_n = value; break;
+    case 0: stxFadePercent_n = value; break;
+    case 1: stxLaw_n = value; break;
     default: break;
     }
   }
 
   void process(int32_t *yn, uint32_t frames)
   {
-    const float blkFadeA_n = xfade_sqrtf((100.f - fadePercent_n) * 0.01f);
-    const float blkFadeB_n = xfade_sqrtf((fadePercent_n) * 0.01f);
+    const float blkStxA_n = (stxLaw_n >= 0.5f ? (100.f - stxFadePercent_n) * 0.01f : xfade_sqrtf((100.f - stxFadePercent_n) * 0.01f));
+    const float blkStxB_n = (stxLaw_n >= 0.5f ? (stxFadePercent_n) * 0.01f : xfade_sqrtf((stxFadePercent_n) * 0.01f));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = (blkFadeA_n * (0.f) + blkFadeB_n * (0.f));
+      const float stxA_n = blkStxA_n;
+      const float stxB_n = blkStxB_n;
+      float y_n_l = stxA_n * (0.f) + stxB_n * (0.f);
+      float y_n_r = stxA_n * (0.f) + stxB_n * (0.f);
+      (void)y_n_l; (void)y_n_r;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -465,7 +495,7 @@ public:
       // most samples -- real, confirmed undefined behavior on nearly every sample of exactly
       // the waveforms this bug first surfaced on. A tiny, inaudible headroom scale keeps the
       // clipped signal's peak just under full-scale, avoiding the overflow deterministically.
-      yn[i] = f32_to_q31(clip1m1f(y_n) * 0.999f);
+      yn[i] = f32_to_q31(clip1m1f(y_n_l) * 0.999f);
     }
   }
 
@@ -488,7 +518,8 @@ private:
   float shapeParam01_;
   float shape01_;
   float shape2_01_;
-  float fadePercent_n;
+  float stxFadePercent_n;
+  float stxLaw_n;
 
   static float clampf(float v, float lo, float hi)
   {
@@ -543,6 +574,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
   switch (index)
   {
   case 0: if (v < 0) v = 0; else if (v > 100) v = 100; break;
+  case 1: if (v < 0) v = 0; else if (v > 1) v = 1; break;
   default: break;
   }
   s_osc.setParameter(index, v);

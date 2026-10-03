@@ -87,7 +87,9 @@ export {
   mixer2Primitive,
   crossfaderPrimitive,
   panPrimitive,
-  widthPrimitive
+  widthPrimitive,
+  stereoMixer2Primitive,
+  stereoCrossfaderPrimitive
 } from './primitives/mix'
 export { mux2Primitive, mux4Primitive, demux2Primitive } from './primitives/mux'
 export {

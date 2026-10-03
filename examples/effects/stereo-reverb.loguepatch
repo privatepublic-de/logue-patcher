@@ -158,81 +158,6 @@
       ]
     },
     {
-      "type": "logue/mix/mix2",
-      "x": 720,
-      "y": 380,
-      "name": "sum_la",
-      "kind": "obj",
-      "params": []
-    },
-    {
-      "type": "logue/mix/mix2",
-      "x": 720,
-      "y": 1340,
-      "name": "sum_lb",
-      "kind": "obj",
-      "params": []
-    },
-    {
-      "type": "logue/mix/mix2",
-      "x": 960,
-      "y": 860,
-      "name": "sum_l",
-      "kind": "obj",
-      "params": []
-    },
-    {
-      "type": "logue/filter/allpass",
-      "x": 1200,
-      "y": 620,
-      "name": "diffuse_l1",
-      "kind": "obj",
-      "params": [
-        {
-          "name": "TIME",
-          "value": "34.8783"
-        },
-        {
-          "name": "GAIN",
-          "value": "55.6"
-        }
-      ]
-    },
-    {
-      "type": "logue/filter/allpass",
-      "x": 1200,
-      "y": 900,
-      "name": "diffuse_l2",
-      "kind": "obj",
-      "params": [
-        {
-          "name": "TIME",
-          "value": "30.8994"
-        },
-        {
-          "name": "GAIN",
-          "value": "55.6"
-        }
-      ]
-    },
-    {
-      "type": "logue/mix/crossfader",
-      "x": 1480,
-      "y": 820,
-      "name": "mix_l",
-      "kind": "obj",
-      "params": [
-        {
-          "name": "FADE",
-          "value": "35",
-          "logueKnob": {
-            "nts1mkii": "mix",
-            "minilogue-xd": "mix"
-          }
-        }
-      ]
-    },
-    {
       "type": "logue/util/long-delay",
       "x": 320,
       "y": 2000,
@@ -381,28 +306,62 @@
       ]
     },
     {
-      "type": "logue/mix/mix2",
+      "type": "logue/mix/stereo-mix2",
       "x": 720,
-      "y": 2380,
-      "name": "sum_ra",
+      "y": 1380,
+      "name": "sum_a",
       "kind": "obj",
       "params": []
     },
     {
-      "type": "logue/mix/mix2",
+      "type": "logue/mix/stereo-mix2",
       "x": 720,
-      "y": 3340,
-      "name": "sum_rb",
+      "y": 2340,
+      "name": "sum_b",
       "kind": "obj",
       "params": []
     },
     {
-      "type": "logue/mix/mix2",
+      "type": "logue/mix/stereo-mix2",
       "x": 960,
-      "y": 2860,
-      "name": "sum_r",
+      "y": 1860,
+      "name": "sum",
       "kind": "obj",
       "params": []
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 1200,
+      "y": 620,
+      "name": "diffuse_l1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "34.8783"
+        },
+        {
+          "name": "GAIN",
+          "value": "55.6"
+        }
+      ]
+    },
+    {
+      "type": "logue/filter/allpass",
+      "x": 1200,
+      "y": 900,
+      "name": "diffuse_l2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "30.8994"
+        },
+        {
+          "name": "GAIN",
+          "value": "55.6"
+        }
+      ]
     },
     {
       "type": "logue/filter/allpass",
@@ -439,10 +398,10 @@
       ]
     },
     {
-      "type": "logue/mix/crossfader",
+      "type": "logue/mix/stereo-crossfader",
       "x": 1480,
-      "y": 2820,
-      "name": "mix_r",
+      "y": 1820,
+      "name": "mix",
       "kind": "obj",
       "params": [
         {
@@ -524,14 +483,70 @@
     {
       "sources": [
         {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r3",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "comb_r4",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
           "obj": "comb_l1",
           "outlet": "out"
         }
       ],
       "dests": [
         {
-          "obj": "sum_la",
-          "inlet": "in1"
+          "obj": "sum_a",
+          "inlet": "l1"
         }
       ]
     },
@@ -544,8 +559,8 @@
       ],
       "dests": [
         {
-          "obj": "sum_la",
-          "inlet": "in2"
+          "obj": "sum_a",
+          "inlet": "l2"
         }
       ]
     },
@@ -558,8 +573,8 @@
       ],
       "dests": [
         {
-          "obj": "sum_lb",
-          "inlet": "in1"
+          "obj": "sum_b",
+          "inlet": "l1"
         }
       ]
     },
@@ -572,44 +587,128 @@
       ],
       "dests": [
         {
-          "obj": "sum_lb",
-          "inlet": "in2"
+          "obj": "sum_b",
+          "inlet": "l2"
         }
       ]
     },
     {
       "sources": [
         {
-          "obj": "sum_la",
+          "obj": "sum_a",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum",
+          "inlet": "l1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_b",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum",
+          "inlet": "l2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_r1",
           "outlet": "out"
         }
       ],
       "dests": [
         {
-          "obj": "sum_l",
-          "inlet": "in1"
+          "obj": "sum_a",
+          "inlet": "r1"
         }
       ]
     },
     {
       "sources": [
         {
-          "obj": "sum_lb",
+          "obj": "comb_r2",
           "outlet": "out"
         }
       ],
       "dests": [
         {
-          "obj": "sum_l",
-          "inlet": "in2"
+          "obj": "sum_a",
+          "inlet": "r2"
         }
       ]
     },
     {
       "sources": [
         {
-          "obj": "sum_l",
+          "obj": "comb_r3",
           "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_b",
+          "inlet": "r1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "comb_r4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum_b",
+          "inlet": "r2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_a",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum",
+          "inlet": "r1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum_b",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "sum",
+          "inlet": "r2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "sum",
+          "outlet": "l"
         }
       ],
       "dests": [
@@ -642,8 +741,8 @@
       ],
       "dests": [
         {
-          "obj": "mix_l",
-          "inlet": "in1"
+          "obj": "mix",
+          "inlet": "l1"
         }
       ]
     },
@@ -656,16 +755,16 @@
       ],
       "dests": [
         {
-          "obj": "mix_l",
-          "inlet": "in2"
+          "obj": "mix",
+          "inlet": "l2"
         }
       ]
     },
     {
       "sources": [
         {
-          "obj": "mix_l",
-          "outlet": "out"
+          "obj": "mix",
+          "outlet": "l"
         }
       ],
       "dests": [
@@ -678,148 +777,8 @@
     {
       "sources": [
         {
-          "obj": "audio-in",
+          "obj": "sum",
           "outlet": "r"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "comb_r1",
-          "inlet": "in"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "audio-in",
-          "outlet": "r"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "comb_r2",
-          "inlet": "in"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "audio-in",
-          "outlet": "r"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "comb_r3",
-          "inlet": "in"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "audio-in",
-          "outlet": "r"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "comb_r4",
-          "inlet": "in"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "comb_r1",
-          "outlet": "out"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "sum_ra",
-          "inlet": "in1"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "comb_r2",
-          "outlet": "out"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "sum_ra",
-          "inlet": "in2"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "comb_r3",
-          "outlet": "out"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "sum_rb",
-          "inlet": "in1"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "comb_r4",
-          "outlet": "out"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "sum_rb",
-          "inlet": "in2"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "sum_ra",
-          "outlet": "out"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "sum_r",
-          "inlet": "in1"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "sum_rb",
-          "outlet": "out"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "sum_r",
-          "inlet": "in2"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "sum_r",
-          "outlet": "out"
         }
       ],
       "dests": [
@@ -852,8 +811,8 @@
       ],
       "dests": [
         {
-          "obj": "mix_r",
-          "inlet": "in1"
+          "obj": "mix",
+          "inlet": "r1"
         }
       ]
     },
@@ -866,16 +825,16 @@
       ],
       "dests": [
         {
-          "obj": "mix_r",
-          "inlet": "in2"
+          "obj": "mix",
+          "inlet": "r2"
         }
       ]
     },
     {
       "sources": [
         {
-          "obj": "mix_r",
-          "outlet": "out"
+          "obj": "mix",
+          "outlet": "r"
         }
       ],
       "dests": [

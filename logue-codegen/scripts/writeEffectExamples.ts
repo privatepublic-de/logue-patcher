@@ -62,14 +62,15 @@ const allpassTime = (samples: number): string =>
   (Math.sqrt((samples / 48 - 0.5) / 99.5) * 100).toFixed(4)
 
 function reverb(): PatchDocument {
-  // A long-delay node is ~430 px tall on the canvas (seven params), an allpass ~220, a mix2 ~130.
+  // A long-delay node is ~430 px tall on the canvas (seven params), an allpass ~220, a mix ~170.
   const nodes: ObjNode[] = [obj('audio-in', 'logue/io/audio-in', 0, 1880)]
   const nets: Net[] = []
-  for (const [side, spread, y0] of [
+  const sides = [
     ['l', 0, 0],
     ['r', 23, 2000]
-  ] as const) {
-    const combs = [1116, 1277, 1422, 1557].map((len, i) => {
+  ] as const
+  const combs = sides.map(([side, spread, y0]) =>
+    [1116, 1277, 1422, 1557].map((len, i) => {
       const name = `comb_${side}${i + 1}`
       nodes.push(
         obj(name, 'logue/util/long-delay', 320, y0 + i * 480, [
@@ -83,22 +84,23 @@ function reverb(): PatchDocument {
       nets.push(wire('audio-in', side, name, 'in'))
       return name
     })
-    const pairA = `sum_${side}a`
-    const pairB = `sum_${side}b`
-    const sum = `sum_${side}`
-    nodes.push(
-      obj(pairA, 'logue/mix/mix2', 720, y0 + 380),
-      obj(pairB, 'logue/mix/mix2', 720, y0 + 1340),
-      obj(sum, 'logue/mix/mix2', 960, y0 + 860)
-    )
+  )
+  nodes.push(
+    obj('sum_a', 'logue/mix/stereo-mix2', 720, 1380),
+    obj('sum_b', 'logue/mix/stereo-mix2', 720, 2340),
+    obj('sum', 'logue/mix/stereo-mix2', 960, 1860)
+  )
+  for (const [k, [side]] of sides.entries()) {
     nets.push(
-      wire(combs[0], 'out', pairA, 'in1'),
-      wire(combs[1], 'out', pairA, 'in2'),
-      wire(combs[2], 'out', pairB, 'in1'),
-      wire(combs[3], 'out', pairB, 'in2'),
-      wire(pairA, 'out', sum, 'in1'),
-      wire(pairB, 'out', sum, 'in2')
+      wire(combs[k][0], 'out', 'sum_a', `${side}1`),
+      wire(combs[k][1], 'out', 'sum_a', `${side}2`),
+      wire(combs[k][2], 'out', 'sum_b', `${side}1`),
+      wire(combs[k][3], 'out', 'sum_b', `${side}2`),
+      wire('sum_a', side, 'sum', `${side}1`),
+      wire('sum_b', side, 'sum', `${side}2`)
     )
+  }
+  for (const [side, spread, y0] of sides) {
     const ap1 = `diffuse_${side}1`
     const ap2 = `diffuse_${side}2`
     nodes.push(
@@ -111,19 +113,19 @@ function reverb(): PatchDocument {
         { name: 'GAIN', value: '55.6' }
       ])
     )
-    nets.push(wire(sum, 'out', ap1, 'in'), wire(ap1, 'out', ap2, 'in'))
-    const mix = `mix_${side}`
-    nodes.push(
-      obj(mix, 'logue/mix/crossfader', 1480, y0 + 820, [
-        { name: 'FADE', value: '35', ...onKnob('mix') }
-      ])
-    )
     nets.push(
-      wire('audio-in', side, mix, 'in1'),
-      wire(ap2, 'out', mix, 'in2'),
-      wire(mix, 'out', 'audio-out', side)
+      wire('sum', side, ap1, 'in'),
+      wire(ap1, 'out', ap2, 'in'),
+      wire('audio-in', side, 'mix', `${side}1`),
+      wire(ap2, 'out', 'mix', `${side}2`),
+      wire('mix', side, 'audio-out', side)
     )
   }
+  nodes.push(
+    obj('mix', 'logue/mix/stereo-crossfader', 1480, 1820, [
+      { name: 'FADE', value: '35', ...onKnob('mix') }
+    ])
+  )
   nodes.push(obj('audio-out', 'logue/io/audio-out', 1760, 1880))
   return doc(
     'revfx',
@@ -472,10 +474,7 @@ function grainMill(): PatchDocument {
     obj('width', 'logue/mix/width', x, 200, [
       { name: 'WIDTH', value: '100', ...ntsSlot(SLOT.width, 'WIDTH') }
     ]),
-    obj('mix-l', 'logue/mix/crossfader', x + 480, 140, [
-      { name: 'FADE', value: '50', ...ntsKnob('mix') }
-    ]),
-    obj('mix-r', 'logue/mix/crossfader', x + 480, 300, [
+    obj('mix', 'logue/mix/stereo-crossfader', x + 480, 140, [
       { name: 'FADE', value: '50', ...ntsKnob('mix') }
     ]),
     obj('audio-out', 'logue/io/audio-out', x + 720, 200)
@@ -490,12 +489,12 @@ function grainMill(): PatchDocument {
     wire('fb-sat', 'out', 'in+fb', 'b'),
     wire(last, 'l', 'width', 'l'),
     wire(last, 'r', 'width', 'r'),
-    wire('audio-in', 'l', 'mix-l', 'in1'),
-    wire('width', 'l', 'mix-l', 'in2'),
-    wire('audio-in', 'r', 'mix-r', 'in1'),
-    wire('width', 'r', 'mix-r', 'in2'),
-    wire('mix-l', 'out', 'audio-out', 'l'),
-    wire('mix-r', 'out', 'audio-out', 'r')
+    wire('audio-in', 'l', 'mix', 'l1'),
+    wire('audio-in', 'r', 'mix', 'r1'),
+    wire('width', 'l', 'mix', 'l2'),
+    wire('width', 'r', 'mix', 'r2'),
+    wire('mix', 'l', 'audio-out', 'l'),
+    wire('mix', 'r', 'audio-out', 'r')
   )
   return doc(
     'delfx',
@@ -629,10 +628,7 @@ function grainMillXd(mode: XdMode, voices: number): PatchDocument {
     obj('fb-level', 'logue/math/multiply', x + 480, 860),
     obj('fb-amt', 'logue/math/multiply', x + 480, 700),
     obj('fb-sat', 'logue/shape/soft-clip', x + 720, 700),
-    obj('mix-l', 'logue/mix/crossfader', x + 480, 140, [
-      { name: 'FADE', value: '50', ...xdKnob('mix') }
-    ]),
-    obj('mix-r', 'logue/mix/crossfader', x + 480, 300, [
+    obj('mix', 'logue/mix/stereo-crossfader', x + 480, 140, [
       { name: 'FADE', value: '50', ...xdKnob('mix') }
     ]),
     obj('audio-out', 'logue/io/audio-out', x + 720, 200)
@@ -652,12 +648,12 @@ function grainMillXd(mode: XdMode, voices: number): PatchDocument {
     wire('fb-level', 'out', 'fb-amt', 'in2'),
     wire('fb-amt', 'out', 'fb-sat', 'in'),
     wire('fb-sat', 'out', 'in+fb', 'b'),
-    wire('audio-in', 'l', 'mix-l', 'in1'),
-    wire(last, 'l', 'mix-l', 'in2'),
-    wire('audio-in', 'r', 'mix-r', 'in1'),
-    wire(last, 'r', 'mix-r', 'in2'),
-    wire('mix-l', 'out', 'audio-out', 'l'),
-    wire('mix-r', 'out', 'audio-out', 'r')
+    wire('audio-in', 'l', 'mix', 'l1'),
+    wire('audio-in', 'r', 'mix', 'r1'),
+    wire(last, 'l', 'mix', 'l2'),
+    wire(last, 'r', 'mix', 'r2'),
+    wire('mix', 'l', 'audio-out', 'l'),
+    wire('mix', 'r', 'audio-out', 'r')
   )
   const clockText = synced ? 'the tempo division' : 'the grain clock rate'
   return doc(
@@ -873,10 +869,7 @@ function reverseWash(xd = false): PatchDocument {
     obj('width', 'logue/mix/width', 4720, 480, [
       { name: 'WIDTH', value: '100', ...ntsSlot(RW_SLOT.width, 'WIDTH') }
     ]),
-    obj('mix-l', 'logue/mix/crossfader', 4980, 300, [
-      { name: 'FADE', value: '50', ...onKnob('mix') }
-    ]),
-    obj('mix-r', 'logue/mix/crossfader', 4980, 660, [
+    obj('mix', 'logue/mix/stereo-crossfader', 4980, 300, [
       { name: 'FADE', value: '50', ...onKnob('mix') }
     ]),
     obj('audio-out', 'logue/io/audio-out', 5240, 480),
@@ -900,12 +893,12 @@ function reverseWash(xd = false): PatchDocument {
     ...(xd
       ? (['l', 'r'] as const).map((side) => wire(diffused(side), 'out', `level-${side}`, 'in'))
       : []),
-    wire('audio-in', 'l', 'mix-l', 'in1'),
-    wire('width', 'l', 'mix-l', 'in2'),
-    wire('audio-in', 'r', 'mix-r', 'in1'),
-    wire('width', 'r', 'mix-r', 'in2'),
-    wire('mix-l', 'out', 'audio-out', 'l'),
-    wire('mix-r', 'out', 'audio-out', 'r'),
+    wire('audio-in', 'l', 'mix', 'l1'),
+    wire('audio-in', 'r', 'mix', 'r1'),
+    wire('width', 'l', 'mix', 'l2'),
+    wire('width', 'r', 'mix', 'r2'),
+    wire('mix', 'l', 'audio-out', 'l'),
+    wire('mix', 'r', 'audio-out', 'r'),
     wire(diffused('l'), 'out', 'fb-sum', 'a'),
     wire(diffused('r'), 'out', 'fb-sum', 'b'),
     wire('fb-sum', 'out', 'fb-dc', 'in'),

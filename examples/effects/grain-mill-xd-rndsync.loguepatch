@@ -385,26 +385,10 @@
       "params": []
     },
     {
-      "type": "logue/mix/crossfader",
+      "type": "logue/mix/stereo-crossfader",
       "x": 1960,
       "y": 140,
-      "name": "mix-l",
-      "kind": "obj",
-      "params": [
-        {
-          "name": "FADE",
-          "value": "50",
-          "logueKnob": {
-            "minilogue-xd": "mix"
-          }
-        }
-      ]
-    },
-    {
-      "type": "logue/mix/crossfader",
-      "x": 1960,
-      "y": 300,
-      "name": "mix-r",
+      "name": "mix",
       "kind": "obj",
       "params": [
         {
@@ -1191,22 +1175,8 @@
       ],
       "dests": [
         {
-          "obj": "mix-l",
-          "inlet": "in1"
-        }
-      ]
-    },
-    {
-      "sources": [
-        {
-          "obj": "voice2",
-          "outlet": "l"
-        }
-      ],
-      "dests": [
-        {
-          "obj": "mix-l",
-          "inlet": "in2"
+          "obj": "mix",
+          "inlet": "l1"
         }
       ]
     },
@@ -1219,8 +1189,22 @@
       ],
       "dests": [
         {
-          "obj": "mix-r",
-          "inlet": "in1"
+          "obj": "mix",
+          "inlet": "r1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "voice2",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "mix",
+          "inlet": "l2"
         }
       ]
     },
@@ -1233,16 +1217,16 @@
       ],
       "dests": [
         {
-          "obj": "mix-r",
-          "inlet": "in2"
+          "obj": "mix",
+          "inlet": "r2"
         }
       ]
     },
     {
       "sources": [
         {
-          "obj": "mix-l",
-          "outlet": "out"
+          "obj": "mix",
+          "outlet": "l"
         }
       ],
       "dests": [
@@ -1255,8 +1239,8 @@
     {
       "sources": [
         {
-          "obj": "mix-r",
-          "outlet": "out"
+          "obj": "mix",
+          "outlet": "r"
         }
       ],
       "dests": [

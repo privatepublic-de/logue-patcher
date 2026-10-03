@@ -576,7 +576,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(doc, { name: 'wired cutoff' })
       expect(result.oscCpp).toContain('float y_lfo1 = osc_sinf(phase_lfo1);')
-      expect(result.oscCpp).toContain('onepole_step(&z1_filt1, y_osc1, cutoff_warp((cutoff_filt1 + (y_lfo1))))')
+      expect(result.oscCpp).toContain(
+        'onepole_step(&z1_filt1, y_osc1, cutoff_warp((cutoff_filt1 + (y_lfo1))))'
+      )
       // the dial is the centre the wired value moves around, so it's still read
       expect(result.oscCpp).not.toContain(
         'onepole_step(&z1_filt1, y_osc1, cutoff_warp(cutoff_filt1))'
@@ -1035,7 +1037,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'lfo modulates filter' })
-      expect(result.oscCpp).toContain('onepole_step(&z1_filt1, y_osc1, cutoff_warp((cutoff_filt1 + (y_lfo1))))')
+      expect(result.oscCpp).toContain(
+        'onepole_step(&z1_filt1, y_osc1, cutoff_warp((cutoff_filt1 + (y_lfo1))))'
+      )
     })
   })
 
@@ -1549,7 +1553,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       expect(result.oscCpp).toContain('fadePercent_xf = 50;')
     })
 
-    it('a wired fade inlet adds to the dial (depth 100), clamped to [0,1] to keep the square root finite', () => {
+    it('a wired fade inlet adds to the dial (depth 100), clamped to [0,100] to keep the square root finite', () => {
       const doc: PatchDocument = {
         nodes: [
           sineNode('a'),
@@ -1569,7 +1573,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(doc, { name: 'crossfader wired' })
       expect(result.oscCpp).toContain(
-        'float y_xf = (xfade_sqrtf(1.f - (clampf(fadePercent_xf * 0.01f + (y_lfo1), 0.f, 1.f))) * (y_a) + xfade_sqrtf(clampf(fadePercent_xf * 0.01f + (y_lfo1), 0.f, 1.f)) * (y_b));'
+        'float y_xf = (xfade_sqrtf((100.f - clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f) * (y_a) + xfade_sqrtf((clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f) * (y_b));'
       )
       expect(result.oscCpp).toContain('static float clampf(float v, float lo, float hi)')
     })
@@ -4235,7 +4239,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
     })
 
-    it("a wired timbre inlet adds to the dial value at depth 100 (clamped to [0,1]), like crossfader FADE", () => {
+    it('a wired timbre inlet adds to the dial value at depth 100 (clamped to [0,1]), like crossfader FADE', () => {
       const doc: PatchDocument = {
         nodes: [
           { kind: 'obj', type: 'logue/lfo/sine-lfo', name: 'lfo1', x: 0, y: 0, params: [] },
