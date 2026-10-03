@@ -349,6 +349,7 @@ export const chancePrimitive: LoguePrimitive = {
   stateBytesPerInstance: 16, // seed_, prevTrig_, pass_, chancePercent_
   description:
     'Lets each gate through with a probability: CHANCE percent, decided at its rising edge.',
+  searchTerms: ['probability', 'random', 'trigger'],
   inlets: [
     { name: 'trig', role: 'control' },
     { name: 'chance', role: 'control' }
