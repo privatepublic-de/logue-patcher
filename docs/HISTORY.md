@@ -2749,3 +2749,24 @@ pitch from a constant and from an LFO, harmonic, fm/TZFM, notes 36/60/96): 107 b
 10 with `harmonic` wired within 1e-6 of full scale (the product is rounded once per block instead
 of contracted into the per-sample phase add). The code-size run linked every primitive on both
 platforms.
+
+### Effect CPU table: how the measurement got its shape (2026-10-03)
+
+Step one towards a CPU gauge for effects: an xd effect counterpart of the oscillator table,
+checked against the example effects built whole on the emulator (all at SDRAM penalty 8).
+- First run, one instance per variant, partners subtracted: -30..+17 %. The 8-comb reverb read
+  17 % low: a chain of long-delays costs 118 cycles for one, +179 for the second, ~147 for each
+  after (GCC inlines a one-caller helper, shares it between several).
+- Adding `extra` (two instances minus one) overshot the reverb to +15 %: the second's +179 holds a
+  one-time cost. Three instances split it into `shared` (once) and `extra`: reverb -2 %. Some
+  primitives only switch at the third (env/ad +34 then +112).
+- `profileFxUnit.ts` on grain-mill-xd-sync (-20 %) and reverse-wash (-13 %) found three causes,
+  none of them per-unit noise: its two grains record all the time (`control` counted 118 cycles
+  and 2 SDRAM accesses, the profile 201 / 6, `heavy-capturing` 203 / 6); its envelopes read
+  attack/decay from knob-only math computed per block, so `control` (a moving source) charged
+  ~90 cycles they don't spend; and reverse-tap was measured with only head `a` read, so GCC had
+  dropped head `b`. Fixed in the measurement (every outlet read) and the summing rules
+  (`fxTableCosts.ts`): -10..+22 %, SDRAM counts exact except the random-trigger grain units,
+  which a moving `trig` deliberately counts as always recording.
+- On the way: an oscillator in an effect cost twice what it does in an oscillator (square 333 vs
+  153), which became the w0 block constant (entry above).
