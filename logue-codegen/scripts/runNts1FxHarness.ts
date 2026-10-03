@@ -1101,6 +1101,32 @@ const GRAIN_FULL: ParamValue[] = [
 }
 
 {
+  // LEVEL (osc/noise, osc/lfsr): 50 is -24 dB of 100 (the same seed, so sample for sample),
+  // 0 is silence, 100 the unscaled source.
+  const level = (type: string, value: number): Run =>
+    render(
+      doc(
+        'modfx',
+        [IN, obj('n', type, [{ name: 'LEVEL', value: String(value) }]), OUT],
+        [wire('n', 'out', 'out', 'l')]
+      ),
+      [],
+      'dc'
+    )
+  for (const type of ['logue/osc/noise', 'logue/osc/lfsr']) {
+    const full = level(type, 100)
+    const half = level(type, 50)
+    const off = level(type, 0)
+    const ratioDb = 20 * Math.log10(rms(half.outL) / rms(full.outL))
+    check(
+      `${type.slice('logue/osc/'.length)}: LEVEL 50 is -24 dB, 0 is silence`,
+      Math.abs(ratioDb + 24) < 0.02 && rms(off.outL) === 0 && rms(full.outL) > 0.3,
+      `LEVEL 50 ${ratioDb.toFixed(3)} dB, LEVEL 100 rms ${rms(full.outL).toFixed(3)}, LEVEL 0 rms ${rms(off.outL)}`
+    )
+  }
+}
+
+{
   // A knob read once per block must not step the crossfader's gain: DEPTH jumps 0 -> full at
   // frame 8192 (FADE 0 -> 100, DC 0.5 into in1), and 0 -> 1 % at 16384 into in2, where the
   // equal-power law is steepest (sqrt(0.01) = 0.1 of the input in one knob step).

@@ -565,6 +565,15 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   (`scripts/runNoiseHarness.ts`): slopes -3.11/-5.99/+5.98 dB/oct over 25 Hz-12.8 kHz, octave
   ripple <= 0.4 dB. State 68 B (the pink rows), = the xd bss. The exciter keeps its own Kellet
   pink (`PINK_NOISE_STEP_HELPER`). No hardware pass yet.
+- **Noise LEVEL** (`osc/noise`, `osc/lfsr`, 2026-10-03, the Radio patch): measured
+  (`scripts/measureRadioLevels.ts`, NTS-1 mkII fx shell) the noise sits 10-15 dB above an
+  effect's input (white -4.8, coloured ~-9.4 dBFS RMS vs a 0.18-peak saw at -19.7), so a hiss
+  under the signal needed `mix2` GAIN ~2. `LEVEL` (`LEVEL_PARAM`/`levelGain`, `primitives/shared.ts`):
+  stored 0..100 (no negative typeless range on the xd), 100 = 0 dB (the default; the gain is then
+  exactly `1.f`, so old patches render bit-identically), 0.48 dB a step to -47.5 at 1, 0 = off;
+  the dial shows dB (`LEVEL_DB`). Gain per block via `exp_approx` (moved to `shared.ts`), at
+  worst 0.015 dB off. +1-2 xd emulator cycles. Harness: LEVEL 50 = -24.000 dB, 0 silent.
+  `mix2`/`stereo-mix2` GAIN show dB too (`MIX_GAIN_DB`, display only). No hardware pass yet.
 - **`osc/lfsr`** (2026-10-03): the NES/Game Boy noise channel. Clock = 127x the pitch (the note
   with TRACK, default on; else RATE on `fast-square`'s 0.1 Hz-2 kHz curve). MODE Long: the
   15-bit register (period 32767, harness-exact), at most one step a sample, so past the sample

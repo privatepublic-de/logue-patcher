@@ -1,4 +1,9 @@
-import { PERCENT, STEREO_XFADE_LAWS, STEREO_XFADE_LAW_NAME } from '../paramPresentation'
+import {
+  MIX_GAIN_DB,
+  PERCENT,
+  STEREO_XFADE_LAWS,
+  STEREO_XFADE_LAW_NAME
+} from '../paramPresentation'
 import type { HelperBlock, LoguePrimitive, PrimitiveParamSpec } from './types'
 import {
   CLAMPF_HELPER,
@@ -48,6 +53,7 @@ export const mixer2Primitive: LoguePrimitive = {
   params: [
     {
       name: 'GAIN1',
+      unit: MIX_GAIN_DB,
       min: 0,
       max: 100,
       default: 50,
@@ -55,6 +61,7 @@ export const mixer2Primitive: LoguePrimitive = {
     },
     {
       name: 'GAIN2',
+      unit: MIX_GAIN_DB,
       min: 0,
       max: 100,
       default: 50,
@@ -348,6 +355,7 @@ export const stereoMixer2Primitive: LoguePrimitive = {
   params: [
     {
       name: 'GAIN1',
+      unit: MIX_GAIN_DB,
       min: 0,
       max: 100,
       default: 50,
@@ -355,6 +363,7 @@ export const stereoMixer2Primitive: LoguePrimitive = {
     },
     {
       name: 'GAIN2',
+      unit: MIX_GAIN_DB,
       min: 0,
       max: 100,
       default: 50,

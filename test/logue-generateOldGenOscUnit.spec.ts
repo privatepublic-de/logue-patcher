@@ -2597,7 +2597,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(doc, { name: 'noise test' })
       expect(result.oscCpp).toContain(
-        'float y_noise1 = (noiseColor_noise1 == 0 ? noise_step(&seed_noise1) : noise_color_step(&seed_noise1, &noiseState_noise1, &pinkCount_noise1, pinkRows_noise1, &pinkSum_noise1, noiseColor_noise1));'
+        'float y_noise1 = ((noiseColor_noise1 == 0 ? noise_step(&seed_noise1) : noise_color_step(&seed_noise1, &noiseState_noise1, &pinkCount_noise1, pinkRows_noise1, &pinkSum_noise1, noiseColor_noise1)) * blkLevel_noise1);'
       )
       expect(result.oscCpp).toContain('static float noise_step(uint32_t *seed)')
       expect(result.oscCpp).toContain('*seed = *seed * 1664525u + 1013904223u;')

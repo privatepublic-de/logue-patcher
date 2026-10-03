@@ -243,20 +243,20 @@ export const CPU_COST_TABLE: Record<
   },
   'logue/osc/lfsr': {
     variants: {
-      base: 28,
-      control: 30,
-      TRACK: 26,
-      'TRACK+control': 29,
-      'heavy-short': 17,
-      'heavy-short-control': 17
+      base: 30,
+      control: 31,
+      TRACK: 28,
+      'TRACK+control': 30,
+      'heavy-short': 18,
+      'heavy-short-control': 18
     },
-    worst: 30,
-    snapshotHash: 'e50f889d5c828e71'
+    worst: 31,
+    snapshotHash: '7fbe59bdb96624a8'
   },
   'logue/osc/noise': {
-    variants: { base: 9, 'heavy-pink': 34, 'heavy-brown': 27, 'heavy-violet': 27 },
-    worst: 34,
-    snapshotHash: '9e2146f56cc83727'
+    variants: { base: 10, 'heavy-pink': 35, 'heavy-brown': 28, 'heavy-violet': 28 },
+    worst: 35,
+    snapshotHash: 'c55e2984e99ac4a6'
   },
   'logue/osc/phase-dist': {
     variants: {

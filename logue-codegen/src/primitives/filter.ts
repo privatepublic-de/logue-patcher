@@ -22,7 +22,8 @@ import {
   ONEPOLE_HELPER,
   TRACK_ON_RAW_THRESHOLD,
   additiveInletExpr,
-  transposedW0Expr
+  transposedW0Expr,
+  EXP_APPROX_HELPER
 } from './shared'
 
 /** A wired `cutoff` adds to the dial at depth 100 (the whole range), so a bipolar LFO swings
@@ -437,32 +438,6 @@ const STRING_DECAY_MAX_SECONDS = 30.0
 // constant), not a runtime `logf` call.
 const STRING_DECAY_LN_THRESHOLD = Math.log(0.001)
 
-const STRING_EXP_APPROX_HELPER: HelperBlock = {
-  key: 'exp_approx',
-  code: `  // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real \`expf\` call, a deliberate,
-  // real finding: unlike \`tanf\` (which links clean, no extra stubs needed; svf used it until
-  // 2026-09-30), a real local-toolchain build failed to LINK \`expf\` at all --
-  // its newlib implementation pulls in the full reentrant syscall stubs (_sbrk/_read/_write/
-  // _close/_lseek), none of which this minimal embedded target provides, a real toolchain-
-  // version-specific risk this approximation sidesteps entirely by staying libm-free like the
-  // rest of this file. Plain Padé[2/2] (accurate only very close to 0) is range-reduced first
-  // (x/8, applied, then squared 3 times -- the standard "exp via repeated squaring" trick) for
-  // accuracy across the WIDER range this primitive's own noteOn-time decay-gain formula
-  // actually uses -- verified numerically to <0.01% relative error across that whole range
-  // (x in roughly [-3, 0]), far tighter than a musical decay-time control needs.
-  static float exp_approx(float x)
-  {
-    float y = x * 0.125f;
-    float y2 = y * y;
-    float r = (1.f + y * 0.5f + y2 * (1.f/12.f)) / (1.f - y * 0.5f + y2 * (1.f/12.f));
-    r = r * r;
-    r = r * r;
-    r = r * r;
-    return r;
-  }
-`
-}
-
 const STRING_ALLPASS1_HELPER: HelperBlock = {
   key: 'allpass1_step',
   code: `  // First-order allpass ("Schroeder" direct form) -- a real, standard, cheap technique for
@@ -735,7 +710,7 @@ export const pluckedStringPrimitive: LoguePrimitive = {
     STRING_STEP_HELPER,
     STRING_ALLPASS1_HELPER,
     STRING_DC_BLOCKER_HELPER,
-    STRING_EXP_APPROX_HELPER,
+    EXP_APPROX_HELPER,
     ONEPOLE_HELPER,
     CLAMPF_HELPER,
     NOTE_W0_HELPER,

@@ -148,7 +148,15 @@ Original plan:
   dedicated rectifier node: it would emit byte-identical code to `max` with `b` unwired, and
   that kind of node has been declined before.
 
-## Phase 3 -- levels: hot noise and linear gain dials
+## Phase 3 -- levels: hot noise and linear gain dials (done 2026-10-03)
+
+Measured (`scripts/measureRadioLevels.ts`): noise -4.8 (white) / ~-9.4 (coloured) dBFS RMS
+against a dry input of -19.7, so 10-15 dB hotter; the follower at its default GAIN saturates to
+1 on that input, so it doesn't lower it. Done: dB display on `mix2`/`stereo-mix2` GAIN, and (user's
+pick over an audio taper) a `LEVEL` param on `osc/noise` and `osc/lfsr`: 100 = 0 dB (default,
+bit-identical), down to -47.5 dB, 0 = off, shown in dB. No file-format change.
+
+Original analysis:
 
 What the code says (inferred; measure before changing anything):
 - `osc/noise` outputs RMS 0.577 (white) or 1/3 (coloured), about -5 to -10 dBFS RMS.

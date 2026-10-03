@@ -648,6 +648,29 @@ export const SCALE_FACTOR_BY_RANGE: ParamUnitDependency = {
 // see that primitive's own doc comment for why (a real, disclosed rescale, not a display-only
 // change: `GAIN=100` now means +12dB, not +0dB).
 export const VCA_GAIN_DB = linearDbUnit(0, 0.04)
+/**
+ * A sound source's LEVEL (`osc/noise`, `osc/lfsr`): stored 0..100 (the xd's manifest takes no
+ * negative typeless range), 100 = 0 dB, then `LEVEL_RANGE_DB / 100` dB per step down to -48 dB
+ * at 1; 0 is off. The noise sources sit 10-15 dB above an effect's input (measured,
+ * `scripts/measureRadioLevels.ts`), so a hiss under the signal is around -30 dB.
+ */
+export const LEVEL_RANGE_DB = 48
+export const LEVEL_DB: ParamUnit = {
+  toDisplay(raw) {
+    if (raw <= 0) return 'Off'
+    const db = ((raw - 100) * LEVEL_RANGE_DB) / 100
+    return `${db.toFixed(1)} dB`
+  },
+  parseInput(text) {
+    if (/^\s*off\s*$/i.test(text)) return 0
+    const db = Number.parseFloat(text)
+    if (!Number.isFinite(db)) return undefined
+    return Math.min(100, Math.max(1, 100 + (db * 100) / LEVEL_RANGE_DB))
+  }
+}
+
+// `logue/mix/mix2`/`stereo-mix2`'s GAIN1/GAIN2: raw * 0.01, so 100 is 0 dB and 1 is -40 dB.
+export const MIX_GAIN_DB = linearDbUnit(0, 0.01)
 // `logue/env/follower`'s GAIN: 1 + 0.15 * raw, so 0..100 is 0..+24 dB.
 export const FOLLOWER_GAIN_DB = linearDbUnit(1, 0.15)
 // `driveGainExpr(..., 0.07)` -- primitives.ts:1738 (`wavefolderPrimitive`'s own call site).

@@ -59,7 +59,10 @@ import {
   floatLit,
   hashSuffixToSeed,
   isBlockInvariant,
-  transposedW0Expr
+  transposedW0Expr,
+  EXP_APPROX_HELPER,
+  LEVEL_PARAM,
+  levelGain
 } from './shared'
 
 /**
@@ -700,22 +703,24 @@ const NOISE_COLOR_STEP_HELPER: HelperBlock = {
 export const noisePrimitive: LoguePrimitive = {
   id: 'logue/osc/noise',
   outletPolarity: 'audio',
-  // seed_, noiseColor_, noiseState_, pinkCount_, pinkSum_, pinkRows_[NOISE_PINK_ROWS]
-  stateBytesPerInstance: 4 * (5 + NOISE_PINK_ROWS),
+  // seed_, noiseColor_, noiseState_, pinkCount_, pinkSum_, levelPercent_, pinkRows_[NOISE_PINK_ROWS]
+  stateBytesPerInstance: 4 * (6 + NOISE_PINK_ROWS),
   description:
     'A noise source, independent of the played note. COLOR: White (flat), Pink (-3 dB/oct, softer), Brown (-6 dB/oct, a rumble) or Violet (+6 dB/oct, a bright hiss). The coloured ones are about 5 dB quieter than White, so their peaks stay near +-1.',
   searchTerms: ['white', 'pink', 'brown', 'red', 'violet', 'purple', 'hiss'],
   memberDecls: (suffix) =>
     `  uint32_t seed_${suffix};\n  int32_t noiseColor_${suffix};\n  int32_t noiseState_${suffix};\n` +
-    `  uint32_t pinkCount_${suffix};\n  int32_t pinkSum_${suffix};\n  int32_t pinkRows_${suffix}[${NOISE_PINK_ROWS}];\n`,
+    `  uint32_t pinkCount_${suffix};\n  int32_t pinkSum_${suffix};\n  int32_t pinkRows_${suffix}[${NOISE_PINK_ROWS}];\n` +
+    `  float levelPercent_${suffix};\n`,
   initStatement: (suffix) =>
     `    seed_${suffix} = ${hashSuffixToSeed(suffix)}u;\n` +
     `    noiseState_${suffix} = 0;\n    pinkCount_${suffix} = 0u;\n    pinkSum_${suffix} = 0;\n` +
     `    for (int k = 0; k < ${NOISE_PINK_ROWS}; ++k) pinkRows_${suffix}[k] = 0;\n`,
+  blockConstants: (suffix) => blockDecls({ level: levelGain(suffix) }),
   renderExpr: (suffix) =>
-    `(noiseColor_${suffix} == 0 ? noise_step(&seed_${suffix}) : noise_color_step(&seed_${suffix}, &noiseState_${suffix}, &pinkCount_${suffix}, pinkRows_${suffix}, &pinkSum_${suffix}, noiseColor_${suffix}))`,
+    `((noiseColor_${suffix} == 0 ? noise_step(&seed_${suffix}) : noise_color_step(&seed_${suffix}, &noiseState_${suffix}, &pinkCount_${suffix}, pinkRows_${suffix}, &pinkSum_${suffix}, noiseColor_${suffix})) * ${levelGain(suffix).ref})`,
   advanceStatement: () => '',
-  helpers: [NOISE_STEP_HELPER, NOISE_COLOR_STEP_HELPER],
+  helpers: [NOISE_STEP_HELPER, NOISE_COLOR_STEP_HELPER, EXP_APPROX_HELPER],
   params: [
     {
       name: 'COLOR',
@@ -728,7 +733,8 @@ export const noisePrimitive: LoguePrimitive = {
       // An int, so the per-sample colour test is an integer compare, not a float one plus vmrs.
       setStatement: (suffix, valueExpr) =>
         `noiseColor_${suffix} = (int32_t)((${valueExpr}) + 0.5f);`
-    }
+    },
+    LEVEL_PARAM
   ]
 }
 
@@ -798,7 +804,7 @@ const LFSR_STEP_HELPER: HelperBlock = {
 export const lfsrPrimitive: LoguePrimitive = {
   id: 'logue/osc/lfsr',
   outletPolarity: 'audio',
-  stateBytesPerInstance: 28, // reg, pos, mode, ratePercent, coarse, fine, track: 7 words
+  stateBytesPerInstance: 32, // reg, pos, mode, ratePercent, coarse, fine, track, levelPercent
   description:
     'NES/Game Boy-style 1-bit noise from a shift register. Long: hiss that gets brighter with the pitch. Short: a 127-step loop, a pitched metallic buzz. TRACK plays the note; off, RATE sets the pitch.',
   searchTerms: ['noise', 'nes', 'gameboy', 'chiptune', '8bit', 'digital', 'metallic'],
@@ -813,16 +819,24 @@ export const lfsrPrimitive: LoguePrimitive = {
     `  float ratePercent_${suffix};\n` +
     `  float coarse_${suffix};\n` +
     `  float fine_${suffix};\n` +
-    `  float track_${suffix};\n`,
+    `  float track_${suffix};\n` +
+    `  float levelPercent_${suffix};\n`,
   initStatement: (suffix) => {
     const reg = hashSuffixToSeed(suffix) & 0x7fff || 1
     return `    lfsrReg_${suffix} = ${reg}u;\n    lfsrPos_${suffix} = 0u;\n`
   },
-  blockConstants: (suffix, inlets) => blockDecls({ steps: lfsrSteps(suffix, inlets) }),
+  blockConstants: (suffix, inlets) =>
+    blockDecls({ steps: lfsrSteps(suffix, inlets), level: levelGain(suffix) }),
   renderExpr: (suffix, inlets) =>
-    `lfsr_step(&lfsrReg_${suffix}, &lfsrPos_${suffix}, ${lfsrSteps(suffix, inlets).ref}, lfsrMode_${suffix})`,
+    `(lfsr_step(&lfsrReg_${suffix}, &lfsrPos_${suffix}, ${lfsrSteps(suffix, inlets).ref}, lfsrMode_${suffix}) * ${levelGain(suffix).ref})`,
   advanceStatement: () => '',
-  helpers: [LFSR_STEP_HELPER, FAST_LFO_RATE_HELPER, NOTE_W0_HELPER, CLAMPF_HELPER],
+  helpers: [
+    LFSR_STEP_HELPER,
+    FAST_LFO_RATE_HELPER,
+    NOTE_W0_HELPER,
+    CLAMPF_HELPER,
+    EXP_APPROX_HELPER
+  ],
   params: [
     {
       name: 'MODE',
@@ -857,7 +871,8 @@ export const lfsrPrimitive: LoguePrimitive = {
       max: 100,
       default: 100,
       setStatement: (suffix, valueExpr) => `track_${suffix} = ${valueExpr};`
-    }
+    },
+    LEVEL_PARAM
   ]
 }
 

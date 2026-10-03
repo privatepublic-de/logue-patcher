@@ -1,4 +1,10 @@
-import { CENTS, SEMITONES, TRACK_ON_THRESHOLD } from '../paramPresentation'
+import {
+  CENTS,
+  LEVEL_DB,
+  LEVEL_RANGE_DB,
+  SEMITONES,
+  TRACK_ON_THRESHOLD
+} from '../paramPresentation'
 import type { HelperBlock, PrimitiveParamSpec } from './types'
 
 /** A C float literal for `n`, e.g. `100.f`, `0.25f`. */
@@ -51,6 +57,34 @@ export function additiveInletExpr(
  * must pick an input whatever the dial says); the filters' `cutoff`, crossfader `fade` and
  * additive `timbre` replaced theirs too until file version 4 (see `migrateAdditiveDialInlets`).
  */
+/** `exp(x)` without libm (`expf` doesn't link on the xd): `string`'s decay gain, the noise
+ *  sources' LEVEL. Moved here from filter.ts once a second category needed it. */
+export const EXP_APPROX_HELPER: HelperBlock = {
+  key: 'exp_approx',
+  code: `  // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real \`expf\` call, a deliberate,
+  // real finding: unlike \`tanf\` (which links clean, no extra stubs needed; svf used it until
+  // 2026-09-30), a real local-toolchain build failed to LINK \`expf\` at all --
+  // its newlib implementation pulls in the full reentrant syscall stubs (_sbrk/_read/_write/
+  // _close/_lseek), none of which this minimal embedded target provides, a real toolchain-
+  // version-specific risk this approximation sidesteps entirely by staying libm-free like the
+  // rest of this file. Plain Padé[2/2] (accurate only very close to 0) is range-reduced first
+  // (x/8, applied, then squared 3 times -- the standard "exp via repeated squaring" trick) for
+  // accuracy across the WIDER range this primitive's own noteOn-time decay-gain formula
+  // actually uses -- verified numerically to <0.01% relative error across that whole range
+  // (x in roughly [-3, 0]), far tighter than a musical decay-time control needs.
+  static float exp_approx(float x)
+  {
+    float y = x * 0.125f;
+    float y2 = y * y;
+    float r = (1.f + y * 0.5f + y2 * (1.f/12.f)) / (1.f - y * 0.5f + y2 * (1.f/12.f));
+    r = r * r;
+    r = r * r;
+    r = r * r;
+    return r;
+  }
+`
+}
+
 export const CLAMPF_HELPER: HelperBlock = {
   key: 'clampf',
   code: `  static float clampf(float v, float lo, float hi)
@@ -604,4 +638,30 @@ ${hilbertChainCode(HILBERT_Q_CHAIN, 0, 'a')}${hilbertChainCode(HILBERT_I_CHAIN, 
     *i = b;
   }
 `
+}
+
+/**
+ * A sound source's LEVEL (`LEVEL_DB`): the gain is worked out once per block, exactly 1 at the
+ * default 100 (so a patch that never touches it renders bit-identically) and 0 at 0, else
+ * `exp_approx` of the dB in natural-log units (libm-free; its own comment checks x in [-3, 0],
+ * but over LEVEL's x in [-5.5, 0] it is at worst 0.015 dB off, at LEVEL 1).
+ */
+export const LEVEL_PARAM: PrimitiveParamSpec = {
+  name: 'LEVEL',
+  unit: LEVEL_DB,
+  min: 0,
+  max: 100,
+  default: 100,
+  setStatement: (suffix, valueExpr) => `levelPercent_${suffix} = ${valueExpr};`
+}
+
+export function levelGain(suffix: string): BlockValue {
+  const perStep = ((LEVEL_RANGE_DB / 100) * Math.log(10)) / 20
+  const v = `levelPercent_${suffix}`
+  return blockValue(
+    'blkLevel',
+    suffix,
+    `(${v} >= 100.f ? 1.f : ${v} <= 0.f ? 0.f : exp_approx((${v} - 100.f) * ${perStep.toPrecision(8)}f))`,
+    []
+  )
 }
