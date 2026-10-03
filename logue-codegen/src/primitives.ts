@@ -19,6 +19,8 @@ export {
   type LoguePlatform,
   type WirePolarityBucket,
   type PrimitiveOutletPolarity,
+  type ResolvedWireBucket,
+  type PolarityRefineContext,
   type PrimitiveOutletSpec,
   findSingleWiredSource,
   outletPolarityOf,

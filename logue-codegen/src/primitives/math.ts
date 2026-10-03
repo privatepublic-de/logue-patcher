@@ -1,4 +1,10 @@
-import type { HelperBlock, LoguePrimitive } from './types'
+import type {
+  HelperBlock,
+  LoguePrimitive,
+  PolarityRefineContext,
+  ResolvedWireBucket,
+  WirePolarityBucket
+} from './types'
 import { CLAMPF_HELPER, additiveInletExpr } from './shared'
 import {
   SCALE_FACTOR,
@@ -6,6 +12,22 @@ import {
   SCALE_RANGE_NAME,
   SCALE_RANGES
 } from '../paramPresentation'
+
+// `refinePolarity` rules (display-only, see `LoguePrimitive.refinePolarity`): what each node does
+// to its inputs' range, so a VCA's "bipolar into gain" warning sees `max(env, 0)` as safe and
+// `env - env` as not. An unwired inlet is `undefined` and reads 0. Audio, `neutral` (inputs that
+// disagree) and buffer aren't ranges this can reason about, so those keep the inherited bucket.
+type InletBucket = ResolvedWireBucket | undefined
+const nonNegative = (b: InletBucket): boolean => b === 'unipolar' || b === 'gate'
+const ranged = (b: InletBucket): boolean =>
+  b === undefined || b === 'unipolar' || b === 'gate' || b === 'bipolar'
+/** Both inputs `>= 0`: a gate only while every wired input is one, else unipolar. */
+const nonNegativeOf = (wired: InletBucket[]): WirePolarityBucket =>
+  wired.every((b) => b === 'gate') ? 'gate' : 'unipolar'
+const pair = (ctx: PolarityRefineContext, x: string, y: string): [InletBucket, InletBucket] => [
+  ctx.inlet(x),
+  ctx.inlet(y)
+]
 
 /**
  * `a * b` -- originally phase 10's `logue/mix/ringmod`, the second `mix` primitive beside `mix2`
@@ -25,6 +47,11 @@ export const multiplyPrimitive: LoguePrimitive = {
   id: 'logue/math/multiply',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => {
+    const ins = pair(ctx, 'in1', 'in2')
+    if (ins.includes(undefined) || !ins.every(ranged)) return undefined
+    return ins.every(nonNegative) ? nonNegativeOf(ins) : 'bipolar'
+  },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description:
     'Multiplies two signals. Two audio signals give ring modulation (metallic, inharmonic sidebands); a 0/1 gate or envelope times a signal acts as a VCA.',
@@ -54,6 +81,7 @@ export const negatePrimitive: LoguePrimitive = {
   id: 'logue/math/negate',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => (nonNegative(ctx.inlet('in')) ? 'bipolar' : undefined),
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description:
     "Flips a signal's sign (-x): a bipolar LFO turns upside down around 0; on audio, a polarity flip.",
@@ -74,6 +102,8 @@ export const oneMinusPrimitive: LoguePrimitive = {
   id: 'logue/math/one-minus',
   pure: true,
   outletPolarity: 'inherit',
+  // 1 - x of a -1..1 signal is 0..2.
+  refinePolarity: (ctx) => (ctx.inlet('in') === 'bipolar' ? 'unipolar' : undefined),
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description:
     '1 - x: flips a 0..1 signal end to end, so an envelope rests at 1 and falls on a note. A -1..1 signal comes out as 0..2.',
@@ -177,6 +207,12 @@ export const addPrimitive: LoguePrimitive = {
   id: 'logue/math/add',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => {
+    const ins = pair(ctx, 'a', 'b')
+    const wired = ins.filter((b) => b !== undefined)
+    if (wired.length === 0 || !ins.every(ranged)) return undefined
+    return wired.every(nonNegative) ? nonNegativeOf(wired) : 'bipolar'
+  },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description: 'Adds two signals together.',
   inlets: [
@@ -197,6 +233,12 @@ export const subtractPrimitive: LoguePrimitive = {
   id: 'logue/math/subtract',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => {
+    const [a, b] = pair(ctx, 'a', 'b')
+    if (b === undefined || !ranged(a) || !ranged(b)) return undefined
+    // Both wired: a difference goes either way, even of two gates.
+    return a !== undefined || nonNegative(b) ? 'bipolar' : undefined
+  },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description: 'Subtracts one signal from another (a - b).',
   inlets: [
@@ -231,6 +273,8 @@ export const scalePrimitive: LoguePrimitive = {
   id: 'logue/math/scale',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) =>
+    nonNegative(ctx.inlet('in')) && ctx.param('FACTOR') < 0 ? 'bipolar' : undefined,
   stateBytesPerInstance: 12, // factor_, factorPercent_, range_
   description:
     'Multiplies a signal by FACTOR, which goes from -1x to +1x times RANGE (up to ±8x): 0.50x halves it, 2.00x doubles it, -1.00x flips it upside down.',
@@ -275,6 +319,13 @@ export const minPrimitive: LoguePrimitive = {
   id: 'logue/math/min',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => {
+    const ins = pair(ctx, 'a', 'b')
+    if (ins.every((b) => b === undefined) || !ins.every(ranged)) return undefined
+    if (ins.every(nonNegative)) return nonNegativeOf(ins)
+    // An unwired side is 0, so the result is <= 0.
+    return 'bipolar'
+  },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description: 'Outputs the smaller of two signals, sample by sample.',
   inlets: [
@@ -295,6 +346,13 @@ export const maxPrimitive: LoguePrimitive = {
   id: 'logue/math/max',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => {
+    const ins = pair(ctx, 'a', 'b')
+    if (ins.every((b) => b === undefined) || !ins.every(ranged)) return undefined
+    if (ins.every((b) => b === 'gate')) return 'gate'
+    // An unwired side is 0: max(x, 0) is a half-wave rectifier.
+    return ins.some((b) => b === undefined || nonNegative(b)) ? 'unipolar' : undefined
+  },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description: 'Outputs the larger of two signals, sample by sample.',
   inlets: [
@@ -322,6 +380,14 @@ export const clampPrimitive: LoguePrimitive = {
   id: 'logue/math/clamp',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => {
+    const input = ctx.inlet('in')
+    if (input === undefined || !ranged(input)) return undefined
+    const lo = ctx.param('LO')
+    const hi = ctx.param('HI')
+    if (lo >= 0) return input === 'gate' && lo === 0 && hi >= 100 ? 'gate' : 'unipolar'
+    return hi <= 0 ? 'bipolar' : undefined
+  },
   stateBytesPerInstance: 8, // lo_ + hi_, 2 floats
   description: 'Clamps a signal to a dialable [LO,HI] range.',
   inlets: [{ name: 'in', role: 'audio' }],
@@ -356,6 +422,11 @@ export const absPrimitive: LoguePrimitive = {
   id: 'logue/math/abs',
   pure: true,
   outletPolarity: 'inherit',
+  refinePolarity: (ctx) => {
+    const input = ctx.inlet('in')
+    if (input === undefined || !ranged(input)) return undefined
+    return input === 'gate' ? 'gate' : 'unipolar'
+  },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
   description: 'Outputs the absolute value of a signal (full-wave rectification).',
   inlets: [{ name: 'in', role: 'audio' }],

@@ -16,6 +16,7 @@ import { parsePatchFile } from '@shared/json/patchCodec'
 import { nodeId } from './nodeId'
 import { autoArrangeNodes, type Size as AutoArrangeSize } from '../canvas/autoArrange'
 import { layoutByFlow } from '../canvas/flowLayout'
+import { outletPolarityChanged } from '../canvas/wirePolarity'
 import {
   isFixedIoNodeType,
   LOGUE_AUDIO_IN_TYPE,
@@ -537,7 +538,19 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
       set({ pendingUndo: null })
       return
     }
-    set({ past: [...past, pendingUndo].slice(-UNDO_LIMIT), future: [], pendingUndo: null })
+    const remount = !!rootDoc?.nodes.some(
+      (n) =>
+        n.kind === 'obj' &&
+        n.name !== undefined &&
+        !pendingUndo.nodes.includes(n) &&
+        outletPolarityChanged(pendingUndo, rootDoc!, n.name)
+    )
+    set((s) => ({
+      past: [...past, pendingUndo].slice(-UNDO_LIMIT),
+      future: [],
+      pendingUndo: null,
+      ...(remount ? { reloadNonce: s.reloadNonce + 1 } : {})
+    }))
   },
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
@@ -630,20 +643,29 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
       return
     }
 
-    commitDoc(get, set, { remount: false }, (doc) => {
-      const nodes = doc.nodes.map((n, i) => {
-        if (nodeId(n, i) !== id || n.kind !== 'obj') return n
-        const existingIndex = n.params.findIndex((p) => p.name === paramName)
-        const params =
-          existingIndex === -1
-            ? [...n.params, { name: paramName, value, logueParamIndex, label }]
-            : n.params.map((p, pi) =>
-                pi === existingIndex ? { ...p, value, logueParamIndex, label } : p
-              )
-        return { ...n, params }
-      })
-      return withNodes(doc, nodes)
-    })
+    const apply = (doc: PatchDocument): PatchDocument =>
+      withNodes(
+        doc,
+        doc.nodes.map((n, i) => {
+          if (nodeId(n, i) !== id || n.kind !== 'obj') return n
+          const existingIndex = n.params.findIndex((p) => p.name === paramName)
+          const params =
+            existingIndex === -1
+              ? [...n.params, { name: paramName, value, logueParamIndex, label }]
+              : n.params.map((p, pi) =>
+                  pi === existingIndex ? { ...p, value, logueParamIndex, label } : p
+                )
+          return { ...n, params }
+        })
+      )
+    // A dial is read live, but wire colours and warnings are projected per mount: remount only
+    // when the edit moves a `refinePolarity` result (clamp's LO crossing 0, scale's FACTOR sign).
+    // Never mid-drag (it would unmount the dial being dragged); `endGesture` catches up.
+    const remount =
+      get().pendingUndo === null &&
+      target.name !== undefined &&
+      outletPolarityChanged(activeDoc!, apply(activeDoc!), target.name)
+    commitDoc(get, set, { remount }, apply)
   },
 
   setSubpatchExpose: (id, paramName, outerName) => {

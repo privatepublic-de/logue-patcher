@@ -44,7 +44,19 @@ Plan:
   sample-to-sample step before and after. Re-measure the xd emulator cost and the code-size and
   CPU tables.
 
-## Phase 2a -- wire polarity that reads the node's settings
+## Phase 2a -- wire polarity that reads the node's settings (done 2026-10-03)
+
+Done: `LoguePrimitive.refinePolarity(ctx)` (display-only; `ctx.inlet(name)` = the bucket arriving,
+`undefined` unwired; `ctx.param(name)`), called by `wirePolarity.ts` after inheriting, with rules on
+`max`/`min`/`clamp`/`abs`/`negate`/`one-minus` and also `multiply`/`add`/`subtract`/`scale`
+(`env - env` and `scale` with a negative FACTOR read bipolar now, so the VCA warns for them).
+Audio and mixed (`neutral`) inputs keep the inherited bucket: rectified audio stays audio.
+`setLogueParam` remounts only when the edit changes that node's outlet bucket, never mid-drag
+(`endGesture` catches up). Checked in the built app: clamp LO -100 -> 0 clears the warning live.
+**Known gap**: a subpatch instance's outlet still inherits from its inlets (`inheritFrom`), so a
+`max` INSIDE a definition isn't seen from outside.
+
+Original analysis:
 
 Confirmed in `src/renderer/src/canvas/wirePolarity.ts`: every `math/*` node is
 `outletPolarity: 'inherit'`, and inherit looks only at what's wired in, never at the node's

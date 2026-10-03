@@ -79,6 +79,17 @@ export type WirePolarityBucket = 'audio' | 'unipolar' | 'bipolar' | 'gate' | 'bu
  */
 export type PrimitiveOutletPolarity = WirePolarityBucket | 'inherit'
 
+/** `WirePolarityBucket` plus the resolver-only `'neutral'`: inputs that disagree, or a cycle. */
+export type ResolvedWireBucket = WirePolarityBucket | 'neutral'
+
+/** What `LoguePrimitive.refinePolarity` reads about one node. */
+export interface PolarityRefineContext {
+  /** The bucket arriving at an inlet, `undefined` while it's unwired (it reads 0). */
+  inlet: (name: string) => ResolvedWireBucket | undefined
+  /** A param's stored value, or its spec default. */
+  param: (name: string) => number
+}
+
 /**
  * One named signal outlet a primitive exposes -- omitted (a primitive's own `outlets` field left
  * `undefined`) for the implicit single `'out'` outlet every primitive before `logue/filter/svf`
@@ -322,6 +333,14 @@ export interface LoguePrimitive {
    * right one. Hand-written primitives never need it.
    */
   inheritFrom?: Record<string, string[]>
+  /**
+   * Display-only, for an `'inherit'` outlet: corrects the inherited bucket from what the node
+   * does to its inputs' RANGE -- `max(env, 0)` can't go negative, `env - env` can. `undefined`
+   * keeps the inherited one. Wire warnings (`InletExpectation.warnFrom`) read the result, so a
+   * wrong `inherit` here is a false warning or a missing one. A param edit that changes the result
+   * remounts the canvas (`setLogueParam`).
+   */
+  refinePolarity?: (ctx: PolarityRefineContext) => WirePolarityBucket | undefined
   /**
    * Exact per-instance RAM footprint of `memberDecls` below, in bytes -- hand-counted from that
    * same method's own declared fields (every scalar `float`/`int`/`uint32_t` member is 4 bytes on

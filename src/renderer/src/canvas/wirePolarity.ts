@@ -5,18 +5,15 @@ import {
   isBufferInlet,
   outletPolarityOf,
   resolveDeclaredOutletName,
-  type WirePolarityBucket
+  type ResolvedWireBucket
 } from '@logue-codegen/primitives'
 import { resolveNodePrimitive } from '../state/subpatchLibraryStore'
+import { nodeId } from '../state/nodeId'
 
-/**
- * `WirePolarityBucket` plus `'neutral'` -- a fifth, RESOLVER-ONLY value no primitive ever
- * declares (see `PrimitiveOutletPolarity`), produced only when there's genuinely nothing single
- * and correct to say: two of a combiner's own audio-role inlets (e.g. `logue/mix/mix2`'s `in1`/
- * `in2`) resolve to different buckets, or resolution hit a cycle. `portColors.ts` paints this the
- * same neutral gray `PORT_COLOR_NEUTRAL` already uses for "accepts any source".
- */
-export type ResolvedWireBucket = WirePolarityBucket | 'neutral'
+// `'neutral'` -- the RESOLVER-ONLY bucket no primitive declares: two of a combiner's own
+// audio-role inlets (e.g. `mix2`'s `in1`/`in2`) resolve to different buckets, or resolution hit a
+// cycle. `portColors.ts` paints it the neutral gray `PORT_COLOR_NEUTRAL` uses for "any source".
+export type { ResolvedWireBucket }
 
 /**
  * Backward-walks `doc.nets` to classify a node's own outlet for wire/dot colour, so a pass-
@@ -75,27 +72,43 @@ export function createWirePolarityResolver(
     const { declared, inheritInlets } = outletPolarityOf(primitive, outletName)
     if (declared !== 'inherit') return declared
 
-    const inherited: ResolvedWireBucket[] = []
-    for (const inletName of inheritInlets) {
-      // A fan-in conflict is ignored here -- that's `toFlowGraph.ts`'s dashed-edge job.
-      const source = findSingleWiredSource(doc.nets, nodeName, inletName)
-      if (!source) continue
-      const sourcePrimitive = resolveNodePrimitive(typeById.get(source.obj) ?? '')
-      const resolvedOutletName = sourcePrimitive
-        ? (resolveDeclaredOutletName(sourcePrimitive, source.outlet) ?? source.outlet ?? 'out')
-        : (source.outlet ?? 'out')
-      const bucket = resolve(source.obj, resolvedOutletName)
-      // A buffer wire into a signal inlet is an error (dashed), not something to pass on.
-      if (bucket !== 'buffer') inherited.push(bucket)
-    }
+    const inherited = inheritInlets
+      .map((inletName) => inletBucket(nodeName, inletName))
+      .filter((bucket): bucket is ResolvedWireBucket => bucket !== undefined)
     // Nothing wired to inherit from -- these primitives are predominantly used for audio, so
     // that's the unsurprising default (matches every pass-through node's pre-existing colour).
-    if (inherited.length === 0) return 'audio'
-    const distinct = new Set(inherited)
     // All wired audio-role inlets agree -- propagate that bucket. Genuine disagreement (e.g.
     // `mix2` fed one bipolar and one gate source) has no single correct answer, so it's 'neutral'
     // rather than a guess.
-    return distinct.size === 1 ? inherited[0] : 'neutral'
+    const result: ResolvedWireBucket =
+      inherited.length === 0 ? 'audio' : new Set(inherited).size === 1 ? inherited[0] : 'neutral'
+    if (!primitive.refinePolarity) return result
+    const node = doc.nodes.find((n) => n.kind === 'obj' && n.name === nodeName)
+    const params = node?.kind === 'obj' ? node.params : []
+    return (
+      primitive.refinePolarity({
+        inlet: (inletName) => inletBucket(nodeName, inletName),
+        param: (paramName) => {
+          const stored = Number(params.find((p) => p.name === paramName)?.value)
+          if (Number.isFinite(stored)) return stored
+          return primitive.params?.find((spec) => spec.name === paramName)?.default ?? 0
+        }
+      }) ?? result
+    )
+  }
+
+  /** What arrives at one inlet, `undefined` while it's unwired. A buffer wire into a signal
+   *  inlet is an error (dashed), not something to pass on, so it counts as unwired here. */
+  function inletBucket(nodeName: string, inletName: string): ResolvedWireBucket | undefined {
+    // A fan-in conflict is ignored here -- that's `toFlowGraph.ts`'s dashed-edge job.
+    const source = findSingleWiredSource(doc.nets, nodeName, inletName)
+    if (!source) return undefined
+    const sourcePrimitive = resolveNodePrimitive(typeById.get(source.obj) ?? '')
+    const resolvedOutletName = sourcePrimitive
+      ? (resolveDeclaredOutletName(sourcePrimitive, source.outlet) ?? source.outlet ?? 'out')
+      : (source.outlet ?? 'out')
+    const bucket = resolve(source.obj, resolvedOutletName)
+    return bucket === 'buffer' ? undefined : bucket
   }
 
   function feedsBufferInlet(nodeName: string): boolean {
@@ -110,4 +123,27 @@ export function createWirePolarityResolver(
   }
 
   return resolve
+}
+
+/** Whether a param edit changed how `nodeName`'s own outlets resolve -- only a primitive with
+ *  `refinePolarity` reads params, so anything else answers `false` without walking. The canvas
+ *  projects wire colours and warnings once per mount, and a param edit doesn't remount it. */
+export function outletPolarityChanged(
+  before: PatchDocument,
+  after: PatchDocument,
+  nodeName: string
+): boolean {
+  const node = after.nodes.find((n) => n.kind === 'obj' && n.name === nodeName)
+  if (node?.kind !== 'obj') return false
+  const primitive = resolveNodePrimitive(node.type)
+  if (!primitive?.refinePolarity) return false
+  const outlets = (primitive.outlets ?? [{ name: 'out' }]).map((o) => o.name)
+  const resolveIn = (doc: PatchDocument): ((name: string, outlet: string) => ResolvedWireBucket) =>
+    createWirePolarityResolver(
+      doc,
+      new Map(doc.nodes.map((n, i) => [nodeId(n, i), n.kind === 'obj' ? n.type : undefined]))
+    )
+  const was = resolveIn(before)
+  const now = resolveIn(after)
+  return outlets.some((outlet) => was(nodeName, outlet) !== now(nodeName, outlet))
 }
