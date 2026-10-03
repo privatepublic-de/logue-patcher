@@ -675,7 +675,9 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
         { kind: 'obj', type: 'logue/mix/crossfader', name: 'xf', x: 0, y: 0, params: [] }
       ])
       const result = generateOscUnit(doc, { name: 'crossfader on nts1' })
-      expect(result.oscH).toContain('float y_xf = (blkFadeA_xf * (0.f) + blkFadeB_xf * (0.f));')
+      expect(result.oscH).toContain(
+        'float y_xf = ((blkFadeMoving_xf != 0.f ? xfade_glide(&xfG_xf[0], blkFadeA_xf) : blkFadeA_xf) * (0.f) + (blkFadeMoving_xf != 0.f ? xfade_glide(&xfG_xf[1], blkFadeB_xf) : blkFadeB_xf) * (0.f));'
+      )
     })
   })
 

@@ -132,7 +132,8 @@ function probeOutputs(fxH: string): string {
 /** Renders `FRAMES` frames of `input` through `d` with `params` set first ([slot, value]). */
 function render(
   d: PatchDocument,
-  params: Array<[number, number]>,
+  // [id, value], or [id, value, frame] to set it at that frame (rounded down to its block).
+  params: Array<[number, number] | [number, number, number]>,
   // A number is a pure tone at that many Hz, 0.3 peak on both channels.
   input:
     | 'sines'
@@ -209,7 +210,10 @@ ${
     ? `  fx.setTempo(${tempo}.f);
 `
     : ''
-}${params.map(([i, v]) => `  fx.setParameter(${i}, ${v});\n`).join('')}  static float in[128], out[128];
+}${params
+      .filter((p) => p.length === 2)
+      .map(([i, v]) => `  fx.setParameter(${i}, ${v});\n`)
+      .join('')}  static float in[128], out[128];
   uint32_t seed = 1;
   (void)seed;
   FILE *raw = fopen(argv[1], "wb");
@@ -220,7 +224,15 @@ ${
       in[2 * i] = l;
       in[2 * i + 1] = r;
     }
-${resetAtFrame !== undefined ? `    if (done == ${Math.floor(resetAtFrame / 64) * 64}u) fx.reset();\n` : ''}${aliased ? '    memcpy(out, in, sizeof in);\n    fx.process(out, out, 64);\n' : '    fx.process(in, out, 64);\n'}    fwrite(in, sizeof(float), 128, raw);
+${resetAtFrame !== undefined ? `    if (done == ${Math.floor(resetAtFrame / 64) * 64}u) fx.reset();\n` : ''}${params
+      .filter((p) => p.length === 3)
+      .map(
+        ([i, v, at]) =>
+          `    if (done == ${Math.floor(at! / 64) * 64}u) fx.setParameter(${i}, ${v});\n`
+      )
+      .join(
+        ''
+      )}${aliased ? '    memcpy(out, in, sizeof in);\n    fx.process(out, out, 64);\n' : '    fx.process(in, out, 64);\n'}    fwrite(in, sizeof(float), 128, raw);
     fwrite(out, sizeof(float), 128, raw);
   }
   fclose(raw);
@@ -1086,6 +1098,50 @@ const GRAIN_FULL: ParamValue[] = [
   const full = width('100')
   const d = Math.max(maxAbsDiff(full.outL, full.inL), maxAbsDiff(full.outR, full.inR))
   check('width: 100 leaves the pair as it is', d < 1e-6, `max diff ${d}`)
+}
+
+{
+  // A knob read once per block must not step the crossfader's gain: DEPTH jumps 0 -> full at
+  // frame 8192 (FADE 0 -> 100, DC 0.5 into in1), and 0 -> 1 % at 16384 into in2, where the
+  // equal-power law is steepest (sqrt(0.01) = 0.1 of the input in one knob step).
+  const knobJump = (in1: boolean, steps: Array<[number, number, number]>): Run =>
+    render(
+      doc(
+        'modfx',
+        [
+          IN,
+          obj('x', 'logue/mix/crossfader', [
+            { name: 'FADE', value: '0', logueKnob: { nts1mkii: 'depth' } }
+          ]),
+          OUT
+        ],
+        [wire('in', 'l', 'x', in1 ? 'in1' : 'in2'), wire('x', 'out', 'out', 'l')]
+      ),
+      [[1, 0], ...steps],
+      'dc'
+    )
+  const maxStep = (a: Float32Array): number => {
+    let m = 0
+    for (let n = 1; n < a.length; n++) m = Math.max(m, Math.abs(a[n] - a[n - 1]))
+    return m
+  }
+  const down = knobJump(true, [[1, 1023, 8192]])
+  const up = knobJump(false, [[1, 10, 16384]])
+  // A one-pole of 96 samples: no sample moves more than 1/96 of the jump.
+  const limit = 0.5 * (1 - Math.exp(-1 / 96)) + 1e-6
+  check(
+    'crossfader: a knob jump glides (2 ms), starts and lands exactly',
+    down.outL[8191] === 0.5 &&
+      down.outL[down.outL.length - 1] === 0 &&
+      maxStep(down.outL) <= limit &&
+      // The small step glides as slowly as the big one: under 1/96 of its own size per sample.
+      maxStep(up.outL) <= up.outL[up.outL.length - 1] * (1 - Math.exp(-1 / 96)) * 1.001 &&
+      up.outL[16383] === 0 &&
+      allFinite(down) &&
+      allFinite(up),
+    `max step ${maxStep(down.outL).toFixed(5)} / ${maxStep(up.outL).toFixed(5)} (limit ${limit.toFixed(5)}), ` +
+      `end ${down.outL[down.outL.length - 1]}, 1 % step to ${up.outL[up.outL.length - 1].toFixed(4)}`
+  )
 }
 
 {

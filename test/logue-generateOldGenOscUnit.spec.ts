@@ -1549,7 +1549,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'crossfader default' })
-      expect(result.oscCpp).toContain('float y_xf = (blkFadeA_xf * (y_a) + blkFadeB_xf * (y_b));')
+      expect(result.oscCpp).toContain(
+        'float y_xf = ((blkFadeMoving_xf != 0.f ? xfade_glide(&xfG_xf[0], blkFadeA_xf) : blkFadeA_xf) * (y_a) + (blkFadeMoving_xf != 0.f ? xfade_glide(&xfG_xf[1], blkFadeB_xf) : blkFadeB_xf) * (y_b));'
+      )
       expect(result.oscCpp).toContain('fadePercent_xf = 50;')
     })
 
@@ -1573,7 +1575,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(doc, { name: 'crossfader wired' })
       expect(result.oscCpp).toContain(
-        'float y_xf = (xfade_sqrtf((100.f - clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f) * (y_a) + xfade_sqrtf((clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f) * (y_b));'
+        'float y_xf = ((xfLaw_xf >= 0.5f ? (100.f - clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f : xfade_sqrtf((100.f - clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f)) * (y_a) + (xfLaw_xf >= 0.5f ? (clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f : xfade_sqrtf((clampf(fadePercent_xf + (y_lfo1) * 100.f, 0.f, 100.f)) * 0.01f)) * (y_b));'
       )
       expect(result.oscCpp).toContain('static float clampf(float v, float lo, float hi)')
     })
@@ -1583,7 +1585,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         { kind: 'obj', type: 'logue/mix/crossfader', name: 'xf', x: 0, y: 0, params: [] }
       ])
       const result = generateOldGenOscUnit(doc, { name: 'crossfader unwired' })
-      expect(result.oscCpp).toContain('float y_xf = (blkFadeA_xf * (0.f) + blkFadeB_xf * (0.f));')
+      expect(result.oscCpp).toContain(
+        'float y_xf = ((blkFadeMoving_xf != 0.f ? xfade_glide(&xfG_xf[0], blkFadeA_xf) : blkFadeA_xf) * (0.f) + (blkFadeMoving_xf != 0.f ? xfade_glide(&xfG_xf[1], blkFadeB_xf) : blkFadeB_xf) * (0.f));'
+      )
     })
 
     it('FADE=0 and FADE=100 select each input fully', () => {

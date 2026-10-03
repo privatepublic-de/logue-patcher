@@ -17,6 +17,8 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
+    stxG_n[0] = -1.f;
+    stxG_n[1] = -1.f;
     stxFadePercent_n = 50;
     stxLaw_n = 0;
   }
@@ -81,10 +83,11 @@ public:
   {
     const float blkStxA_n = (stxLaw_n >= 0.5f ? (100.f - stxFadePercent_n) * 0.01f : xfade_sqrtf((100.f - stxFadePercent_n) * 0.01f));
     const float blkStxB_n = (stxLaw_n >= 0.5f ? (stxFadePercent_n) * 0.01f : xfade_sqrtf((stxFadePercent_n) * 0.01f));
+    const float blkStxMoving_n = xfade_settle(stxG_n, blkStxA_n, blkStxB_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      const float stxA_n = blkStxA_n;
-      const float stxB_n = blkStxB_n;
+      const float stxA_n = (blkStxMoving_n != 0.f ? xfade_glide(&stxG_n[0], blkStxA_n) : blkStxA_n);
+      const float stxB_n = (blkStxMoving_n != 0.f ? xfade_glide(&stxG_n[1], blkStxB_n) : blkStxB_n);
       float y_n_l = stxA_n * (0.f) + stxB_n * (0.f);
       float y_n_r = stxA_n * (0.f) + stxB_n * (0.f);
       (void)y_n_l; (void)y_n_r;
@@ -121,6 +124,7 @@ private:
   float shape2_01_;
   float stxFadePercent_n;
   float stxLaw_n;
+  float stxG_n[2];
 
   static float clampf(float v, float lo, float hi)
   {
@@ -136,6 +140,24 @@ private:
 #else
     return sqrtf(x);
 #endif
+  }
+
+  // Once per block: snaps each of g[0]/g[1] onto its target when within 1e-5 (or not started,
+  // < 0); 1.f while either still has to glide there.
+  static __attribute__((noinline)) float xfade_settle(float *g, float a, float b)
+  {
+    const float da = a - g[0], db = b - g[1];
+    const bool aMoving = g[0] >= 0.f && (da > 1e-5f || da < -1e-5f);
+    const bool bMoving = g[1] >= 0.f && (db > 1e-5f || db < -1e-5f);
+    if (!aMoving) g[0] = a;
+    if (!bMoving) g[1] = b;
+    return (aMoving || bMoving) ? 1.f : 0.f;
+  }
+  // Per sample while settling: a one-pole of 96 samples (2 ms at 48 kHz). A leaf.
+  static inline __attribute__((always_inline)) float xfade_glide(float *g, float target)
+  {
+    *g += (target - *g) * 0.0103626f;
+    return *g;
   }
 };
 
@@ -193,6 +215,8 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
+    stxG_n[0] = -1.f;
+    stxG_n[1] = -1.f;
     value_c_l1 = 37 * 0.01f;
     value_c_r1 = 37 * 0.01f;
     value_c_l2 = 37 * 0.01f;
@@ -267,10 +291,11 @@ public:
       float y_c_fade = value_c_fade;
     const float blkStxA_n = (stxLaw_n >= 0.5f ? (100.f - clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f : xfade_sqrtf((100.f - clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f));
     const float blkStxB_n = (stxLaw_n >= 0.5f ? (clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f : xfade_sqrtf((clampf(stxFadePercent_n + (y_c_fade) * 100.f, 0.f, 100.f)) * 0.01f));
+    const float blkStxMoving_n = xfade_settle(stxG_n, blkStxA_n, blkStxB_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      const float stxA_n = blkStxA_n;
-      const float stxB_n = blkStxB_n;
+      const float stxA_n = (blkStxMoving_n != 0.f ? xfade_glide(&stxG_n[0], blkStxA_n) : blkStxA_n);
+      const float stxB_n = (blkStxMoving_n != 0.f ? xfade_glide(&stxG_n[1], blkStxB_n) : blkStxB_n);
       float y_n_l = stxA_n * (y_c_l1) + stxB_n * (y_c_l2);
       float y_n_r = stxA_n * (y_c_r1) + stxB_n * (y_c_r2);
       (void)y_n_l; (void)y_n_r;
@@ -312,6 +337,7 @@ private:
   float value_c_fade;
   float stxFadePercent_n;
   float stxLaw_n;
+  float stxG_n[2];
 
   static float clampf(float v, float lo, float hi)
   {
@@ -327,6 +353,24 @@ private:
 #else
     return sqrtf(x);
 #endif
+  }
+
+  // Once per block: snaps each of g[0]/g[1] onto its target when within 1e-5 (or not started,
+  // < 0); 1.f while either still has to glide there.
+  static __attribute__((noinline)) float xfade_settle(float *g, float a, float b)
+  {
+    const float da = a - g[0], db = b - g[1];
+    const bool aMoving = g[0] >= 0.f && (da > 1e-5f || da < -1e-5f);
+    const bool bMoving = g[1] >= 0.f && (db > 1e-5f || db < -1e-5f);
+    if (!aMoving) g[0] = a;
+    if (!bMoving) g[1] = b;
+    return (aMoving || bMoving) ? 1.f : 0.f;
+  }
+  // Per sample while settling: a one-pole of 96 samples (2 ms at 48 kHz). A leaf.
+  static inline __attribute__((always_inline)) float xfade_glide(float *g, float target)
+  {
+    *g += (target - *g) * 0.0103626f;
+    return *g;
   }
 };
 
@@ -412,6 +456,8 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
+    stxG_n[0] = -1.f;
+    stxG_n[1] = -1.f;
     stxFadePercent_n = 50;
     stxLaw_n = 0;
   }
@@ -480,10 +526,11 @@ public:
   {
     const float blkStxA_n = (stxLaw_n >= 0.5f ? (100.f - stxFadePercent_n) * 0.01f : xfade_sqrtf((100.f - stxFadePercent_n) * 0.01f));
     const float blkStxB_n = (stxLaw_n >= 0.5f ? (stxFadePercent_n) * 0.01f : xfade_sqrtf((stxFadePercent_n) * 0.01f));
+    const float blkStxMoving_n = xfade_settle(stxG_n, blkStxA_n, blkStxB_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      const float stxA_n = blkStxA_n;
-      const float stxB_n = blkStxB_n;
+      const float stxA_n = (blkStxMoving_n != 0.f ? xfade_glide(&stxG_n[0], blkStxA_n) : blkStxA_n);
+      const float stxB_n = (blkStxMoving_n != 0.f ? xfade_glide(&stxG_n[1], blkStxB_n) : blkStxB_n);
       float y_n_l = stxA_n * (0.f) + stxB_n * (0.f);
       float y_n_r = stxA_n * (0.f) + stxB_n * (0.f);
       (void)y_n_l; (void)y_n_r;
@@ -520,6 +567,7 @@ private:
   float shape2_01_;
   float stxFadePercent_n;
   float stxLaw_n;
+  float stxG_n[2];
 
   static float clampf(float v, float lo, float hi)
   {
@@ -535,6 +583,24 @@ private:
 #else
     return sqrtf(x);
 #endif
+  }
+
+  // Once per block: snaps each of g[0]/g[1] onto its target when within 1e-5 (or not started,
+  // < 0); 1.f while either still has to glide there.
+  static __attribute__((noinline)) float xfade_settle(float *g, float a, float b)
+  {
+    const float da = a - g[0], db = b - g[1];
+    const bool aMoving = g[0] >= 0.f && (da > 1e-5f || da < -1e-5f);
+    const bool bMoving = g[1] >= 0.f && (db > 1e-5f || db < -1e-5f);
+    if (!aMoving) g[0] = a;
+    if (!bMoving) g[1] = b;
+    return (aMoving || bMoving) ? 1.f : 0.f;
+  }
+  // Per sample while settling: a one-pole of 96 samples (2 ms at 48 kHz). A leaf.
+  static inline __attribute__((always_inline)) float xfade_glide(float *g, float target)
+  {
+    *g += (target - *g) * 0.0103626f;
+    return *g;
   }
 };
 

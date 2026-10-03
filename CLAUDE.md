@@ -498,6 +498,18 @@ Current rules only. The round-by-round reports, measurements and reversals behin
 - **`mix/crossfader`** uses `xfade_sqrtf` (`vsqrt.f32` on ARM, `sqrtf` on the host): newlib's
   `sqrtf` sets `errno` and breaks the static xd link. Any new libm call needs a real xd link check
   -- `tanf` links, `expf` and `sqrtf` don't.
+- **Crossfader knob smoothing** (both crossfaders, 2026-10-03, user report: a jump and crackles
+  near one end of a Depth-knob dry/wet): a per-block fade (unwired, or a knob) used to step its
+  gains once per block, and near the equal-power law's ends one 10-bit knob step is ~-27 dB. Now
+  `xfade_settle` (per block) snaps each gain onto its target within 1e-5 and flags a gain still on
+  its way; only then does the loop run `xfade_glide`, a one-pole of 96 samples (2 ms), whatever
+  the step size. Gliding every sample cost 38 xd emulator cycles; settled it's 16 / 15 (stereo),
+  was 4 / 4. `xfade_settle` is a shared `noinline` leaf (both inlined: 9 cycles but ~350 B per
+  instance; both out of line: 21 cycles), code ~140-220 B per instance. A per-sample `fade` (an LFO) isn't smoothed. Gains start at -1 ("not started"), so
+  the first block takes its target at once and FADE 0/100 stay bit-exact. Harness
+  (`runNts1FxHarness.ts`): a full Depth jump moves at most 1/96 of it per sample and lands exactly
+  on 0; a 1 % step (0.049 at once before) at most 0.0005. Mono `crossfader` got `LAW`
+  (Power/Linear) too. No hardware pass yet.
 - **`filter/comb`**: `TUNE`/`FEEDBACK`/`DAMPING` (inlets `tune`/`feedback`/`damping`). All three
   pass through a warp (`comb_response_warp`/`cutoff_warp`), since a linear dial crams the audible
   range into the last ~20%. `TRACK` on (raw >= 1) replaces `TUNE` with note tracking (`1/note_w0`), so
@@ -747,7 +759,8 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   re-read every 16 samples (`env_rate_ctl`: the clamp and `env_rate_from_percent`'s divide), not
   every sample; unwired they stay block constants. xd emulator: ad with control inputs 150 -> 73,
   ahd 139 -> 59. Found profiling grain-mill on the xd, where they were ~20 % of the unit.
-  **`mix/crossfader`**'s two square roots are block constants while `fade` is unwired (34 -> 4).
+  **`mix/crossfader`**'s two square roots are block constants while `fade` is unwired (34 -> 4;
+  16 since the knob smoothing).
 - **`env/ad` vs `env/ahd`**: `ad` always runs to completion and ignores note-off; `ahd` holds
   until note-off (`noteOffStatement`). Separate primitives on purpose.
 - **`env/multistage`** (2026-09-28): a six-stage breakpoint envelope for modulation (the device's

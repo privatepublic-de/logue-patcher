@@ -17,7 +17,15 @@ the code but not measured), or **open** (needs a measurement or a decision).
   `mix2` doesn't have, and they can't be deleted from the canvas (see phase 2b). They do
   nothing in the unit: the only live noise path is `noise -> vca_2 -> mix2.in2`.
 
-## Phase 1 -- crossfader: crackle and the steep start
+## Phase 1 -- crossfader: crackle and the steep start (done 2026-10-03)
+
+Done, crossfader-only (the general knob smoothing stays a decision for later): per-block gains
+settle once per block and glide with a 2 ms one-pole only while moving (`xfade_settle`/
+`xfade_glide`), landing exactly; mono `crossfader` has `LAW`. xd emulator 4 -> 16 (stereo 4 -> 15)
+settled, ~140-220 B of code per instance. Harness: a full knob jump moves <= 1/96 per sample, a 1 % step 100x gentler than
+before. Needs a listening pass on the Radio patch.
+
+Original analysis:
 
 Even with correct wiring, two real problems remain (both inferred, not yet heard in the harness):
 

@@ -2714,3 +2714,23 @@ made it 28 (Short 17). An early Short mode stepped the register itself, which ca
 The level target (RMS 1/3 for the colours) came from a 10M-sample simulation: at white's RMS
 ~8% of pink/brown samples sat past +-1.
 
+
+### Radio patch findings: stale wires, polarity, crossfader smoothing (2026-10-03)
+
+The user's Radio modfx (`docs/PLAN-radio-findings.md`) turned up four things. Two were wiring:
+a Depth control's bipolar outlet into a crossfader `fade` with FADE at 50 clamps away the bottom
+and top quarter of the knob (the "jump at 25 %"), and an envelope through `math/max` into a VCA
+gain still showed the bipolar warning. The fixes in code:
+- Replace with... had left wires into inlets the new type lacks; they had no handle, so they
+  were invisible and undeletable. Every primitive now gets dashed stale handles, the Inspector
+  removes them, and stereo/mono siblings remap `l`/`r` <-> `in`.
+- `refinePolarity`: math nodes correct their inherited bucket from their inputs' range and
+  params, so `max(env, 0)` reads unipolar and `env - env` bipolar.
+- Crossfader smoothing. First version: a per-sample slew limiter (1/96 of full travel a
+  sample). It glided a full jump fine but a small step near the steep end still ramped in ~10
+  samples, so it became a one-pole (2 ms whatever the step size) with a snap. Running that on
+  every sample cost 42 xd emulator cycles (was 4) -- too much for grain-mill's xd units, which
+  sit near their limit -- so the snap moved to a once-per-block settle step and the loop only
+  glides while a gain is still moving: 9 / 15 (stereo) settled. Inlined, though, each instance
+  carried ~350 B of code (an xd modfx has 6 KB in all); moving both helpers out of line cost 21
+  cycles (a call in the loop), so only the per-block settle is out of line: 16 / 15, ~140-220 B.

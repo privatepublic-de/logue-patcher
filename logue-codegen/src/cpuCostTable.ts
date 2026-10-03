@@ -178,9 +178,9 @@ export const CPU_COST_TABLE: Record<
   'logue/math/scale': { variants: { base: 0 }, worst: 0, snapshotHash: '33fcee3c312305e9' },
   'logue/math/subtract': { variants: { base: 0 }, worst: 0, snapshotHash: 'd9827f1376cc7742' },
   'logue/mix/crossfader': {
-    variants: { base: 4, control: 4 },
-    worst: 4,
-    snapshotHash: '1194ab4c27067353'
+    variants: { base: 16, control: 16 },
+    worst: 16,
+    snapshotHash: 'ff48b03b50520cf3'
   },
   'logue/mix/mix2': { variants: { base: 0 }, worst: 0, snapshotHash: '996f8fc72e564aa8' },
   'logue/mix/pan': {
@@ -189,9 +189,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: 'd139dc1b3b1c3b34'
   },
   'logue/mix/stereo-crossfader': {
-    variants: { base: 4, control: 4 },
-    worst: 4,
-    snapshotHash: '3ba512337d3824a1'
+    variants: { base: 15, control: 15 },
+    worst: 15,
+    snapshotHash: '779c8ef1206c74bd'
   },
   'logue/mix/stereo-mix2': { variants: { base: 0 }, worst: 0, snapshotHash: 'a9fb88bd2914a2f3' },
   'logue/mix/width': {

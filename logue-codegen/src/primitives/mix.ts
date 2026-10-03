@@ -1,5 +1,5 @@
 import { PERCENT, STEREO_XFADE_LAWS, STEREO_XFADE_LAW_NAME } from '../paramPresentation'
-import type { HelperBlock, LoguePrimitive } from './types'
+import type { HelperBlock, LoguePrimitive, PrimitiveParamSpec } from './types'
 import {
   CLAMPF_HELPER,
   additiveInletExpr,
@@ -84,55 +84,134 @@ const XFADE_SQRTF_HELPER: HelperBlock = {
 `
 }
 
-/** The two square roots, once per block while `fade` is unwired (a dry/wet knob: two per
- *  crossfader per sample were ~3 % of grain-mill's xd CPU, 2026-10-01). In percent, so both ends
- *  are exact: `1 - 100 * 0.01f` is not 0 in float, and its square root let ~-72 dB of `in1`
- *  through at FADE 100 (harness, 2026-10-03). */
-function crossfaderGains(
-  suffix: string,
-  inlets: Record<string, string | undefined>
-): Record<'a' | 'b', BlockValue> {
-  const fade =
-    inlets.fade !== undefined
-      ? additiveInletExpr('fadePercent', suffix, inlets.fade, 100)
-      : `fadePercent_${suffix}`
-  return {
-    a: blockValue('blkFadeA', suffix, `xfade_sqrtf((100.f - ${fade}) * 0.01f)`, [inlets.fade]),
-    b: blockValue('blkFadeB', suffix, `xfade_sqrtf((${fade}) * 0.01f)`, [inlets.fade])
+/** A block-rate crossfader gain follows its target with this time constant, in samples (2 ms at
+ *  48 kHz), whatever the size of the step. */
+const XFADE_SMOOTH_SAMPLES = 96
+
+/**
+ * Smoothing for a crossfader's per-block gains: a knob is read once per block, and near the
+ * equal-power law's ends one 10-bit knob step is a jump of about -27 dB -- a knob jittering
+ * between two values there crackled (user, 2026-10-03). Once per block `xfade_settle` snaps both
+ * gains onto their targets when within 1e-5 (-100 dB), so they land exactly, and says whether
+ * either is still on its way; only then does the loop run `xfade_glide`, a one-pole of
+ * ${XFADE_SMOOTH_SAMPLES} samples. A settled crossfader costs a predictable branch a sample:
+ * gliding all the time cost 38 xd emulator cycles. `xfade_settle` is a shared `noinline` leaf
+ * (inlined, the two helpers made each instance ~350 B, and an xd modfx has 6 KB); `xfade_glide`
+ * stays inlined, as a call inside the loop cost a settled crossfader ~5 more cycles (16 vs 21).
+ * A negative gain is init/reset's "not started" mark and takes its target at once.
+ */
+const XFADE_SLEW_HELPER: HelperBlock = {
+  key: 'xfade_slew',
+  code: `  // Once per block: snaps each of g[0]/g[1] onto its target when within 1e-5 (or not started,
+  // < 0); 1.f while either still has to glide there.
+  static __attribute__((noinline)) float xfade_settle(float *g, float a, float b)
+  {
+    const float da = a - g[0], db = b - g[1];
+    const bool aMoving = g[0] >= 0.f && (da > 1e-5f || da < -1e-5f);
+    const bool bMoving = g[1] >= 0.f && (db > 1e-5f || db < -1e-5f);
+    if (!aMoving) g[0] = a;
+    if (!bMoving) g[1] = b;
+    return (aMoving || bMoving) ? 1.f : 0.f;
   }
+  // Per sample while settling: a one-pole of ${XFADE_SMOOTH_SAMPLES} samples (2 ms at 48 kHz). A leaf.
+  static inline __attribute__((always_inline)) float xfade_glide(float *g, float target)
+  {
+    *g += (target - *g) * ${(1 - Math.exp(-1 / XFADE_SMOOTH_SAMPLES)).toPrecision(6)}f;
+    return *g;
+  }
+`
+}
+
+interface CrossfaderMembers {
+  fade: string
+  law: string
+  /** The two slewed gains, `float [2]`. */
+  g: string
+  /** Prefix of the two per-block gain locals. */
+  blk: string
+}
+
+const MONO_XFADE: CrossfaderMembers = {
+  fade: 'fadePercent',
+  law: 'xfLaw',
+  g: 'xfG',
+  blk: 'blkFade'
+}
+const STEREO_XFADE: CrossfaderMembers = {
+  fade: 'stxFadePercent',
+  law: 'stxLaw',
+  g: 'stxG',
+  blk: 'blkStx'
 }
 
 /**
- * An equal-power crossfader: `gain1 = sqrt(1-t)`, `gain2 = sqrt(t)`, so `gain1^2 + gain2^2 = 1`
- * across the whole fade (a linear fade dips to 0.5 power at the center). The square root is
- * `xfade_sqrtf` (see `XFADE_SQRTF_HELPER`), not newlib's `sqrtf`.
- *
- * `FADE` (0-100, default 50 = center) is where the fade sits; a wired `fade` adds to it at depth
- * 100 (the whole range), so a bipolar LFO swings around FADE. The sum is clamped to [0,1] because
- * a negative square-root argument gives NaN, so the clamp is load-bearing. Unwired `in1`/`in2` read
- * as silence. Constant loudness holds for uncorrelated inputs: two correlated, in-phase,
- * full-scale inputs sum to ~1.41x at the center (both gains ~0.707), unlike `mix2`, which
- * averages. History: docs/HISTORY.md.
+ * Both crossfaders' two gains from the fade percent and LAW (Power: square roots, Linear: the
+ * percent itself), once per block while `fade` is unwired or per-block (a dry/wet knob: two square
+ * roots per sample were ~3 % of grain-mill's xd CPU, 2026-10-01). In percent, so both ends are
+ * exact: `1 - 100 * 0.01f` is not 0 in float, and its square root let ~-72 dB of `in1` through at
+ * FADE 100 (harness, 2026-10-03).
  */
-export const crossfaderPrimitive: LoguePrimitive = {
-  id: 'logue/mix/crossfader',
-  outletPolarity: 'inherit',
-  stateBytesPerInstance: 4, // fadePercent_, 1 float
-  description: 'Equal-power crossfades between two audio signals.',
-  inlets: [
-    { name: 'in1', role: 'audio' },
-    { name: 'in2', role: 'audio' },
-    { name: 'fade', role: 'control' }
-  ],
-  memberDecls: (suffix) => `  float fadePercent_${suffix};\n`,
-  blockConstants: (suffix, inlets) => blockDecls(crossfaderGains(suffix, inlets)),
-  renderExpr: (suffix, inlets) => {
-    const g = crossfaderGains(suffix, inlets)
-    return `(${g.a.ref} * (${inlets.in1 ?? '0.f'}) + ${g.b.ref} * (${inlets.in2 ?? '0.f'}))`
-  },
-  advanceStatement: () => '',
-  helpers: [CLAMPF_HELPER, XFADE_SQRTF_HELPER],
-  params: [
+function crossfaderBlockValues(
+  suffix: string,
+  inlets: Record<string, string | undefined>,
+  m: CrossfaderMembers
+): Record<'a' | 'b', BlockValue> {
+  const fade =
+    inlets.fade !== undefined
+      ? additiveInletExpr(m.fade, suffix, inlets.fade, 100)
+      : `${m.fade}_${suffix}`
+  const gain = (percent: string): string =>
+    `(${m.law}_${suffix} >= 0.5f ? ${percent} * 0.01f : xfade_sqrtf(${percent} * 0.01f))`
+  return {
+    a: blockValue(`${m.blk}A`, suffix, gain(`(100.f - ${fade})`), [inlets.fade]),
+    b: blockValue(`${m.blk}B`, suffix, gain(`(${fade})`), [inlets.fade])
+  }
+}
+
+/** The gains the loop multiplies by: per-block ones glide toward their targets while
+ *  `xfade_settle` says so (`XFADE_SLEW_HELPER`); a per-sample `fade` (an LFO) is already
+ *  continuous and used as is. */
+function crossfaderGains(
+  suffix: string,
+  inlets: Record<string, string | undefined>,
+  m: CrossfaderMembers
+): Record<'a' | 'b', string> {
+  const v = crossfaderBlockValues(suffix, inlets, m)
+  if (!isBlockInvariant(inlets.fade)) return { a: v.a.ref, b: v.b.ref }
+  const g = `${m.g}_${suffix}`
+  const moving = `${m.blk}Moving_${suffix}`
+  return {
+    a: `(${moving} != 0.f ? xfade_glide(&${g}[0], ${v.a.ref}) : ${v.a.ref})`,
+    b: `(${moving} != 0.f ? xfade_glide(&${g}[1], ${v.b.ref}) : ${v.b.ref})`
+  }
+}
+
+/** The per-block targets, then (while they are per-block) the settle step that reads them. */
+function crossfaderBlockDecls(
+  suffix: string,
+  inlets: Record<string, string | undefined>,
+  m: CrossfaderMembers
+): Array<{ name: string; expr: string }> {
+  const v = crossfaderBlockValues(suffix, inlets, m)
+  const decls = blockDecls(v)
+  if (!isBlockInvariant(inlets.fade)) return decls
+  return [
+    ...decls,
+    {
+      name: `${m.blk}Moving_${suffix}`,
+      expr: `xfade_settle(${m.g}_${suffix}, ${v.a.ref}, ${v.b.ref})`
+    }
+  ]
+}
+
+const crossfaderMemberDecls = (suffix: string, m: CrossfaderMembers): string =>
+  `  float ${m.fade}_${suffix};\n  float ${m.law}_${suffix};\n  float ${m.g}_${suffix}[2];\n`
+
+const crossfaderInit = (suffix: string, m: CrossfaderMembers): string =>
+  `    ${m.g}_${suffix}[0] = -1.f;\n    ${m.g}_${suffix}[1] = -1.f;\n`
+
+function crossfaderParams(m: CrossfaderMembers): PrimitiveParamSpec[] {
+  return [
     {
       name: 'FADE',
       unit: PERCENT,
@@ -141,42 +220,64 @@ export const crossfaderPrimitive: LoguePrimitive = {
       min: 0,
       max: 100,
       default: 50,
-      setStatement: (suffix, valueExpr) => `fadePercent_${suffix} = ${valueExpr};`
+      setStatement: (suffix, valueExpr) => `${m.fade}_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'LAW',
+      unit: STEREO_XFADE_LAW_NAME,
+      select: { count: 2, scale: 1, label: 'Law', names: STEREO_XFADE_LAWS },
+      min: 0,
+      max: 1,
+      default: 0,
+      step: 1,
+      setStatement: (suffix, valueExpr) => `${m.law}_${suffix} = ${valueExpr};`
     }
   ]
 }
 
-/** Both sides' two gains, once per block while `fade` is unwired. LAW 1 is linear: with a wet
- *  signal correlated to the dry one (a chorus, a filter) equal power swells ~3 dB at the centre. */
-function stereoCrossfaderGains(
-  suffix: string,
-  inlets: Record<string, string | undefined>
-): Record<'a' | 'b', BlockValue> {
-  // In percent, so both ends are exact (see `crossfaderGains`).
-  const fade =
-    inlets.fade !== undefined
-      ? additiveInletExpr('stxFadePercent', suffix, inlets.fade, 100)
-      : `stxFadePercent_${suffix}`
-  const gain = (percent: string): string =>
-    `(stxLaw_${suffix} >= 0.5f ? ${percent} * 0.01f : xfade_sqrtf(${percent} * 0.01f))`
-  return {
-    a: blockValue('blkStxA', suffix, gain(`(100.f - ${fade})`), [inlets.fade]),
-    b: blockValue('blkStxB', suffix, gain(`(${fade})`), [inlets.fade])
-  }
+/**
+ * A crossfader: `in1` at FADE 0, `in2` at 100. LAW Power (default) is equal power, `gain1 =
+ * sqrt(1-t)`, `gain2 = sqrt(t)`, so `gain1^2 + gain2^2 = 1` for uncorrelated inputs (two
+ * correlated, in-phase ones sum to ~1.41x at the centre, unlike `mix2`, which averages); Linear
+ * sums to unity for correlated inputs and has no steep ends. `fade` adds to FADE at depth 100 (the
+ * whole range), clamped to [0,100] -- load-bearing, a negative square-root argument is NaN. The
+ * square root is `xfade_sqrtf`, not newlib's `sqrtf`. Unwired `in1`/`in2` read as silence.
+ * History: docs/HISTORY.md.
+ */
+export const crossfaderPrimitive: LoguePrimitive = {
+  id: 'logue/mix/crossfader',
+  outletPolarity: 'inherit',
+  stateBytesPerInstance: 16, // fadePercent_, xfLaw_, xfG_[2]
+  description:
+    'Crossfades between two signals (in1 at 0, in2 at 100). LAW: equal power, or linear for two signals that are close to each other.',
+  inlets: [
+    { name: 'in1', role: 'audio' },
+    { name: 'in2', role: 'audio' },
+    { name: 'fade', role: 'control' }
+  ],
+  memberDecls: (suffix) => crossfaderMemberDecls(suffix, MONO_XFADE),
+  initStatement: (suffix) => crossfaderInit(suffix, MONO_XFADE),
+  blockConstants: (suffix, inlets) => crossfaderBlockDecls(suffix, inlets, MONO_XFADE),
+  renderExpr: (suffix, inlets) => {
+    const g = crossfaderGains(suffix, inlets, MONO_XFADE)
+    return `(${g.a} * (${inlets.in1 ?? '0.f'}) + ${g.b} * (${inlets.in2 ?? '0.f'}))`
+  },
+  advanceStatement: () => '',
+  helpers: [CLAMPF_HELPER, XFADE_SQRTF_HELPER, XFADE_SLEW_HELPER],
+  params: crossfaderParams(MONO_XFADE)
 }
 
 /**
  * `logue/mix/stereo-crossfader`: `crossfader` for a stereo pair, so an effect's dry/wet is one
  * node with one FADE (one device control) instead of two crossfaders whose dials must be kept
  * equal -- every effect example had that pair. `l1`/`r1` at FADE 0, `l2`/`r2` at 100; `fade`
- * additive at depth 100, as on `crossfader`. LAW Power is `crossfader`'s equal-power law,
- * Linear sums to unity gain for correlated inputs. Both sides share the gains, so a wired `fade`
- * costs two square roots per sample, not four.
+ * and LAW as on `crossfader`. Both sides share the gains, so a wired `fade` costs two square
+ * roots per sample, not four.
  */
 export const stereoCrossfaderPrimitive: LoguePrimitive = {
   id: 'logue/mix/stereo-crossfader',
   outletPolarity: 'inherit',
-  stateBytesPerInstance: 8, // stxFadePercent_, stxLaw_
+  stateBytesPerInstance: 16, // stxFadePercent_, stxLaw_, stxG_[2]
   description:
     "Crossfades between two stereo pairs (l1/r1 at 0, l2/r2 at 100) with one FADE -- an effect's dry/wet in one node. LAW: equal power, or linear for a wet signal that is close to the dry one.",
   searchTerms: ['xfade', 'dry', 'wet', 'blend'],
@@ -188,48 +289,28 @@ export const stereoCrossfaderPrimitive: LoguePrimitive = {
     { name: 'fade', role: 'control' }
   ],
   outlets: [{ name: 'l' }, { name: 'r' }],
-  memberDecls: (suffix) => `  float stxFadePercent_${suffix};\n  float stxLaw_${suffix};\n`,
-  blockConstants: (suffix, inlets) => blockDecls(stereoCrossfaderGains(suffix, inlets)),
+  memberDecls: (suffix) => crossfaderMemberDecls(suffix, STEREO_XFADE),
+  initStatement: (suffix) => crossfaderInit(suffix, STEREO_XFADE),
+  blockConstants: (suffix, inlets) => crossfaderBlockDecls(suffix, inlets, STEREO_XFADE),
   renderExpr: () => {
     throw new Error(
       'logue/mix/stereo-crossfader is multi-outlet -- use renderOutletStatements, not renderExpr'
     )
   },
   renderOutletStatements: (suffix, inlets) => {
-    const g = stereoCrossfaderGains(suffix, inlets)
-    // Locals so a per-sample gain is worked out once for both sides.
+    const g = crossfaderGains(suffix, inlets, STEREO_XFADE)
+    // Locals so a gain is worked out (and glides) once for both sides.
     return (
-      `      const float stxA_${suffix} = ${g.a.ref};\n` +
-      `      const float stxB_${suffix} = ${g.b.ref};\n` +
+      `      const float stxA_${suffix} = ${g.a};\n` +
+      `      const float stxB_${suffix} = ${g.b};\n` +
       `      float y_${suffix}_l = stxA_${suffix} * (${inlets.l1 ?? '0.f'}) + stxB_${suffix} * (${inlets.l2 ?? '0.f'});\n` +
       `      float y_${suffix}_r = stxA_${suffix} * (${inlets.r1 ?? '0.f'}) + stxB_${suffix} * (${inlets.r2 ?? '0.f'});\n` +
       `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`
     )
   },
   advanceStatement: () => '',
-  helpers: [CLAMPF_HELPER, XFADE_SQRTF_HELPER],
-  params: [
-    {
-      name: 'FADE',
-      unit: PERCENT,
-      modulatedBy: { inlet: 'fade', shape: 'additive' },
-      nts1mkiiType: 'percent',
-      min: 0,
-      max: 100,
-      default: 50,
-      setStatement: (suffix, valueExpr) => `stxFadePercent_${suffix} = ${valueExpr};`
-    },
-    {
-      name: 'LAW',
-      unit: STEREO_XFADE_LAW_NAME,
-      select: { count: 2, scale: 1, label: 'Law', names: STEREO_XFADE_LAWS },
-      min: 0,
-      max: 1,
-      default: 0,
-      step: 1,
-      setStatement: (suffix, valueExpr) => `stxLaw_${suffix} = ${valueExpr};`
-    }
-  ]
+  helpers: [CLAMPF_HELPER, XFADE_SQRTF_HELPER, XFADE_SLEW_HELPER],
+  params: crossfaderParams(STEREO_XFADE)
 }
 
 /**

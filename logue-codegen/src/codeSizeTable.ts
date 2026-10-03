@@ -105,11 +105,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '422c16a247da8ec8'
     },
     'logue/mix/crossfader': {
-      first: 84,
-      extra: 84,
-      helpers: [],
-      unwired: { first: 56, extra: 20, helpers: [] },
-      snapshotHash: '1194ab4c27067353'
+      first: 276,
+      extra: 216,
+      helpers: ['Osc::xfade_settle(float*, float, float)'],
+      unwired: { first: 184, extra: 148, helpers: ['Osc::xfade_settle(float*, float, float)'] },
+      snapshotHash: 'ff48b03b50520cf3'
     },
     'logue/mix/stereo-mix2': {
       first: 24,
@@ -119,11 +119,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'a9fb88bd2914a2f3'
     },
     'logue/mix/stereo-crossfader': {
-      first: 156,
-      extra: 128,
-      helpers: [],
-      unwired: { first: 72, extra: 40, helpers: [] },
-      snapshotHash: '3ba512337d3824a1'
+      first: 264,
+      extra: 204,
+      helpers: ['Osc::xfade_settle(float*, float, float)'],
+      unwired: { first: 172, extra: 136, helpers: ['Osc::xfade_settle(float*, float, float)'] },
+      snapshotHash: '779c8ef1206c74bd'
     },
     'logue/filter/lowpass-cheap': {
       first: 64,
@@ -706,11 +706,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '422c16a247da8ec8'
     },
     'logue/mix/crossfader': {
-      first: 96,
-      extra: 92,
+      first: 212,
+      extra: 140,
       helpers: [],
-      unwired: { first: 60, extra: 16, helpers: [] },
-      snapshotHash: '1194ab4c27067353'
+      unwired: { first: 212, extra: 128, helpers: ['Fx::xfade_settle(float*, float, float)'] },
+      snapshotHash: 'ff48b03b50520cf3'
     },
     'logue/mix/stereo-mix2': {
       first: 28,
@@ -720,11 +720,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'a9fb88bd2914a2f3'
     },
     'logue/mix/stereo-crossfader': {
-      first: 172,
-      extra: 128,
+      first: 200,
+      extra: 136,
       helpers: [],
-      unwired: { first: 76, extra: 36, helpers: [] },
-      snapshotHash: '3ba512337d3824a1'
+      unwired: { first: 192, extra: 116, helpers: ['Fx::xfade_settle(float*, float, float)'] },
+      snapshotHash: '779c8ef1206c74bd'
     },
     'logue/filter/lowpass-cheap': {
       first: 92,
@@ -1332,11 +1332,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '0b26d1b6c51171af'
     },
     'logue/mix/crossfader': {
-      first: 92,
-      extra: 72,
-      helpers: [],
-      unwired: { first: 60, extra: 24, helpers: [] },
-      snapshotHash: 'dd44b98bd10555cb'
+      first: 343,
+      extra: 216,
+      helpers: ['Osc::xfade_settle(float*, float, float)'],
+      unwired: { first: 271, extra: 128, helpers: ['Osc::xfade_settle(float*, float, float)'] },
+      snapshotHash: '089b0063484764a0'
     },
     'logue/mix/stereo-mix2': {
       first: 24,
@@ -1346,11 +1346,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '8dc968f7e941e464'
     },
     'logue/mix/stereo-crossfader': {
-      first: 152,
-      extra: 128,
-      helpers: [],
-      unwired: { first: 84, extra: 36, helpers: [] },
-      snapshotHash: '0b19f3f60d915157'
+      first: 331,
+      extra: 204,
+      helpers: ['Osc::xfade_settle(float*, float, float)'],
+      unwired: { first: 259, extra: 116, helpers: ['Osc::xfade_settle(float*, float, float)'] },
+      snapshotHash: '691c2bffa3b82a56'
     },
     'logue/filter/lowpass-cheap': {
       first: 72,
@@ -1931,11 +1931,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '0b26d1b6c51171af'
     },
     'logue/mix/crossfader': {
-      first: 92,
-      extra: 80,
+      first: 204,
+      extra: 144,
       helpers: [],
-      unwired: { first: 60, extra: 16, helpers: [] },
-      snapshotHash: 'dd44b98bd10555cb'
+      unwired: { first: 298, extra: 124, helpers: ['Fx::xfade_settle(float*, float, float)'] },
+      snapshotHash: '089b0063484764a0'
     },
     'logue/mix/stereo-mix2': {
       first: 24,
@@ -1945,11 +1945,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '8dc968f7e941e464'
     },
     'logue/mix/stereo-crossfader': {
-      first: 156,
-      extra: 128,
+      first: 192,
+      extra: 140,
       helpers: [],
-      unwired: { first: 80, extra: 32, helpers: [] },
-      snapshotHash: '0b19f3f60d915157'
+      unwired: { first: 286, extra: 112, helpers: ['Fx::xfade_settle(float*, float, float)'] },
+      snapshotHash: '691c2bffa3b82a56'
     },
     'logue/filter/lowpass-cheap': {
       first: 92,
@@ -2490,9 +2490,9 @@ export const CODE_SIZE_TABLE: Record<
 /** The unit shell each context was measured in (`shellHash`, measureCodeSizes.ts). */
 export const CODE_SHELL_HASH: Record<CodeSizeContext, string> = {
   'minilogue-xd:osc': 'f3edec1a842e0630',
-  'minilogue-xd:fx': '253151d82c3efd66',
+  'minilogue-xd:fx': '323c55ee855d1752',
   'nts1mkii:osc': '2f68421838833402',
-  'nts1mkii:fx': '67e442371ca963a4'
+  'nts1mkii:fx': '91502563103d0945'
 }
 
 /** Bytes of each out-of-line function (demangled name) per context. */
@@ -2513,7 +2513,8 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::polyblep(float, float)': 96,
     'Osc::quantize_step(float, int, float*, float*)': 328,
     'Osc::string_step(float*, int*, float*, float*, float*, float*, float, float, float, float, float)': 524,
-    'Osc::sync_osc_step(float*, float*, float*, float, float, int, float)': 848
+    'Osc::sync_osc_step(float*, float*, float*, float, float, int, float)': 848,
+    'Osc::xfade_settle(float*, float, float)': 172
   },
   'minilogue-xd:fx': {
     'Fx::additive_step(float, float, float)': 480,
@@ -2531,6 +2532,7 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Fx::quantize_step(float, int, float*, float*)': 328,
     'Fx::string_step(float*, int*, float*, float*, float*, float*, float, float, float, float, float)': 524,
     'Fx::sync_osc_step(float*, float*, float*, float, float, int, float)': 848,
+    'Fx::xfade_settle(float*, float, float)': 172,
     memset: 134
   },
   'nts1mkii:osc': {
@@ -2549,7 +2551,8 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::polyblep(float, float)': 96,
     'Osc::quantize_step(float, int, float*, float*)': 328,
     'Osc::string_step(float*, int*, float*, float*, float*, float*, float, float, float, float, float)': 524,
-    'Osc::sync_osc_step(float*, float*, float*, float, float, int, float)': 864
+    'Osc::sync_osc_step(float*, float*, float*, float, float, int, float)': 864,
+    'Osc::xfade_settle(float*, float, float)': 172
   },
   'nts1mkii:fx': {
     'Fx::additive_step(float, float, float)': 488,
@@ -2567,6 +2570,7 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Fx::quantize_step(float, int, float*, float*)': 328,
     'Fx::string_step(float*, int*, float*, float*, float*, float*, float, float, float, float, float)': 524,
     'Fx::sync_osc_step(float*, float*, float*, float, float, int, float)': 864,
+    'Fx::xfade_settle(float*, float, float)': 172,
     memset: 16
   }
 }
