@@ -33,6 +33,14 @@ import {
   XD_CONFIRMED_WORKING_CYCLES,
   XD_HUNG_REFERENCE_CYCLES
 } from '@logue-codegen/estimateOscCpuCost'
+import {
+  estimateFxCpuCost,
+  fxCpuZone,
+  XD_FX_CLEAN_CYCLES,
+  XD_FX_CPU_GAUGE,
+  XD_FX_DROPOUT_CYCLES,
+  XD_FX_SOLO_CYCLES
+} from '@logue-codegen/estimateFxCpuCost'
 import { usedSubpatchTypes } from '@logue-codegen/subpatches'
 import { useOptionalPatchStore } from '../state/patchStore'
 import { useSubpatchLibraryStore } from '../state/subpatchLibraryStore'
@@ -177,10 +185,19 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
 
   const cpuCost = useMemo(
     () =>
-      analysisDoc && logueTarget && !isSubpatchDoc
+      analysisDoc && logueTarget && !isSubpatchDoc && !effect
         ? estimateOscCpuCost(analysisDoc, subpatchDefs, buildPlatform)
         : null,
-    [analysisDoc, logueTarget, isSubpatchDoc, buildPlatform, subpatchDefs]
+    [analysisDoc, logueTarget, isSubpatchDoc, effect, buildPlatform, subpatchDefs]
+  )
+
+  // Only the xd has an effect table (its emulator); the NTS-1 mkII keeps a placeholder row.
+  const fxCpuCost = useMemo(
+    () =>
+      analysisDoc && effect && !isSubpatchDoc && buildPlatform === 'minilogue-xd'
+        ? estimateFxCpuCost(analysisDoc, subpatchDefs)
+        : null,
+    [analysisDoc, effect, isSubpatchDoc, buildPlatform, subpatchDefs]
   )
 
   /** Fallback only -- used when the document has no explicit `settings.unitName` override. */
@@ -533,9 +550,84 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 />
               )
             })()}
-          {effect && findUnitKind(buildPlatform, logueTarget.module) && (
-            <UsageGauge label="CPU" text="—" tooltip="CPU: not measured for effects yet." />
-          )}
+          {effect &&
+            buildPlatform === 'nts1mkii' &&
+            findUnitKind(buildPlatform, logueTarget.module) && (
+              <UsageGauge
+                label="CPU"
+                text="—"
+                tooltip="CPU: not estimated for NTS-1 mkII effects yet (only the minilogue xd has an effect emulator)."
+              />
+            )}
+          {fxCpuCost?.status === 'ok' &&
+            (() => {
+              const { cyclesPerSample, maxCyclesPerSample, perInstance, unmeasured } =
+                fxCpuCost.estimate
+              const { zone } = fxCpuZone(cyclesPerSample)
+              const max = fxCpuZone(maxCyclesPerSample)
+              // Past the dropout anchor a unit may still run with the other two slots off.
+              const solo = (cycles: number): boolean => cycles <= XD_FX_SOLO_CYCLES
+              const verdictOf = (z: typeof zone, cycles: number): string =>
+                z === 'fine'
+                  ? 'likely fine'
+                  : z === 'between'
+                    ? 'untested'
+                    : solo(cycles)
+                      ? 'likely to drop out with the other effects on; needs the other two effect slots off'
+                      : 'likely to drop out, even alone'
+              const shortVerdictOf = (z: typeof zone, cycles: number): string =>
+                z === 'fine'
+                  ? 'fine'
+                  : z === 'between'
+                    ? 'untested'
+                    : solo(cycles)
+                      ? 'solo only'
+                      : 'dropouts'
+              const knobsMatter =
+                maxCyclesPerSample > cyclesPerSample &&
+                shortVerdictOf(max.zone, maxCyclesPerSample) !==
+                  shortVerdictOf(zone, cyclesPerSample)
+              return (
+                <UsageGauge
+                  label="CPU"
+                  value={cyclesPerSample}
+                  fineUpTo={XD_FX_CPU_GAUGE.fineUpTo}
+                  limit={XD_FX_CPU_GAUGE.limit}
+                  reach={maxCyclesPerSample}
+                  markFine
+                  tooltip={
+                    `CPU: ${verdictOf(zone, cyclesPerSample)}` +
+                    (knobsMatter
+                      ? `; with the knobs turned up: ${verdictOf(max.zone, maxCyclesPerSample)}`
+                      : '') +
+                    '.\n\n' +
+                    `Estimated ${cyclesPerSample} cycles per sample at the saved settings` +
+                    (maxCyclesPerSample > cyclesPerSample
+                      ? `, up to ${maxCyclesPerSample} with the knobs at their costliest`
+                      : '') +
+                    ' (emulator, not measured on the synth; whole example effects come out ' +
+                    'within -10..+22 % of their estimate).\n\n' +
+                    `An xd delay unit at ~680-${XD_FX_CLEAN_CYCLES} stayed clean with the factory ` +
+                    `mod and reverb running; at ~${XD_FX_DROPOUT_CYCLES} it dropped out with both, ` +
+                    '~1000 crackled with both, ~1200 with either alone. A reverb at ' +
+                    `~${XD_FX_SOLO_CYCLES} runs only with both other slots off. All three effect ` +
+                    'slots share one processor, so busier effects in the others leave this one less.' +
+                    '\n\nBiggest costs:\n' +
+                    [...perInstance]
+                      .filter((i) => i.cycles > 0)
+                      .sort((a, b) => b.cycles - a.cycles)
+                      .slice(0, 4)
+                      .map((i) => `${i.nodeName}: ${i.cycles}`)
+                      .join('\n') +
+                    (unmeasured.length ? `\n\nNot measured: ${unmeasured.join(', ')}` : '')
+                  }
+                  text={
+                    shortVerdictOf(zone, cyclesPerSample) +
+                    (knobsMatter ? ` → ${shortVerdictOf(max.zone, maxCyclesPerSample)}` : '')
+                  }
+                />
+              )
+            })()}
           {cpuCost?.status === 'ok' &&
             cpuCost.estimate.perInstance.length > 0 &&
             (() => {

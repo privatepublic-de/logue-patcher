@@ -4,7 +4,7 @@
  * accesses per line) and attributes each fx.cpp line to the instance whose `_<suffix>` names it
  * uses inside `process`; a line inside a helper goes to that helper (shared by every instance
  * calling it), an SDK header's to that header, the rest of `process` to "glue". Lists each
- * counted instance with its table cost (`fxTableCosts.ts`) and its inline lines, then the other
+ * counted instance with its table cost (`estimateFxCpuCost`) and its inline lines, then the other
  * buckets. Found the causes behind `checkFxCpuEstimate.ts`' misses (2026-10-03): a primitive
  * measured with an outlet unread, envelopes charged a per-sample control path they didn't take,
  * grains that capture all the time.
@@ -23,7 +23,7 @@ import { dirname, join } from 'path'
 import { parsePatchFile } from '../../src/shared/json/patchCodec'
 import type { PatchDocument } from '../../src/shared/domain/patch'
 import { examplesDir } from './exampleSubpatches'
-import { atPenalty, fxTableCosts } from './fxTableCosts'
+import { estimateFxCpuCost, fxCycles } from '../src/estimateFxCpuCost'
 import { measureXdFx } from './measureXdFxCycles'
 
 const DIR = 'lp-measure-fxprofile'
@@ -64,9 +64,11 @@ for (const arg of process.argv.slice(2)) {
     }
   )
   const src = readFileSync(join(stage, 'fx.cpp'), 'utf8').split('\n')
-  const table = fxTableCosts(doc, subpatches)
+  const result = estimateFxCpuCost(doc, subpatches)
+  if (result.status !== 'ok') throw new Error(`${arg}: ${result.reason}`)
+  const table = result.estimate
   // Longest first, so `voice1_env` isn't read as `voice1`.
-  const suffixes = table.instances.map((i) => i.suffix).sort((a, b) => b.length - a.length)
+  const suffixes = table.perInstance.map((i) => i.suffix).sort((a, b) => b.length - a.length)
   const functionAt: string[] = []
   let current = ''
   src.forEach((line, i) => {
@@ -99,14 +101,14 @@ for (const arg of process.argv.slice(2)) {
   const profiled = [...buckets.values()].reduce((sum, b) => sum + b.cycles, 0)
   console.log(
     `\n== ${arg}: whole ${whole.cycles.toFixed(0)} cycles, ${whole.sdram.toFixed(1)} SDRAM; ` +
-      `profiled ${profiled.toFixed(0)}; table ${atPenalty(table.sum, 0).toFixed(0)} ` +
-      `(baseline ${table.baseline.cycles})`
+      `profiled ${profiled.toFixed(0)}; table ${fxCycles(table.sum, 0).toFixed(0)} ` +
+      `(baseline ${fxCycles(table.sum, 0) - table.perInstance.reduce((n, i) => n + i.cost.cycles, 0)})`
   )
   console.log('instance                 table variant             table      inline lines')
-  for (const inst of table.instances) {
+  for (const inst of table.perInstance) {
     const own = buckets.get(`inst:${inst.suffix}`) ?? { cycles: 0, sdram: 0 }
     console.log(
-      `  ${inst.suffix.padEnd(22)} ${`${inst.id.slice('logue/'.length)} ${inst.label}`.padEnd(34)} ` +
+      `  ${inst.suffix.padEnd(22)} ${`${inst.primitiveId.slice('logue/'.length)} ${inst.variant}`.padEnd(34)} ` +
         `${String(inst.cost.cycles).padStart(4)}/${inst.cost.sdram.toFixed(1).padEnd(4)} ` +
         `${own.cycles.toFixed(0).padStart(5)}/${own.sdram.toFixed(2)}`
     )
@@ -118,6 +120,6 @@ for (const arg of process.argv.slice(2)) {
       `  ${key.padEnd(40)} ${b.cycles.toFixed(0).padStart(5)} cycles ${b.sdram.toFixed(2)} SDRAM`
     )
   }
-  if (table.missing.length) console.log(`not in the table: ${table.missing.join(', ')}`)
+  if (table.unmeasured.length) console.log(`not in the table: ${table.unmeasured.join(', ')}`)
 }
 rmSync(stage, { recursive: true, force: true })

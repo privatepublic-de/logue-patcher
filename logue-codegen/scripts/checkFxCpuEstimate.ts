@@ -1,6 +1,6 @@
 /**
  * `fxCpuCostTable.ts` against whole units: every example effect built for the minilogue xd and run
- * on the emulator, next to the table's sum for the same patch (`fxTableCosts.ts`). Prints both at
+ * on the emulator, next to the table's sum for the same patch (`estimateFxCpuCost`). Prints both at
  * SDRAM_PENALTY 0 and 8, the SDRAM accesses, `max` (moving inputs at their heavy cases) and the
  * error band. A miss to chase goes to `profileFxUnit.ts`.
  *
@@ -11,7 +11,7 @@ import { homedir } from 'os'
 import { join } from 'path'
 import type { FxCpuCost } from '../src/fxCpuCostTable'
 import { parsePatchFile } from '../../src/shared/json/patchCodec'
-import { atPenalty, fxTableCosts } from './fxTableCosts'
+import { estimateFxCpuCost, fxCycles } from '../src/estimateFxCpuCost'
 import { exampleSubpatches, examplesDir } from './exampleSubpatches'
 import { measureXdFx, TooBigError } from './measureXdFxCycles'
 
@@ -35,12 +35,17 @@ for (const file of readdirSync(examplesDir)
     )
     continue
   }
-  const { sum, max, missing } = fxTableCosts(doc, subpatches)
-  const error = atPenalty(sum, 8) / atPenalty(whole, 8) - 1
+  const result = estimateFxCpuCost(doc, subpatches)
+  if (result.status !== 'ok') {
+    console.log(`${file.padEnd(30)} ${result.reason}`)
+    continue
+  }
+  const { sum, max, unmeasured: missing } = result.estimate
+  const error = fxCycles(sum, 8) / fxCycles(whole, 8) - 1
   errors.push(error)
   const n = (v: number, w: number): string => v.toFixed(0).padStart(w)
   console.log(
-    `${file.padEnd(30)} ${n(atPenalty(whole, 0), 8)} ${n(atPenalty(sum, 0), 8)} ${n(atPenalty(whole, 8), 8)} ${n(atPenalty(sum, 8), 8)} ${n(atPenalty(max, 8), 7)}  ` +
+    `${file.padEnd(30)} ${n(fxCycles(whole, 0), 8)} ${n(fxCycles(sum, 0), 8)} ${n(fxCycles(whole, 8), 8)} ${n(fxCycles(sum, 8), 8)} ${n(fxCycles(max, 8), 7)}  ` +
       `${[whole, sum, max]
         .map((c) => c.sdram.toFixed(1))
         .join(' / ')

@@ -53,10 +53,17 @@ export function cpuZone(
   cyclesPerVoice: number,
   platform: LoguePlatform = 'minilogue-xd'
 ): { zone: CpuZone; between: number } {
-  const { fineUpTo, limit } = CPU_GAUGE[platform]
-  const between = Math.min(1, Math.max(0, (cyclesPerVoice - fineUpTo) / (limit - fineUpTo)))
-  if (cyclesPerVoice <= fineUpTo) return { zone: 'fine', between }
-  if (cyclesPerVoice < limit) return { zone: 'between', between }
+  return zoneFor(cyclesPerVoice, CPU_GAUGE[platform])
+}
+
+/** `cpuZone` against any pair of anchors (the effect gauge's too). */
+export function zoneFor(
+  cycles: number,
+  { fineUpTo, limit }: { fineUpTo: number; limit: number }
+): { zone: CpuZone; between: number } {
+  const between = Math.min(1, Math.max(0, (cycles - fineUpTo) / (limit - fineUpTo)))
+  if (cycles <= fineUpTo) return { zone: 'fine', between }
+  if (cycles < limit) return { zone: 'between', between }
   return { zone: 'over', between }
 }
 
