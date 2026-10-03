@@ -484,7 +484,7 @@ export const multistageEnvelopePrimitive: LoguePrimitive = {
   noteOnStatement: (suffix) => `    noteHeld_${suffix} = 1.f;\n    retrig_${suffix} = 1;\n`,
   noteOffStatement: (suffix) => `    noteHeld_${suffix} = 0.f;\n`,
   params: [
-    ...[100, 30, 0, 0, 0, 0].map((level, i) => ({
+    ...[100, 50, 70, 30, 15, 0].map((level, i) => ({
       name: `L${i + 1}`,
       unit: PERCENT,
       min: -100,
@@ -493,7 +493,7 @@ export const multistageEnvelopePrimitive: LoguePrimitive = {
       setStatement: (suffix: string, valueExpr: string) =>
         `level_${suffix}[${i}] = (${valueExpr}) * 0.01f;`
     })),
-    ...[20, 35, 45, 0, 0, 0].map((time, i) => ({
+    ...[15, 25, 25, 25, 25, 35].map((time, i) => ({
       name: `T${i + 1}`,
       unit: MSEG_STAGE_MS,
       min: 0,

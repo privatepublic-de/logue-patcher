@@ -179,11 +179,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'a39fd0de0ef1ae2a'
     },
     'logue/env/multistage': {
-      first: 808,
-      extra: 592,
+      first: 824,
+      extra: 604,
       helpers: ['Osc::mseg_rate_from_percent(float)'],
-      unwired: { first: 740, extra: 444, helpers: ['Osc::mseg_rate_from_percent(float)'] },
-      snapshotHash: 'ba515229c0fca386'
+      unwired: { first: 756, extra: 460, helpers: ['Osc::mseg_rate_from_percent(float)'] },
+      snapshotHash: '8672d9936f6615d1'
     },
     'logue/lfo/sine-lfo': {
       first: 300,
@@ -761,11 +761,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'a39fd0de0ef1ae2a'
     },
     'logue/env/multistage': {
-      first: 804,
-      extra: 584,
+      first: 820,
+      extra: 600,
       helpers: ['Fx::mseg_rate_from_percent(float)'],
-      unwired: { first: 744, extra: 428, helpers: ['Fx::mseg_rate_from_percent(float)'] },
-      snapshotHash: 'ba515229c0fca386'
+      unwired: { first: 760, extra: 444, helpers: ['Fx::mseg_rate_from_percent(float)'] },
+      snapshotHash: '8672d9936f6615d1'
     },
     'logue/lfo/sine-lfo': {
       first: 316,
@@ -1382,11 +1382,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '9c5705d6ac6db998'
     },
     'logue/env/multistage': {
-      first: 910,
-      extra: 702,
+      first: 926,
+      extra: 714,
       helpers: ['Osc::mseg_rate_from_percent(float)'],
-      unwired: { first: 834, extra: 562, helpers: ['Osc::mseg_rate_from_percent(float)'] },
-      snapshotHash: '67a349cd244b6848'
+      unwired: { first: 850, extra: 578, helpers: ['Osc::mseg_rate_from_percent(float)'] },
+      snapshotHash: 'c717614593848225'
     },
     'logue/lfo/sine-lfo': {
       first: 350,
@@ -1962,11 +1962,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '9c5705d6ac6db998'
     },
     'logue/env/multistage': {
-      first: 929,
-      extra: 681,
+      first: 941,
+      extra: 697,
       helpers: ['Fx::mseg_rate_from_percent(float)'],
-      unwired: { first: 865, extra: 545, helpers: ['Fx::mseg_rate_from_percent(float)'] },
-      snapshotHash: '67a349cd244b6848'
+      unwired: { first: 877, extra: 561, helpers: ['Fx::mseg_rate_from_percent(float)'] },
+      snapshotHash: 'c717614593848225'
     },
     'logue/lfo/sine-lfo': {
       first: 366,

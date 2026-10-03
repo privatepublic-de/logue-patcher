@@ -744,10 +744,13 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   mkII the mode names; the xd shows 1..N). Harness-checked per mode (ASan/UBSan clean); real
   ARM builds link on both (`scripts/stageMultistageEnv.ts`), `mseg_step` is inlined into the
   xd's `process`, and the xd RAM estimate matches its bss exactly. Emulator cost (xd, per
-  voice-sample): 110 running, 86 idle with control inputs wired, 166 for `heavy-cycle` (cycle
-  mode, short stages, inputs wired) -- counted once MODE or another param is on a knob. Moving the
+  voice-sample, table of 2026-10-03): 123 base, 47 with control inputs wired, 113 for
+  `heavy-cycle` (cycle mode, short stages, inputs wired) -- counted once MODE or another param is on a knob. Moving the
   hold/loop clamps per block or adding a sustain early-return didn't pay off at `-Os` (+15 for the
   early return). Confirmed on both devices, all four modes (user, 2026-09-30).
+  Defaults give every stage a nonzero time and its own level (L 100/50/70/30/15/0, T
+  15/25/25/25/25/35; user, 2026-10-03): with T4-T6 at 0 the last three graph points sat on T3's
+  and were hard to grab. A file that never touched those params now plays the new shape.
 - **`env/adsr` + `env/one-knob-adsr`** (2026-10-02): an ADSR (none existed: `ahd` has no
   sustain level) and the same core with its four stages picked by one SHAPE knob, after the
   user's Axoloti `one-knob-adsr` subpatch. A primitive, not a subpatch: there was no ADSR and no

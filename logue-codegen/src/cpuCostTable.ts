@@ -32,9 +32,9 @@ export const CPU_COST_TABLE: Record<
   },
   'logue/env/follower': { variants: { base: 20 }, worst: 20, snapshotHash: 'ecfd9702000ca1e0' },
   'logue/env/multistage': {
-    variants: { base: 110, control: 47, 'heavy-cycle': 113 },
-    worst: 113,
-    snapshotHash: 'ba515229c0fca386'
+    variants: { base: 123, control: 47, 'heavy-cycle': 113 },
+    worst: 123,
+    snapshotHash: '8672d9936f6615d1'
   },
   'logue/env/one-knob-adsr': {
     variants: { base: 51, control: 42, 'heavy-moving-shape': 131 },
