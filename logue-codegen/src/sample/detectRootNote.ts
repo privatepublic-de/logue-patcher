@@ -1,9 +1,8 @@
+import { yinDifference, yinFirstDip, YIN_APERIODICITY_THRESHOLD } from './yin'
+
 const MIN_HZ = 40
 const MAX_HZ = 2000
 const WINDOW_SECONDS = 0.1
-// YIN's cumulative-mean-normalized difference must dip below this for a period to count --
-// above it the material is treated as unpitched (noise, a drum hit) and no root is proposed.
-const APERIODICITY_THRESHOLD = 0.2
 
 /**
  * A plain YIN estimate over the loudest ~100 ms of the source, rounded to the nearest MIDI note.
@@ -19,28 +18,12 @@ export function detectRootNote(samples: Float32Array, sampleRate: number): numbe
   const start = loudestWindowStart(samples, windowLength + maxLag)
   const n = windowLength - maxLag
   if (n < minLag) return undefined
-  const diff = new Float64Array(maxLag + 1)
-  for (let lag = 1; lag <= maxLag; lag++) {
-    let sum = 0
-    for (let i = 0; i < n; i++) {
-      const d = samples[start + i] - samples[start + i + lag]
-      sum += d * d
-    }
-    diff[lag] = sum
-  }
-  let running = 0
-  let bestLag = -1
-  for (let lag = 1; lag <= maxLag; lag++) {
-    running += diff[lag]
-    const cmnd = running > 0 ? (diff[lag] * lag) / running : 1
-    if (lag >= minLag && cmnd < APERIODICITY_THRESHOLD) {
-      // Walk down to the local minimum rather than taking the first sub-threshold lag.
-      bestLag = lag
-      while (bestLag + 1 <= maxLag && diff[bestLag + 1] < diff[bestLag]) bestLag++
-      break
-    }
-  }
-  if (bestLag < 0) return undefined
+  const bestLag = yinFirstDip(
+    yinDifference(samples, start, n, maxLag),
+    minLag,
+    YIN_APERIODICITY_THRESHOLD
+  )
+  if (bestLag === undefined) return undefined
   const hz = sampleRate / bestLag
   return Math.round(69 + 12 * Math.log2(hz / 440))
 }
