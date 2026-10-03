@@ -125,6 +125,7 @@ const axolotiApi: AxolotiIpcApi = {
     onMenuOpenAbout: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.openAbout'], cb),
     onMenuExportUnitSource: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.exportUnitSource'], cb),
     onMenuBuildUnit: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.buildUnit'], cb),
+    onMenuBuildAndUploadUnit: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.buildAndUploadUnit'], cb),
     onMenuOpenParamMatrix: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.openParamMatrix'], cb),
     onMenuDeviceBackup: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.deviceBackup'], cb),
     onMenuDeviceRestore: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.deviceRestore'], cb),

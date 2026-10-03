@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { LoguePlatform } from '@shared/domain/patch'
+import type { LogueUnitModule } from '@logue-codegen/sysex/korgUserUnitMessages'
 
 /**
  * One completed Export or Build. Only successful attempts are recorded -- a failed attempt
@@ -18,9 +19,21 @@ export interface BuildResultEntry {
   builtWith?: string
 }
 
+/** Where a built unit was last uploaded. */
+export interface UploadTarget {
+  /** The MIDI output it went through, to find the same device again. */
+  device: string
+  module: LogueUnitModule
+  slot: number
+  at: number
+}
+
 interface BuildResultsState {
   results: BuildResultEntry[]
   addResult: (entry: Omit<BuildResultEntry, 'id' | 'createdAt'>) => void
+  /** Keyed by the unit file's path, which a rebuild of the same unit keeps. */
+  uploads: Record<string, UploadTarget>
+  recordUpload: (path: string, target: Omit<UploadTarget, 'at'>) => void
 }
 
 /**
@@ -34,5 +47,25 @@ export const useBuildResultsStore = create<BuildResultsState>((set) => ({
   addResult: (entry) =>
     set((s) => ({
       results: [{ ...entry, id: crypto.randomUUID(), createdAt: Date.now() }, ...s.results]
-    }))
+    })),
+  uploads: {},
+  recordUpload: (path, target) =>
+    set((s) => ({ uploads: { ...s.uploads, [path]: { ...target, at: Date.now() } } }))
 }))
+
+/** One row per unit file: its newest result and how many times it was produced. A rebuild
+ *  renames the previous file aside (`makeRoomForDestination`), so only the newest is at `path`. */
+export interface BuildResultGroup {
+  latest: BuildResultEntry
+  count: number
+}
+
+export function groupResultsByPath(results: BuildResultEntry[]): BuildResultGroup[] {
+  const groups = new Map<string, BuildResultGroup>()
+  for (const r of results) {
+    const group = groups.get(r.path)
+    if (group) group.count++
+    else groups.set(r.path, { latest: r, count: 1 })
+  }
+  return [...groups.values()]
+}

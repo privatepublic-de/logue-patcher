@@ -449,7 +449,20 @@ inside `logue-generateOscUnit`/`logue-generateOldGenOscUnit` rather than their o
   `build:mac`). It's spawned by `src/main/midi/midiHelper.ts` and passes raw bytes through the
   `logueMidi` IPC namespace; all parsing stays in tested TS.
 - **UI:**
-  - Build Results upload icon (newest build per path, both platforms).
+  - Build Results: ONE row per unit file (`groupResultsByPath`; a rebuild renames the previous
+    file aside, so only the newest is at its path), with a build count and `● slot N` (uploaded
+    from this build) / `○ slot N` (rebuilt since). Upload icon per row.
+  - **Build & Upload** (button beside Build, Build menu ⇧⌘B, 2026-10-03): builds, then
+    `quickUpload` (`device/unitUpload.ts`) goes straight to the slot this unit was last uploaded
+    to (session-only `uploads`, keyed by path; re-reads that one slot: it must still hold the
+    same name or be empty), or the ONE slot holding its name; anything else (first upload, no
+    device, a slot taken over, two candidates) opens the dialog with the reason. It finds the
+    device again by its MIDI output name, so with two devices connected it doesn't jump to the
+    other one.
+  - The dialog preselects the same way (`slotChoice.ts`' `initialSlot`: remembered slot, else
+    one holding the name -- the device shows 13 characters -- else the first empty), and
+    re-uploading the same-named unit needs no Replace click ("Update slot N").
+    Checked end to end against the fake xd (with a real xd also connected; it was never written).
   - Device menu › "Back Up Device…" writes ONE new zip, `<build output folder>/backups/backup-<timestamp>.<device>.zip`
     (`backupZipName`, store-only, flat): the exact `.body.bin` per xd unit (plus a unit file only
     when it re-encodes exactly), or the `.nts1mkiiunit` itself for the mkII, and `index.json`.
@@ -1427,7 +1440,7 @@ Mechanics (`logue-codegen/src/subpatches.ts`, dependency-free, definitions alway
   buildOutputFolder, subpatchLibraryPath -- main's `PATH_PICKERS` holds each dialog's title), `subpatchLibrary` (list),
   `patchFile` (openPath, save, openDialog, saveDialog, listRecent),
   `logueExport` (exportNts1MkiiUnit, exportMinilogueXdUnit), `logueBuild` (buildMinilogueXdUnit/
-  buildNts1MkiiUnit; detectLocalArmToolchain), `events` (20
+  buildNts1MkiiUnit; detectLocalArmToolchain), `events` (21
   menu-triggered subscriptions, `menu.newLogueEffect(module)` among them + `app.saveAllAndClose` + `logueMidi.data`/`logueMidi.setupChanged`/
   `subpatchLibrary.changed`).
 - `noImplicitAny` is switched back on in both tsconfigs (the electron-toolkit base turns it

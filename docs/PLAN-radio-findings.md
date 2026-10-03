@@ -173,7 +173,15 @@ Plan:
      lowering the coloured noises' RMS. Cheaper, but only fixes noise, not the mixer dials.
    My recommendation is 2 now, then decide 3 after the measurement in 1.
 
-## Phase 4 -- results and upload, for fast iteration
+## Phase 4 -- results and upload, for fast iteration (B, A, C done 2026-10-03)
+
+Done: B (preselect the remembered slot / the one holding the name; no Replace click for the
+same unit), A (Build & Upload, ⇧⌘B: dialog-free into the remembered or name-matched slot, else
+the dialog with the reason) and C (one row per unit, build count, `●/○ slot N`). D (keeping the
+session open) wasn't needed: the quick path reads one slot, not all. Checked end to end against
+the fake xd. Remembered slots are session-only.
+
+Original analysis:
 
 Today (confirmed in `BuildPanel.tsx`/`UploadUnitDialog.tsx`):
 - Every Build adds a row (global, newest first). Only the newest row per path has the upload

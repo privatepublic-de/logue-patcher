@@ -346,6 +346,7 @@ export interface AxolotiIpcEvents {
    *  disagree with the panel's selected platform. */
   'menu.exportUnitSource'(): void
   'menu.buildUnit'(): void
+  'menu.buildAndUploadUnit'(): void
   'menu.openParamMatrix'(): void
   'menu.deviceBackup'(): void
   'menu.deviceRestore'(): void
@@ -383,6 +384,7 @@ export const IPC_EVENT_CHANNELS = {
   'menu.openAbout': 'axoloti:event:menu.openAbout',
   'menu.exportUnitSource': 'axoloti:event:menu.exportUnitSource',
   'menu.buildUnit': 'axoloti:event:menu.buildUnit',
+  'menu.buildAndUploadUnit': 'axoloti:event:menu.buildAndUploadUnit',
   'menu.openParamMatrix': 'axoloti:event:menu.openParamMatrix',
   'menu.deviceBackup': 'axoloti:event:menu.deviceBackup',
   'menu.deviceRestore': 'axoloti:event:menu.deviceRestore',
@@ -411,6 +413,7 @@ export interface AxolotiEventSubscriptions {
   onMenuOpenAbout(cb: () => void): () => void
   onMenuExportUnitSource(cb: () => void): () => void
   onMenuBuildUnit(cb: () => void): () => void
+  onMenuBuildAndUploadUnit(cb: () => void): () => void
   onMenuOpenParamMatrix(cb: () => void): () => void
   onMenuDeviceBackup(cb: () => void): () => void
   onMenuDeviceRestore(cb: () => void): () => void

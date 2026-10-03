@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronRight, FolderOpen, Hammer, SquareArrowRightEnter } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Hammer,
+  LoaderCircle,
+  SquareArrowRightEnter
+} from 'lucide-react'
 import { useTargetPlatformStore } from '../state/targetPlatformStore'
 import type { ArmToolchainInfo } from '@shared/ipc/contract'
 import type { LogueEffectModule, PatchDocument } from '@shared/domain/patch'
@@ -36,8 +43,13 @@ import { computeCrossPlatformExposureWarnings } from '../state/exposedLogueParam
 import { listUnboundDeviceControls } from '@logue-codegen/deviceControls'
 import PlatformToggle from './PlatformToggle'
 import { PLATFORM_LABEL } from '../browser/loguePrimitiveCatalog'
-import { useBuildResultsStore, type BuildResultEntry } from '../state/buildResultsStore'
+import {
+  groupResultsByPath,
+  useBuildResultsStore,
+  type BuildResultEntry
+} from '../state/buildResultsStore'
 import UploadUnitDialog from '../device/UploadUnitDialog'
+import { errorMessage, quickUpload } from '../device/unitUpload'
 import DeviceBackupDialog from '../device/DeviceBackupDialog'
 import UsageGauge from './UsageGauge'
 import WarningLine from './WarningLine'
@@ -99,7 +111,15 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
   }, [])
 
   const buildResults = useBuildResultsStore((s) => s.results)
+  const uploads = useBuildResultsStore((s) => s.uploads)
+  const resultGroups = useMemo(() => groupResultsByPath(buildResults), [buildResults])
   const [uploadEntry, setUploadEntry] = useState<BuildResultEntry | null>(null)
+  /** Why Build & Upload handed over to the dialog (`quickUpload`'s `ask`). */
+  const [uploadReason, setUploadReason] = useState<string | undefined>(undefined)
+  const [uploadStatus, setUploadStatus] = useState<{
+    tone: 'progress' | 'success' | 'error'
+    text: string
+  } | null>(null)
   const [backupMode, setBackupMode] = useState<'backup' | 'restore' | null>(null)
   const addBuildResult = useBuildResultsStore((s) => s.addResult)
 
@@ -240,39 +260,86 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
    * turned out to be wrong) -- dispatched on this panel's own `buildPlatform` selector, same
    * shape as `handleExportLogueUnit`'s own platform dispatch.
    */
+  const buildEntry = async (doc: PatchDocument, unitName: string): Promise<BuildResultEntry> => {
+    const result =
+      buildPlatform === 'nts1mkii'
+        ? await window.axoloti.logueBuild.buildNts1MkiiUnit(doc, unitName, filePath ?? null)
+        : await window.axoloti.logueBuild.buildMinilogueXdUnit(doc, unitName, filePath ?? null)
+    addBuildResult({
+      kind: 'build',
+      platform: buildPlatform,
+      unitName,
+      path: result.savedPath,
+      builtWith: result.builtWith
+    })
+    const entry = useBuildResultsStore.getState().results[0]
+    setHighlightId(entry.id)
+    return entry
+  }
+
   const handleBuildUnit = (): Promise<void> =>
     runUnitAction(setBuilding, async (doc, unitName) => {
-      const result =
-        buildPlatform === 'nts1mkii'
-          ? await window.axoloti.logueBuild.buildNts1MkiiUnit(doc, unitName, filePath ?? null)
-          : await window.axoloti.logueBuild.buildMinilogueXdUnit(doc, unitName, filePath ?? null)
-      addBuildResult({
-        kind: 'build',
-        platform: buildPlatform,
-        unitName,
-        path: result.savedPath,
-        builtWith: result.builtWith
-      })
-      setHighlightId(useBuildResultsStore.getState().results[0].id)
+      setUploadStatus(null)
+      await buildEntry(doc, unitName)
+    })
+
+  /**
+   * Build, then upload with no dialog where the slot is unambiguous (`quickUpload`: where this
+   * unit went last time, or the one slot holding its name) -- the edit/build/listen loop. Anything
+   * else opens the upload dialog on the new build, saying why.
+   */
+  const handleBuildAndUpload = (): Promise<void> =>
+    runUnitAction(setBuilding, async (doc, unitName) => {
+      setUploadStatus(null)
+      const entry = await buildEntry(doc, unitName)
+      const remembered = useBuildResultsStore.getState().uploads[entry.path]
+      try {
+        const result = await quickUpload(entry, remembered, (text) =>
+          setUploadStatus({ tone: 'progress', text })
+        )
+        if (result.kind === 'ask') {
+          setUploadStatus(null)
+          setUploadReason(result.reason)
+          setUploadEntry(entry)
+          return
+        }
+        useBuildResultsStore.getState().recordUpload(entry.path, {
+          device: result.device,
+          module: result.module!,
+          slot: result.slot
+        })
+        setUploadStatus({ tone: 'success', text: `Uploaded to slot ${result.slot + 1}.` })
+      } catch (e) {
+        setUploadStatus({ tone: 'error', text: `Couldn't upload: ${errorMessage(e)}` })
+      }
     })
 
   // Subscribed once; always calls the latest render's handlers so a menu click acts on the
   // current document and build-target selector, not the ones from mount time.
-  const menuActions = useRef({ exportSource: handleExportLogueUnit, build: handleBuildUnit })
+  const menuActions = useRef({
+    exportSource: handleExportLogueUnit,
+    build: handleBuildUnit,
+    buildAndUpload: handleBuildAndUpload
+  })
   useEffect(() => {
-    menuActions.current = { exportSource: handleExportLogueUnit, build: handleBuildUnit }
+    menuActions.current = {
+      exportSource: handleExportLogueUnit,
+      build: handleBuildUnit,
+      buildAndUpload: handleBuildAndUpload
+    }
   })
 
   useEffect(() => {
     // A menu action's result/error only renders while expanded, so expand first -- otherwise a
     // Cmd+B on a collapsed panel would give no feedback at all.
-    const runDocAction = (action: 'exportSource' | 'build') => (): void => {
+    const runDocAction = (action: 'exportSource' | 'build' | 'buildAndUpload') => (): void => {
       setCollapsed(false)
       void menuActions.current[action]()
     }
     const unsubscribers = [
       window.axoloti.events.onMenuExportUnitSource(runDocAction('exportSource')),
       window.axoloti.events.onMenuBuildUnit(runDocAction('build')),
+      window.axoloti.events.onMenuBuildAndUploadUnit(runDocAction('buildAndUpload')),
       window.axoloti.events.onMenuOpenParamMatrix(() => openParamMatrix()),
       window.axoloti.events.onMenuDeviceBackup(() => setBackupMode('backup')),
       window.axoloti.events.onMenuDeviceRestore(() => setBackupMode('restore'))
@@ -599,20 +666,49 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
           )}
           {/* Last control above the results: the gauges and warnings above are what decide
               whether to press it. */}
-          <button
-            type="button"
-            className="build-panel__build-button"
-            onClick={handleBuildUnit}
-            disabled={!rootDoc || exporting || building}
-            data-tooltip={
-              building
-                ? 'Building…'
-                : `Build .${buildPlatform === 'nts1mkii' ? 'nts1mkiiunit' : 'mnlgxdunit'} (${armToolchainInfo ? armToolchainInfo.version : 'local ARM toolchain'})`
-            }
-          >
-            <Hammer size={16} />
-            {building ? 'Building…' : 'Build Unit'}
-          </button>
+          <div className="build-panel__build-row">
+            <button
+              type="button"
+              className="build-panel__build-button"
+              onClick={handleBuildUnit}
+              disabled={!rootDoc || exporting || building}
+              data-tooltip={
+                building
+                  ? 'Building…'
+                  : `Build .${buildPlatform === 'nts1mkii' ? 'nts1mkiiunit' : 'mnlgxdunit'} (${armToolchainInfo ? armToolchainInfo.version : 'local ARM toolchain'}) -- ⌘B`
+              }
+            >
+              <Hammer size={16} />
+              {building ? 'Building…' : 'Build'}
+            </button>
+            <button
+              type="button"
+              className="build-panel__build-button"
+              onClick={handleBuildAndUpload}
+              disabled={!rootDoc || exporting || building}
+              data-tooltip={`Build, then upload to the connected ${PLATFORM_LABEL[buildPlatform]}: into the slot this unit went to last time (or the one holding its name) without asking -- ⇧⌘B`}
+            >
+              <SquareArrowRightEnter size={16} />
+              Build &amp; Upload
+            </button>
+          </div>
+          {uploadStatus && (
+            <div
+              className={
+                uploadStatus.tone === 'error'
+                  ? 'build-panel__error'
+                  : uploadStatus.tone === 'success'
+                    ? 'build-panel__upload-status upload-modal__success'
+                    : 'build-panel__upload-status upload-modal__progress'
+              }
+              role="status"
+            >
+              {uploadStatus.tone === 'progress' && (
+                <LoaderCircle size={12} className="icon-spin" aria-hidden="true" />
+              )}
+              {uploadStatus.text}
+            </div>
+          )}
           {error && <div className="build-panel__error">{error}</div>}
           {/* Successes aren't echoed here: the new Build Results row (highlighted) says it. */}
           {notice && <div className="build-panel__error">{notice}</div>}
@@ -643,46 +739,57 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 </button>
               </div>
             )}
-            {buildResults.length > 0 && (
+            {resultGroups.length > 0 && (
               <div className="build-panel__results-list">
-                {buildResults.map((r, idx) => (
-                  <div
-                    key={r.id}
-                    className={
-                      'build-panel__result-row' +
-                      (r.id === highlightId ? ' build-panel__result-row--new' : '')
-                    }
-                  >
-                    {/* Only the file name and device stay visible; kind/time live in the tooltip
-                        so a narrow sidebar truncates the device label before the file name. */}
-                    <button
-                      type="button"
-                      className="build-panel__hint-link build-panel__result-name"
-                      onClick={() => window.axoloti.system.showItemInFolder(r.path)}
-                      data-tooltip={`${r.kind === 'export' ? 'Exported' : 'Built'} ${new Date(r.createdAt).toLocaleTimeString()}${r.builtWith ? ` (${r.builtWith})` : ''} -- click to reveal in Finder: ${r.path}`}
+                {/* One row per unit file (a rebuild renames the previous one aside, so only the
+                    newest is still at its path): how often it was built, and where it went. */}
+                {resultGroups.map(({ latest: r, count }) => {
+                  const uploaded = uploads[r.path]
+                  return (
+                    <div
+                      key={r.path}
+                      className={
+                        'build-panel__result-row' +
+                        (r.id === highlightId ? ' build-panel__result-row--new' : '')
+                      }
                     >
-                      {baseName(r.path)}
-                    </button>
-                    <span className="build-panel__result-meta">{PLATFORM_LABEL[r.platform]}</span>
-                    {/* Both platforms' uploads are captured and byte-exact (logue-cli for the
-                        xd, Kontrol Editor for the NTS-1 mkII). Only the newest row per path gets a
-                        button: a rebuild renames the previous file aside
-                        (makeRoomForDestination), so an older row's `path` now holds the NEWER
-                        build and would silently upload that instead. */}
-                    {r.kind === 'build' &&
-                      !buildResults.slice(0, idx).some((newer) => newer.path === r.path) && (
+                      <button
+                        type="button"
+                        className="build-panel__hint-link build-panel__result-name"
+                        onClick={() => window.axoloti.system.showItemInFolder(r.path)}
+                        data-tooltip={`${r.kind === 'export' ? 'Exported' : 'Built'} ${new Date(r.createdAt).toLocaleTimeString()}${count > 1 ? ` (${count} times this session)` : ''}${r.builtWith ? ` with ${r.builtWith}` : ''} -- click to reveal in Finder: ${r.path}`}
+                      >
+                        {baseName(r.path)}
+                      </button>
+                      <span className="build-panel__result-meta">
+                        {PLATFORM_LABEL[r.platform]}
+                        {count > 1 && ` · ×${count}`}
+                      </span>
+                      {uploaded && (
+                        <span
+                          className="build-panel__result-slot"
+                          data-tooltip={`Uploaded to slot ${uploaded.slot + 1} (${uploaded.module}) at ${new Date(uploaded.at).toLocaleTimeString()}${uploaded.device ? ` via ${uploaded.device}` : ''}${uploaded.at < r.createdAt ? ' -- before this build' : ''}`}
+                        >
+                          {uploaded.at < r.createdAt ? '○' : '●'} slot {uploaded.slot + 1}
+                        </span>
+                      )}
+                      {r.kind === 'build' && (
                         <button
                           type="button"
                           className="build-panel__result-upload"
-                          onClick={() => setUploadEntry(r)}
+                          onClick={() => {
+                            setUploadReason(undefined)
+                            setUploadEntry(r)
+                          }}
                           data-tooltip={`Upload this unit straight to a connected ${PLATFORM_LABEL[r.platform]} over MIDI`}
                           aria-label={`Upload ${baseName(r.path)} to ${PLATFORM_LABEL[r.platform]}`}
                         >
                           <SquareArrowRightEnter size={14} />
                         </button>
                       )}
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -691,7 +798,13 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
       {!collapsed && !logueTarget && (
         <div className="build-panel__empty-hint">No patch opened to build</div>
       )}
-      {uploadEntry && <UploadUnitDialog entry={uploadEntry} onClose={() => setUploadEntry(null)} />}
+      {uploadEntry && (
+        <UploadUnitDialog
+          entry={uploadEntry}
+          reason={uploadReason}
+          onClose={() => setUploadEntry(null)}
+        />
+      )}
       {backupMode && <DeviceBackupDialog mode={backupMode} onClose={() => setBackupMode(null)} />}
     </div>
   )

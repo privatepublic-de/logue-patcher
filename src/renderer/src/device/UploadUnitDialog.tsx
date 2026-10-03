@@ -1,23 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { LoaderCircle, RefreshCw, X } from 'lucide-react'
-import { readOldGenUnitArchive } from '@logue-codegen/sysex/unitArchive'
-import { buildMinilogueXdUnitBody } from '@logue-codegen/sysex/minilogueXdUnitBody'
-import { readNts1mkiiUnitHeader } from '@logue-codegen/sysex/unitBackup'
-import { LOGUE_UNIT_MODULE_IDS } from '@logue-codegen/sysex/korgUserUnitMessages'
-import type { LoguePlatform } from '@shared/domain/patch'
 import { LogueDeviceSession } from '@logue-codegen/sysex/deviceSession'
 import type { LogueUnitModule, SlotStatus } from '@logue-codegen/sysex/korgUserUnitMessages'
-import type { BuildResultEntry } from '../state/buildResultsStore'
+import { useBuildResultsStore, type BuildResultEntry } from '../state/buildResultsStore'
 import { findLogueDevices, linkFor, type FoundDevice } from './midiLink'
 import { useDraggableModal } from '../useDraggableModal'
-
-interface PreparedUnit {
-  module: LogueUnitModule
-  name: string
-  body: Uint8Array
-  /** logue-cli (and so presumably the device) silently cuts a longer name to 13 characters. */
-  truncatedName?: string
-}
+import { errorMessage, prepareUnit, type PreparedUnit } from './unitUpload'
+import { DEVICE_LABEL, NAME_MAX, holdsUnit, initialSlot } from './slotChoice'
 
 type Phase =
   | { kind: 'scanning' }
@@ -28,42 +17,6 @@ type Phase =
   | { kind: 'uploaded'; slot: number }
   | { kind: 'error'; message: string }
 
-const NAME_MAX = 13
-
-const DEVICE_LABEL: Record<LoguePlatform, string> = {
-  'minilogue-xd': 'minilogue xd',
-  nts1mkii: 'NTS-1 mkII'
-}
-
-async function prepareXd(bytes: Uint8Array): Promise<PreparedUnit> {
-  const archive = await readOldGenUnitArchive(bytes)
-  const name = archive.manifest.header.name
-  return {
-    module: archive.module,
-    name,
-    body: buildMinilogueXdUnitBody(archive.manifest, archive.payload),
-    truncatedName: name.length > NAME_MAX ? name.slice(0, NAME_MAX) : undefined
-  }
-}
-
-/**
- * The NTS-1 mkII stores and receives the `.nts1mkiiunit` ELF verbatim (captured from Kontrol
- * Editor), so the file IS the upload body; its own `.unit_header` says which module it's for.
- */
-function prepareNts1mkii(bytes: Uint8Array): PreparedUnit {
-  const h = readNts1mkiiUnitHeader(bytes)
-  if (!h) throw new Error('not an NTS-1 mkII unit (no ELF .unit_header).')
-  const platformId = (h.target >> 8) & 0x7f
-  if (platformId !== 5) throw new Error(`built for platform ${platformId}, not the NTS-1 mkII (5).`)
-  const module = (Object.keys(LOGUE_UNIT_MODULE_IDS) as LogueUnitModule[]).find(
-    (m) => LOGUE_UNIT_MODULE_IDS[m] === (h.target & 0xff)
-  )
-  if (!module) throw new Error(`unknown module id ${h.target & 0xff}.`)
-  return { module, name: h.name, body: bytes }
-}
-
-const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e))
-
 /**
  * Direct SysEx upload of a built unit (minilogue xd or NTS-1 mkII), over the native MIDI helper (see
  * `midiLink.ts`). The device's reply framing/ACK timing is still unconfirmed on real hardware
@@ -72,9 +25,12 @@ const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : S
  */
 function UploadUnitDialog({
   entry,
+  reason,
   onClose
 }: {
   entry: BuildResultEntry
+  /** Why Build & Upload couldn't go straight to a slot (`quickUpload`), shown at the top. */
+  reason?: string
   onClose: () => void
 }): React.JSX.Element {
   const { modalRef, onHeaderPointerDown } = useDraggableModal()
@@ -90,6 +46,7 @@ function UploadUnitDialog({
   const [phase, setPhase] = useState<Phase>({ kind: 'scanning' })
 
   const busy = phase.kind === 'uploading'
+  const recordUpload = useBuildResultsStore((s) => s.recordUpload)
 
   useEffect(() => {
     let cancelled = false
@@ -108,7 +65,7 @@ function UploadUnitDialog({
   }
 
   const connect = useCallback(
-    async (module: LogueUnitModule, device: FoundDevice): Promise<void> => {
+    async (module: LogueUnitModule, unitName: string, device: FoundDevice): Promise<void> => {
       const s = new LogueDeviceSession(
         linkFor(device.inputId, device.outputId),
         entry.platform,
@@ -125,12 +82,14 @@ function UploadUnitDialog({
         read.push(await s.slotStatus(module, slot))
       }
       setSlots(read)
-      const firstEmpty = read.findIndex((st) => st.empty)
-      setSelectedSlot(firstEmpty >= 0 ? firstEmpty : 0)
+      const remembered = useBuildResultsStore.getState().uploads[entry.path]
+      setSelectedSlot(
+        initialSlot(read, unitName, remembered?.module === module ? remembered : undefined)
+      )
       setConfirmOverwrite(false)
       setPhase({ kind: 'ready' })
     },
-    [entry.platform]
+    [entry.platform, entry.path]
   )
 
   const scan = useCallback(
@@ -150,7 +109,7 @@ function UploadUnitDialog({
           setPhase({ kind: 'no-device', otherPlatforms: others })
           return
         }
-        await connect(u.module, xds[0])
+        await connect(u.module, u.name, xds[0])
       } catch (e) {
         setPhase({ kind: 'error', message: errorMessage(e) })
       }
@@ -165,8 +124,7 @@ function UploadUnitDialog({
     ;(async () => {
       let prepared: PreparedUnit
       try {
-        const bytes = await window.axoloti.logueDevice.readUnitFile(entry.path)
-        prepared = entry.platform === 'nts1mkii' ? prepareNts1mkii(bytes) : await prepareXd(bytes)
+        prepared = await prepareUnit(entry)
       } catch (e) {
         if (!cancelled) {
           setPhase({
@@ -183,13 +141,13 @@ function UploadUnitDialog({
     return () => {
       cancelled = true
     }
-  }, [entry.path, entry.platform, scan])
+  }, [entry, scan])
 
   const switchDevice = async (index: number): Promise<void> => {
     if (!unit) return
     setDeviceIndex(index)
     try {
-      await connect(unit.module, devices[index])
+      await connect(unit.module, unit.name, devices[index])
     } catch (e) {
       setPhase({ kind: 'error', message: errorMessage(e) })
     }
@@ -198,7 +156,9 @@ function UploadUnitDialog({
   const upload = async (): Promise<void> => {
     if (!unit || !session) return
     const occupant = slots[selectedSlot]
-    if (occupant && !occupant.empty && !confirmOverwrite && !alwaysReplace) {
+    // Replacing this same unit is a re-upload, not an overwrite: no extra click.
+    const overwrites = occupant && !occupant.empty && !holdsUnit(occupant, unit.name)
+    if (overwrites && !confirmOverwrite && !alwaysReplace) {
       setConfirmOverwrite(true)
       return
     }
@@ -208,6 +168,11 @@ function UploadUnitDialog({
       const refreshed = await session.slotStatus(unit.module, selectedSlot).catch(() => undefined)
       if (refreshed) setSlots((prev) => prev.map((st, i) => (i === selectedSlot ? refreshed : st)))
       setConfirmOverwrite(false)
+      recordUpload(entry.path, {
+        device: devices[deviceIndex]?.outputName ?? '',
+        module: unit.module,
+        slot: selectedSlot
+      })
       setPhase({ kind: 'uploaded', slot: selectedSlot })
     } catch (e) {
       setPhase({ kind: 'error', message: `Couldn't upload: ${errorMessage(e)}` })
@@ -230,6 +195,9 @@ function UploadUnitDialog({
           </button>
         </div>
         <div className="modal__body">
+          {reason && (
+            <div className="upload-modal__meta">Build &amp; Upload needs a slot: {reason}.</div>
+          )}
           <div className="upload-modal__unit">
             <span className="upload-modal__unit-name">{unit?.name ?? entry.unitName}</span>
             {unit && (
@@ -356,9 +324,11 @@ function UploadUnitDialog({
               onClick={() => void upload()}
               disabled={!canUpload}
             >
-              {confirmOverwrite || (alwaysReplace && occupant && !occupant.empty)
-                ? `Replace slot ${selectedSlot + 1}`
-                : `Upload to slot ${selectedSlot + 1}`}
+              {unit && holdsUnit(occupant, unit.name)
+                ? `Update slot ${selectedSlot + 1}`
+                : confirmOverwrite || (alwaysReplace && occupant && !occupant.empty)
+                  ? `Replace slot ${selectedSlot + 1}`
+                  : `Upload to slot ${selectedSlot + 1}`}
             </button>
           </div>
           {/* Below the buttons and always its full height, so a message appearing doesn't grow the

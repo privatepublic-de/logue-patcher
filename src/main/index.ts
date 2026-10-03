@@ -221,6 +221,12 @@ function buildAppMenu(): void {
           label: 'Build Unit',
           accelerator: 'CmdOrCtrl+B',
           click: send(IPC_EVENT_CHANNELS['menu.buildUnit'])
+        },
+        {
+          id: 'build-and-upload-unit',
+          label: 'Build and Upload',
+          accelerator: 'CmdOrCtrl+Shift+B',
+          click: send(IPC_EVENT_CHANNELS['menu.buildAndUploadUnit'])
         }
       ]
     },

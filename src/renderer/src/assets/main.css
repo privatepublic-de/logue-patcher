@@ -2427,7 +2427,23 @@ input[type='checkbox'].param-widget__checkbox-input:checked {
   border-radius: 999px;
 }
 
-/* The panel's one primary action, full width so it reads as the end of the form above it. */
+/* The panel's primary actions, side by side across the full width: Build, and Build & Upload
+   for the edit/build/listen loop. */
+.build-panel__build-row {
+  display: flex;
+  gap: 6px;
+}
+
+.build-panel__build-row .build-panel__build-button {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.build-panel__upload-status {
+  font-size: 11px;
+}
+
 .build-panel__build-button {
   display: inline-flex;
   align-items: center;
@@ -2705,6 +2721,14 @@ input[type='checkbox'].param-widget__checkbox-input:checked {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ev-c-text-3);
+}
+
+/* Where the unit was last uploaded: filled while that upload is of the newest build, hollow
+   once it was rebuilt since (the device holds an older one). */
+.build-panel__result-slot {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: var(--ev-c-text-2);
 }
 
 .build-panel__result-upload {
