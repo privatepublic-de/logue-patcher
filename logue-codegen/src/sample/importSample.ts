@@ -72,7 +72,7 @@ export function sampleBytes(asset: Pick<SampleAsset, 'data'>): Uint8Array {
 export function decodeSampleAsset(asset: Pick<SampleAsset, 'data' | 'encoding'>): Float32Array {
   const bytes = sampleBytes(asset)
   const out = new Float32Array(bytes.length)
-  if (asset.encoding === 'pcm8') {
+  if (asset.encoding === 'pcm8' || asset.encoding === 'wt8') {
     for (let i = 0; i < bytes.length; i++) out[i] = pcm8Decode(bytes[i])
   } else {
     for (let i = 0; i < bytes.length; i++) out[i] = mulawDecode(bytes[i])
@@ -80,18 +80,24 @@ export function decodeSampleAsset(asset: Pick<SampleAsset, 'data' | 'encoding'>)
   return out
 }
 
-/** FNV-1a over the stored bytes -- names the baked table, so identical samples dedupe to one. */
+/** FNV-1a over the stored bytes -- names the baked table, so identical samples dedupe to one.
+ *  A wavetable's frame length is hashed too: the same bytes cut into other frames are another
+ *  table (the other encodings' hashes are unchanged by it). */
 export function sampleContentHash(asset: SampleAsset): string {
   let hash = 0x811c9dc5
-  const bytes = sampleBytes(asset)
-  for (let i = 0; i < bytes.length; i++) {
-    hash ^= bytes[i]
+  const mix = (byte: number): void => {
+    hash ^= byte
     hash = Math.imul(hash, 0x01000193)
   }
+  if (asset.encoding === 'wt8' && asset.frameLength !== undefined) {
+    for (let shift = 0; shift < 32; shift += 8) mix((asset.frameLength >>> shift) & 0xff)
+  }
+  const bytes = sampleBytes(asset)
+  for (let i = 0; i < bytes.length; i++) mix(bytes[i])
   return (hash >>> 0).toString(16).padStart(8, '0')
 }
 
-function trimSilence(samples: Float32Array): Float32Array {
+export function trimSilence(samples: Float32Array): Float32Array {
   const [start, end] = silenceBounds(samples)
   return samples.subarray(start, end)
 }

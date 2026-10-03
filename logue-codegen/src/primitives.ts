@@ -104,6 +104,7 @@ export {
   noisePrimitive,
   granularOscPrimitive,
   samplePrimitive,
+  wavetablePrimitive,
   pluckExciterPrimitive,
   syncOscPrimitive,
   bassSupportPrimitive

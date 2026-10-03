@@ -29,11 +29,36 @@ export function testPcm8SampleAsset(length = 256, cycles = 4, rate = 24000): Sam
   }
 }
 
+/** A small `wt8` table (4 frames of 128: sine, then more saw each frame) for
+ *  `logue/osc/wavetable`, in the shape `importWavetable` stores. */
+export function testWavetableAsset(frameCount = 4, frameLength = 128): SampleAsset {
+  const bytes = new Uint8Array(frameCount * frameLength)
+  for (let f = 0; f < frameCount; f++) {
+    for (let j = 0; j < frameLength; j++) {
+      let v = 0
+      for (let k = 1; k <= frameLength / 4; k++) {
+        v +=
+          (k === 1 ? 1 : f / (frameCount - 1) / k) * Math.sin((2 * Math.PI * k * j) / frameLength)
+      }
+      bytes[f * frameLength + j] = Math.max(-127, Math.min(127, Math.round(v * 60))) & 0xff
+    }
+  }
+  return {
+    sourceName: 'test.wav',
+    rate: 48000,
+    encoding: 'wt8',
+    data: bytesToBase64(bytes),
+    frameLength,
+    frameCount
+  }
+}
+
 /** The test sample a primitive's import kind expects, or undefined for one that reads none. */
 export function testSampleFor(
   p: Pick<LoguePrimitive, 'sampleImport'> | undefined
 ): SampleAsset | undefined {
   if (p?.sampleImport === 'granular') return testSampleAsset()
   if (p?.sampleImport === 'plain') return testPcm8SampleAsset()
+  if (p?.sampleImport === 'wavetable') return testWavetableAsset()
   return undefined
 }

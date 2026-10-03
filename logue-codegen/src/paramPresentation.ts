@@ -495,6 +495,8 @@ export const SAMPLE_LOOP_NAMES = ['Off', 'Forward', 'PingPng']
 export const SAMPLE_LOOP_NAME = namedChoiceUnit(['Off', 'Forward', 'Ping-pong'])
 export const SAMPLE_INTERP_NAMES = ['Linear', 'None']
 export const SAMPLE_INTERP_NAME = namedChoiceUnit(SAMPLE_INTERP_NAMES)
+export const WAVETABLE_MORPH_NAMES = ['Smooth', 'Step']
+export const WAVETABLE_MORPH_NAME = namedChoiceUnit(WAVETABLE_MORPH_NAMES)
 /** `logue/osc/phase-dist`'s waves, in the CZ's own order (NTS-1 mkII: 7 characters at most). */
 export const PD_WAVE_NAMES = [
   'Saw',

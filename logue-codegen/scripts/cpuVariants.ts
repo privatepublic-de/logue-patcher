@@ -12,6 +12,7 @@ import { LOGUE_AUDIO_OUT_TYPE } from '../src/oscInstances'
 import type { MeasureJob } from './measureXdCycles'
 import { bytesToBase64 } from '../src/sample/base64'
 import { mulawEncode } from '../src/sample/mulaw'
+import { wavetableFixture } from './wavetableFixture'
 import type { Net, ObjNode, PatchDocument } from '../../src/shared/domain/patch'
 
 const here = dirname(new URL(import.meta.url).pathname)
@@ -37,7 +38,8 @@ export function snapshotHash(id: string): string {
 }
 
 /** 4K samples of noise at 16 kHz, stored the way the primitive's import stores it. */
-export function sample(kind: 'granular' | 'plain'): ObjNode['sample'] {
+export function sample(kind: 'granular' | 'plain' | 'wavetable'): ObjNode['sample'] {
+  if (kind === 'wavetable') return wavetableFixture()
   const bytes = new Uint8Array(4096)
   let seed = 12345
   for (let i = 0; i < bytes.length; i++) {
@@ -210,6 +212,19 @@ export function variants(id: string, unit: UnitBuilder): Array<MeasureJob & { ke
       name: `${tag}-pingpong-reverse`,
       doc: unit(id, bouncing, 'all')
     })
+  }
+  if (id === 'logue/osc/wavetable') {
+    // POSITION from a moving source: the frame position is worked out every sample instead of
+    // once a block. The LFO's own cost is included. Not the pitch too: a knob-bound POSITION (a
+    // block constant, ~146) would then show ~365 as knob-reachable, and a moving pitch is the
+    // `control` variants' known gap for every oscillator.
+    const doc = unit(id, [], 'none')
+    doc.nodes.push({ kind: 'obj', type: 'logue/lfo/sine-lfo', name: 'src', x: 0, y: 0, params: [] })
+    doc.nets.push({
+      sources: [{ obj: 'src', outlet: 'out' }],
+      dests: [{ obj: 'n', inlet: 'position' }]
+    })
+    jobs.push({ key: 'heavy-moving-position', name: `${tag}-moving`, doc })
   }
   if (id === 'logue/util/grain') {
     // Capturing all the time (a buffer read and a table write a sample, against looping's one

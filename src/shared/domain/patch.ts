@@ -33,10 +33,12 @@ export interface SampleAsset {
   sourceName: string
   sourcePath?: string
   /** Stored sample rate in Hz. Granular's import derives it from the chosen size; the plain
-   *  (`logue/osc/sample`) import keeps the source's own rate unless it had to downsample. */
+   *  (`logue/osc/sample`) import keeps the source's own rate unless it had to downsample. For a
+   *  `wt8` wavetable it's the analysed source's rate, informational only. */
   rate: number
   /** `mulaw8`: G.711 mu-law (granular's import). `pcm8`: linear signed 8-bit, two's complement
-   *  (the plain import -- an 8-bit source is stored bit-exactly). */
+   *  (the plain import -- an 8-bit source is stored bit-exactly). `wt8`: `frameCount` single
+   *  cycles of `frameLength` signed 8-bit values each, back to back (the wavetable import). */
   encoding: SampleEncoding
   /** Base64 of the stored bytes. */
   data: string
@@ -47,9 +49,12 @@ export interface SampleAsset {
   /** A forward loop in stored samples, `loopEnd` exclusive; both or neither. */
   loopStart?: number
   loopEnd?: number
+  /** `wt8` only, and required there: points per frame, and frames. */
+  frameLength?: number
+  frameCount?: number
 }
 
-export type SampleEncoding = 'mulaw8' | 'pcm8'
+export type SampleEncoding = 'mulaw8' | 'pcm8' | 'wt8'
 
 /** A freeform text annotation. */
 export interface CommentNode extends PatchNodeBase {

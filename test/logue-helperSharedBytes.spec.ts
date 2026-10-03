@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
   directHelpersOf,
+  findLoguePrimitive,
   recognizedLoguePrimitiveIds,
   resolveHelperChain
 } from '../logue-codegen/src/primitives'
-import { testSampleAsset } from './support/testSample'
+import { testSampleAsset, testWavetableAsset } from './support/testSample'
 
 /**
  * `HelperBlock.sharedBytes` is hand-counted (or, better, derived from the same constants the
@@ -17,7 +18,13 @@ import { testSampleAsset } from './support/testSample'
  * [a][b]...` declaration, sized by its element type) and asserts it matches the declared
  * `sharedBytes`. Node-aware helpers (`instanceHelpers`) are covered too, via a placed test sample.
  */
-const ELEMENT_BYTES: Record<string, number> = { float: 4, int32_t: 4, uint32_t: 4, uint8_t: 1, int8_t: 1 }
+const ELEMENT_BYTES: Record<string, number> = {
+  float: 4,
+  int32_t: 4,
+  uint32_t: 4,
+  uint8_t: 1,
+  int8_t: 1
+}
 
 function parsedSharedBytes(code: string): number {
   const declRe = /static const (\w+) \w+((?:\[\d+\])+)\s*=/g
@@ -38,7 +45,15 @@ describe('HelperBlock.sharedBytes', () => {
   // `estimateOscStateCost.ts` themselves use, so this test covers exactly what could actually be
   // emitted, not a hand-picked subset.
   const allDirectHelpers = directHelpersOf(
-    recognizedLoguePrimitiveIds().map((id) => ({ id, node: { sample: testSampleAsset(100) } }))
+    recognizedLoguePrimitiveIds().map((id) => ({
+      id,
+      node: {
+        sample:
+          findLoguePrimitive(id)?.sampleImport === 'wavetable'
+            ? testWavetableAsset()
+            : testSampleAsset(100)
+      }
+    }))
   )
   const allHelpers = resolveHelperChain(allDirectHelpers)
 

@@ -340,7 +340,7 @@ function encodeObjNode(n: ObjNode): Record<string, unknown> {
 function decodeSampleAsset(v: unknown, what: string): SampleAsset {
   const r = expectRecord(v, what)
   const encoding = expectString(r.encoding, `${what}.encoding`)
-  if (encoding !== 'mulaw8' && encoding !== 'pcm8') {
+  if (encoding !== 'mulaw8' && encoding !== 'pcm8' && encoding !== 'wt8') {
     throw new InvalidPatchFileError(`unrecognized ${what}.encoding: ${JSON.stringify(encoding)}`)
   }
   const sample: SampleAsset = {
@@ -372,10 +372,41 @@ function decodeSampleAsset(v: unknown, what: string): SampleAsset {
         `${what} has an invalid loop (${loopStart}..${loopEnd} in ${length} samples)`
       )
     }
+    if (encoding === 'wt8')
+      throw new InvalidPatchFileError(`${what} is a wavetable and can't have a loop`)
     sample.loopStart = loopStart
     sample.loopEnd = loopEnd
   }
+  const frameLength = optionalNumber(r.frameLength, `${what}.frameLength`)
+  const frameCount = optionalNumber(r.frameCount, `${what}.frameCount`)
+  if (encoding === 'wt8') {
+    const length = base64ByteLength(sample.data)
+    if (
+      frameLength === undefined ||
+      frameCount === undefined ||
+      !isWavetableFrameLength(frameLength) ||
+      !Number.isInteger(frameCount) ||
+      frameCount < WAVETABLE_MIN_FRAMES ||
+      frameCount > WAVETABLE_MAX_FRAMES ||
+      frameLength * frameCount !== length
+    ) {
+      throw new InvalidPatchFileError(
+        `${what} has an invalid wavetable shape (${frameCount} frames of ${frameLength} in ${length} bytes)`
+      )
+    }
+    sample.frameLength = frameLength
+    sample.frameCount = frameCount
+  } else if (frameLength !== undefined || frameCount !== undefined) {
+    throw new InvalidPatchFileError(`${what} has a frame shape but isn't a wavetable`)
+  }
   return sample
+}
+
+/** The shapes a `wt8` asset may have -- mirrored by the wavetable import's choices. */
+const WAVETABLE_MIN_FRAMES = 2
+const WAVETABLE_MAX_FRAMES = 64
+function isWavetableFrameLength(n: number): boolean {
+  return n === 128 || n === 256 || n === 512
 }
 
 function base64ByteLength(data: string): number {
@@ -393,6 +424,10 @@ function encodeSampleAsset(s: SampleAsset): Record<string, unknown> {
   if (s.loopStart !== undefined && s.loopEnd !== undefined) {
     out.loopStart = s.loopStart
     out.loopEnd = s.loopEnd
+  }
+  if (s.frameLength !== undefined && s.frameCount !== undefined) {
+    out.frameLength = s.frameLength
+    out.frameCount = s.frameCount
   }
   out.data = s.data
   return out

@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 import { describe, it, expect } from 'vitest'
-import { testSampleAsset } from './support/testSample'
+import { testSampleAsset, testSampleFor } from './support/testSample'
 import { pack7, unpack7, packedLength } from '../logue-codegen/src/sysex/pack7'
 import { crc32 } from '../logue-codegen/src/sysex/crc32'
 import {
@@ -244,7 +244,7 @@ describe('generated minilogue xd manifests fit the upload header', () => {
               ...(spec.freeLabel ? { label: 'LABEL' } : {})
             }
           ],
-          ...(prim.instanceProblem ? { sample: testSampleAsset() } : {})
+          ...(prim.instanceProblem ? { sample: testSampleFor(prim) ?? testSampleAsset() } : {})
         }
         const out: ObjNode = {
           kind: 'obj',

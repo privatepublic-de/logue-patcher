@@ -312,6 +312,11 @@ export const CPU_COST_TABLE: Record<
     worst: 43,
     snapshotHash: 'c19162f9574d3fe7'
   },
+  'logue/osc/wavetable': {
+    variants: { base: 146, control: 149, 'heavy-moving-position': 208 },
+    worst: 208,
+    snapshotHash: 'f92185a8a2498df5'
+  },
   'logue/sense/control': { variants: { base: 0 }, worst: 0, snapshotHash: '550ef812bd56decd' },
   'logue/sense/cutoff': { variants: { base: 0 }, worst: 0, snapshotHash: '6bc89bcd79ffcb07' },
   'logue/sense/gate': { variants: { base: 0 }, worst: 0, snapshotHash: '5c83466572c3c9c0' },

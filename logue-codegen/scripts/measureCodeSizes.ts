@@ -35,6 +35,7 @@ import { estimateOscStateCost } from '../src/estimateOscStateCost'
 import { UNIT_KINDS } from '../src/unitKinds'
 import { bytesToBase64 } from '../src/sample/base64'
 import { mulawEncode } from '../src/sample/mulaw'
+import { wavetableFixture } from './wavetableFixture'
 import type {
   LogueModule,
   LoguePlatform,
@@ -67,7 +68,8 @@ function wire(from: string, outlet: string, to: string, inlet: string): Net {
 
 /** 4K samples of noise at 16 kHz, stored the way the primitive's import stores it; at note 60
  *  `logue/osc/sample` reads a third of a stored sample per output sample, so it keeps playing. */
-function sample(kind: 'granular' | 'plain'): ObjNode['sample'] {
+function sample(kind: 'granular' | 'plain' | 'wavetable'): ObjNode['sample'] {
+  if (kind === 'wavetable') return wavetableFixture()
   const bytes = new Uint8Array(4096)
   let seed = 12345
   for (let i = 0; i < bytes.length; i++) {

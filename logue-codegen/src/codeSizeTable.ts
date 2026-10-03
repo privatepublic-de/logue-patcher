@@ -90,6 +90,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 652, extra: 552, helpers: ['Osc::note_w0(float)'] },
       snapshotHash: '7cb41406b040b044'
     },
+    'logue/osc/wavetable': {
+      first: 1016,
+      extra: 724,
+      helpers: [],
+      unwired: { first: 844, extra: 660, helpers: [] },
+      snapshotHash: 'f92185a8a2498df5'
+    },
     'logue/mix/mix2': {
       first: 24,
       extra: 20,
@@ -1316,6 +1323,13 @@ export const CODE_SIZE_TABLE: Record<
       helpers: ['Osc::note_w0(float)'],
       unwired: { first: 879, extra: 540, helpers: ['Osc::note_w0(float)'] },
       snapshotHash: '8b8c9ba689f8af40'
+    },
+    'logue/osc/wavetable': {
+      first: 1190,
+      extra: 842,
+      helpers: [],
+      unwired: { first: 1018, extra: 778, helpers: [] },
+      snapshotHash: '7b26d43d1b740a72'
     },
     'logue/mix/mix2': {
       first: 24,

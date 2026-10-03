@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 92 primitives, 5 of them superseded and hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 93 primitives, 5 of them superseded and hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -55,12 +55,17 @@ not here.
   a comment showing that target (`patchCodec.ts`, 2026-09-28); nothing writes one any more.
 - `PatchDocument`: `{nodes, nets, settings, notes}`. `Net`: `{sources: NetSource[], dests:
   NetDest[]}` (every real net has exactly one source; not enforced at this layer).
-- `ObjNode.sample?: SampleAsset` (`{sourceName, sourcePath?, rate, encoding: 'mulaw8' | 'pcm8',
-  data (base64), truncatedFromSeconds?, resampledFromRate?, loopStart?/loopEnd?}`; loop end
-  exclusive, both or neither) -- read by `logue/osc/granular` (mu-law only; a `pcm8` one is an
+- `ObjNode.sample?: SampleAsset` (`{sourceName, sourcePath?, rate, encoding: 'mulaw8' | 'pcm8' |
+  'wt8', data (base64), truncatedFromSeconds?, resampledFromRate?, loopStart?/loopEnd?,
+  frameLength?/frameCount?}`; loop end exclusive, both or neither) -- read by `logue/osc/granular`
+  (mu-law only; a `pcm8` one is an
   instance problem) and `logue/osc/sample` (`pcm8`: linear signed 8-bit at the source's own
-  rate, `importPlainSample`; a mu-law one is converted at generation). Which import a primitive
-  wants is `LoguePrimitive.sampleImport` (`granular`/`plain`). Deliberately on the
+  rate, `importPlainSample`; a mu-law one is converted at generation). `wt8` (2026-10-04, `docs/PLAN-wavetable.md`; read by `logue/osc/wavetable`) is
+  `frameCount` (2..64) single cycles of `frameLength` (128/256/512) signed 8-bit points from
+  `importWavetable` (pitch-tracked, one cycle rebuilt per position from its harmonics, frames
+  phase-aligned); the codec checks the shape, rejects a loop on it, and the two sample players
+  report it as an instance problem (the wavetable reports the other two). Which import a primitive
+  wants is `LoguePrimitive.sampleImport` (`granular`/`plain`/`wavetable`). Deliberately on the
   node, not a document-level asset table: copy/paste and subpatch flattening carry it for free,
   and codegen dedupes identical samples by content hash anyway. Added without a file-version
   bump (plain optional field, the `unitName`/`label` precedent).
@@ -96,9 +101,9 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-92 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
-history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (14:
-sine/saw/square/pulse/triangle/additive/granular/sample/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (8:
+93 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (15:
+sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (8:
 lowpass-cheap/highpass-cheap/comb/string/svf/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (14: constant/unipolar-to-bipolar/bipolar-to-unipolar/
@@ -173,7 +178,7 @@ matching when adding a new one):
 - A wireable inlet that drives a dial is one of two shapes. **Additive** is the rule
   (`effective = control + incoming*depth`, clamped to the control's own range): `depth` is half
   of a 0-100 param's range or a pitch param's own semitone max, never an invented constant, except
-  the filters' `cutoff`, crossfader `fade`, additive `timbre` and phase-dist `dcw`, which use the whole range
+  the filters' `cutoff`, crossfader `fade`, additive `timbre`, phase-dist `dcw` and wavetable `position`, which use the whole range
   (depth 100) so one LFO sweeps closed to open. The formula needs no bipolar/unipolar branching:
   the dial is the centre and any source moves it sensibly. **Replace** is the exception, kept only
   where it's the natural meaning: `vca`'s `gain` (an envelope must close it whatever the dial
@@ -703,6 +708,39 @@ Current rules only. The round-by-round reports, measurements and reversals behin
     fits: 46 570 B). xd emulator 68 base, 76 with control inputs then (measured
     looping: unlooped, a variant can end up timing a finished one-shot's silence). Confirmed on
     a real xd and a real NTS-1 mkII, loops and all (user, 2026-10-02).
+- **`osc/wavetable`** (2026-10-04, `docs/PLAN-wavetable.md`): single cycles cut from a recording
+  by `importWavetable` (`wt8`, phase 1: pitch-tracked, one cycle rebuilt per position from its
+  harmonics, frames phase-aligned), read at the played note. POSITION (additive, depth 100) picks
+  the frame, MORPH Smooth crossfades neighbours / Step takes the nearest. Built because granular
+  SYNC bends the pitch while POSITION moves (each grain is a note-period slice of material with
+  its own period); here the pitch can't move (harness, a one-way ramp scan over every frame of the
+  user's soul vocal: mean offset <= 0.03 ct, granular SYNC on the same scan up to 21 ct).
+  Formants move with the note (wavetable character, accepted by the user).
+  - Aliasing: `wavetablePyramid` bakes band-limited copies at generation (level j: harmonics up
+    to `(L/4) >> j`, `L >> j` points but at least 64), cached by content hash (the RAM estimate
+    calls it on every edit). The level follows the note: `x = L*w0`, level j for x in
+    [2^j, 2^(j+1)), crossfaded linearly into j+1 so its top harmonic is gone exactly at Nyquist
+    (`wt_level`, halving, no libm). What's left is linear interpolation's images at 4 points per
+    cycle of a level's top harmonic: the fixture saw (64 harmonics at 1/k, the worst case) -39 dB
+    off-harmonic at note 78, the soul vocal <= -46 dB. Levels of 8/16 points gave -26 dB at note
+    120, hence the 64-point floor (~25 % more table). Doubling the level lengths (r = 1/8) or
+    Hermite reads would buy ~6-10 dB in the middle notes for ~30 % more table or ~2x the reads.
+  - The frame shape lives in members set in `init` (`frames_`/`len_`/`lastLevel_`/
+    `levelOffsets_[]`): only `initStatement` sees the node. `sample/wavetableRead.ts` is the same
+    read in TypeScript (single precision); the harness holds the unit to it within 1.2e-7.
+  - Harness (`scripts/runWavetableHarness.ts`, `WAVETABLE_WAV=<file>` adds a real import and the
+    granular comparison): reference match, no sustained pitch offset while scanning (the
+    fundamental's phase per window; autocorrelation and short windows misread fast timbre change
+    as a few cents), aliasing per note, crossfade midpoints (vocal: >= -0.58 dB), fuzz clean.
+  - Builds (`scripts/stageWavetable.ts`): xd 32x256 21 960 B, only `note_w0` (with `pitch`
+    wired) below `process`; NTS-1 mkII 32x256 25 925 B, 64x256 46 405 B (of 49 152), 32x512
+    42 313 B; the RAM estimate within 0.3 % of each. xd emulator 146 base (cheaper than granular
+    SYNC's 234), 208 `heavy-moving-position` (an LFO into POSITION, LFO included); the profile
+    is mostly the 8 table reads and their lerps. Whole units against the CPU estimate: POSITION on
+    the Shape knob 165 measured / 165..227 estimated, an LFO into POSITION 228 / 204..263, an LFO
+    into POSITION and `pitch` 385 / 204..263 -- a moving `pitch` is the `control` variants' known
+    gap (see "CPU"). The heavy variant was POSITION and pitch at first (365), which put a
+    knob-bound POSITION's knob maximum at 384. No hardware pass yet.
 - **`osc/sync`** (2026-09-28): hard sync as one node -- a silent master plays the note
   (COARSE/FINE/`pitch`), the heard slave runs `SYNC` 0-48 st above it and restarts at each master
   wrap; SHAPE saw/pulse (WIDTH)/triangle/sine. Chosen over a `sync` inlet on every oscillator
@@ -1553,6 +1591,9 @@ Mechanics (`logue-codegen/src/subpatches.ts`, dependency-free, definitions alway
   full patch 857/969 cycles -- past the ~750 clean anchor, so the xd gets `reverse-wash-xd` (one
   line, one allpass a side): 606/670. SOFTEN's detector constants are from a simulation and the
   harness, not ears.
+- `osc/wavetable` (2026-10-04) is harness-, link- and emulator-checked only: no listening pass,
+  and no Inspector import yet (phase 3 of `docs/PLAN-wavetable.md`: the node shows no sample
+  section until then). Staged: `lp-xd-wt`(`-lfo`), `lp-nts1-wt`(`-lfo`/`-64x256`/`-32x512`).
 - `osc/noise`'s COLOR and `osc/lfsr` (2026-10-03) are harness-, link- and emulator-checked
   only: no listening pass. Staged: `lp-xd-noise`/`lp-xd-lfsr`/`lp-xd-lfsr-lfo` and the
   `lp-nts1-*` equivalents (`scripts/stageNoiseTypes.ts`; COLOR/MODE/TRACK as menu params).

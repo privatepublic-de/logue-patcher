@@ -383,10 +383,11 @@ export interface LoguePrimitive {
   instanceHelpers?(node: InstanceNodeData): HelperBlock[]
   /**
    * Reads `ObjNode.sample`, imported the way named: `granular` (mu-law, resampled to fit a size,
-   * `importWavSample`) or `plain` (linear 8-bit at the source's rate, `importPlainSample`).
+   * `importWavSample`), `plain` (linear 8-bit at the source's rate, `importPlainSample`) or
+   * `wavetable` (`wt8` single-cycle frames, `importWavetable`).
    * The Inspector's sample section and every test that places a node-aware primitive read it.
    */
-  sampleImport?: 'granular' | 'plain'
+  sampleImport?: 'granular' | 'plain' | 'wavetable'
   /**
    * A reason this placed node can't generate code yet (e.g. no sample loaded), or undefined.
    * Checked for active instances only (`resolveAudioGraph`), so an unwired, incomplete node

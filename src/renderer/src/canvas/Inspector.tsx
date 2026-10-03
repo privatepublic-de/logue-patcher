@@ -621,16 +621,19 @@ function Inspector(): React.JSX.Element {
           })}
         </div>
       )}
-      {!collapsed && selectedNode?.kind === 'obj' && selectedPrimitive?.sampleImport && (
-        <SampleSection
-          key={selectedNodeId}
-          kind={selectedPrimitive.sampleImport}
-          sample={selectedNode.sample}
-          loopMode={sampleLoopModeOf(selectedNode.params)}
-          reverse={Number(selectedNode.params.find((p) => p.name === 'REVERSE')?.value ?? 0) >= 1}
-          onSampleChange={(sample, rootNote) => setNodeSample(selectedNodeId!, sample, rootNote)}
-        />
-      )}
+      {!collapsed &&
+        selectedNode?.kind === 'obj' &&
+        (selectedPrimitive?.sampleImport === 'granular' ||
+          selectedPrimitive?.sampleImport === 'plain') && (
+          <SampleSection
+            key={selectedNodeId}
+            kind={selectedPrimitive.sampleImport}
+            sample={selectedNode.sample}
+            loopMode={sampleLoopModeOf(selectedNode.params)}
+            reverse={Number(selectedNode.params.find((p) => p.name === 'REVERSE')?.value ?? 0) >= 1}
+            onSampleChange={(sample, rootNote) => setNodeSample(selectedNodeId!, sample, rootNote)}
+          />
+        )}
       {/* Always last -- a brief, plain-language blurb (LoguePrimitive.description) explaining
           what the selected primitive actually does, for a user who doesn't already know this
           registry by heart. Bottom-of-panel placement is deliberate: Name/params are things a

@@ -25,11 +25,21 @@ import {
   SYNC_WIDGET,
   TRACK_WIDGET,
   TZFM_WIDGET,
-  UNUSED_WHILE_SYNC_GATE
+  UNUSED_WHILE_SYNC_GATE,
+  WAVETABLE_MORPH_NAME,
+  WAVETABLE_MORPH_NAMES
 } from '../paramPresentation'
 import { mulawDecode } from '../sample/mulaw'
 import { MIN_LOOP_LENGTH, sampleBytes, sampleContentHash } from '../sample/importSample'
 import { bytesToBase64 } from '../sample/base64'
+import {
+  WAVETABLE_MIN_LEVEL_LENGTH,
+  wavetableLevelCount,
+  wavetableLevelOffsets,
+  wavetablePyramid,
+  wavetableShapeOf,
+  wavetableShapeProblem
+} from '../sample/wavetablePyramid'
 import type { SampleAsset } from '../../../src/shared/domain/patch'
 import type { HelperBlock, InstanceNodeData, LoguePrimitive } from './types'
 import {
@@ -1221,6 +1231,9 @@ export const granularOscPrimitive: LoguePrimitive = {
   instanceProblem: (node) => {
     if (!node.sample) return 'No sample loaded -- use "Load WAV…" in the Inspector.'
     // Replace with keeps a node's sample, so a `logue/osc/sample`'s linear one can land here.
+    if (node.sample.encoding === 'wt8') {
+      return 'This sample is stored as a wavetable -- re-import it for granular ("Load WAV…").'
+    }
     if (node.sample.encoding !== 'mulaw8') {
       return 'This sample is stored as linear 8-bit -- re-import it for granular ("Load WAV…").'
     }
@@ -1570,6 +1583,9 @@ export const samplePrimitive: LoguePrimitive = {
   instanceProblem: (node) => {
     const sample = node.sample
     if (!sample) return 'No sample loaded -- use "Load WAV…" in the Inspector.'
+    if (sample.encoding === 'wt8') {
+      return 'This sample is stored as a wavetable -- re-import it for the sample player ("Load WAV…").'
+    }
     const length = sampleBytes(sample).length
     if (length < 2) return 'Sample is shorter than 2 samples.'
     if (length > SAMPLE_MAX_LENGTH) return `Sample is longer than ${SAMPLE_MAX_LENGTH} samples.`
@@ -1657,6 +1673,225 @@ export const samplePrimitive: LoguePrimitive = {
       default: 0,
       step: 1,
       setStatement: (suffix, valueExpr) => `interp_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/**
+ * `logue/osc/wavetable` (docs/PLAN-wavetable.md): single cycles cut from a recording by
+ * `importWavetable` (`wt8`), read at the played note. POSITION picks the frame (MORPH Smooth
+ * crossfades the two neighbours, Step takes the nearest), so scanning changes only the timbre --
+ * granular's SYNC mode bends the pitch while POSITION moves, which is what this replaces.
+ *
+ * Aliasing: every frame has band-limited copies (`wavetablePyramid`, baked here at generation:
+ * level j has harmonics up to `(L / 4) >> j`, on `L >> j` points but at least 64). The level follows the note:
+ * with `x = L * w0` level-0 points per sample, level j covers `x` in [2^j, 2^(j+1)), and the
+ * player crossfades j into j+1 linearly across it, so level j's top harmonic has faded out
+ * exactly when it reaches Nyquist (`x = 2^(j+1)`), and is at full weight only up to 12 kHz.
+ * Above the last level's range (2 harmonics, past ~note 115 for L = 256) it stays on the last one.
+ *
+ * Reads are signed 8-bit through a pointer member (a call to the table function per sample would
+ * be a real call below `process`); the step is an `always_inline` leaf. The frame count, length
+ * and last level are members set in `init` (only `initStatement` sees the node's sample).
+ */
+/** Levels of the longest frame the codec allows (512 points). */
+const WAVETABLE_MAX_LEVELS = wavetableLevelCount(512)
+
+const WAVETABLE_STEP_HELPER: HelperBlock = {
+  key: 'wavetable_step',
+  code: `  static inline __attribute__((always_inline)) float wt_level_read(const int8_t *level, uint32_t len,
+      uint32_t frame, float frameT, float phase)
+  {
+    const int8_t *a = level + frame * len;
+    const int8_t *b = a + len;
+    float x = phase * (float)len;
+    uint32_t i = (uint32_t)x;
+    float fr = x - (float)i;
+    i &= len - 1u;
+    uint32_t j = (i + 1u) & (len - 1u);
+    float va = (float)a[i] + (float)(a[j] - a[i]) * fr;
+    float vb = (float)b[i] + (float)(b[j] - b[i]) * fr;
+    return va + (vb - va) * frameT;
+  }
+
+  // \`level\` is the mip level plus the crossfade into the next one; \`framePos\` 0..frames-1.
+  // \`offsets\` is where each level starts in \`tab\`; a level is \`len0 >> level\` points, at
+  // least ${WAVETABLE_MIN_LEVEL_LENGTH}.
+  static inline __attribute__((always_inline)) float wavetable_step(const int8_t *tab, const uint32_t *offsets,
+      uint32_t frames, uint32_t len0, uint32_t lastLevel, float phase, float level, float framePos)
+  {
+    uint32_t frame = (uint32_t)framePos;
+    float frameT = framePos - (float)frame;
+    if (frame > frames - 2u) { frame = frames - 2u; frameT = 1.f; }
+    uint32_t l0 = (uint32_t)level;
+    float levelT = level - (float)l0;
+    uint32_t len = len0 >> l0;
+    if (len < ${WAVETABLE_MIN_LEVEL_LENGTH}u) len = ${WAVETABLE_MIN_LEVEL_LENGTH}u;
+    float v = wt_level_read(tab + offsets[l0], len, frame, frameT, phase);
+    if (levelT > 0.f && l0 < lastLevel)
+    {
+      uint32_t len1 = len0 >> (l0 + 1u);
+      if (len1 < ${WAVETABLE_MIN_LEVEL_LENGTH}u) len1 = ${WAVETABLE_MIN_LEVEL_LENGTH}u;
+      float w = wt_level_read(tab + offsets[l0 + 1u], len1, frame, frameT, phase);
+      v += (w - v) * levelT;
+    }
+    return v * (1.f / 128.f);
+  }
+
+  // The mip level for a phase increment, as level + crossfade (see the primitive's comment).
+  // Halving instead of a log2: no libm, at most a few iterations.
+  static inline __attribute__((always_inline)) float wt_level(float w0, float len0, float lastLevel)
+  {
+    float x = w0 * len0;
+    float level = 0.f;
+    while (x >= 2.f && level < lastLevel) { x *= 0.5f; level += 1.f; }
+    if (level >= lastLevel || x <= 1.f) return level;
+    return level + (x - 1.f);
+  }
+
+  // POSITION (0..1) as a frame position: Smooth keeps the fraction, Step rounds to a frame.
+  static inline __attribute__((always_inline)) float wt_frame_pos(float pos01, float lastFrame, bool step)
+  {
+    float p = pos01 * lastFrame;
+    return step ? (float)(uint32_t)(p + 0.5f) : p;
+  }
+`
+}
+
+function wavetableSampleOf(node: InstanceNodeData | undefined): SampleAsset {
+  const sample = node?.sample
+  if (!sample) throw new Error(`wavetable node "${node?.name ?? '?'}" has no wavetable loaded`)
+  return sample
+}
+
+/** The pyramid as a table helper, cached by content: the RAM estimate calls this on every edit,
+ *  and a 64-frame bake is tens of milliseconds. */
+const wavetableTableCache = new Map<string, HelperBlock>()
+function wavetableTableHelper(sample: SampleAsset): HelperBlock {
+  const hash = sampleContentHash(sample)
+  const cached = wavetableTableCache.get(hash)
+  if (cached) return cached
+  const bytes = wavetablePyramid(sample)
+  const rows: string[] = []
+  for (let i = 0; i < bytes.length; i += 24) {
+    rows.push(Array.from(bytes.subarray(i, i + 24), (b) => (b >= 128 ? b - 256 : b)).join(','))
+  }
+  const helper: HelperBlock = {
+    key: `wavetable_${hash}`,
+    sharedBytes: bytes.length,
+    code: `  static const int8_t *wavetable_${hash}()
+  {
+    static const int8_t kWavetable_${hash}[${bytes.length}] = {
+      ${rows.join(',\n      ')}
+    };
+    return kWavetable_${hash};
+  }
+`
+  }
+  wavetableTableCache.set(hash, helper)
+  return helper
+}
+
+function wavetableValues(
+  suffix: string,
+  inlets: Record<string, string | undefined>
+): { w0: BlockValue; level: BlockValue; framePos: BlockValue } {
+  const w0 = transposedW0(suffix, inlets)
+  const level = blockValue(
+    'blkLevel',
+    suffix,
+    `wt_level(${w0.ref}, (float)len_${suffix}, (float)lastLevel_${suffix})`,
+    [inlets.pitch, inlets.harmonic]
+  )
+  const pos01 =
+    inlets.position !== undefined
+      ? `(${additiveInletExpr('position', suffix, inlets.position, 100)} * 0.01f)`
+      : `(position_${suffix} * 0.01f)`
+  const framePos = blockValue(
+    'blkFrame',
+    suffix,
+    `wt_frame_pos(${pos01}, (float)(frames_${suffix} - 1u), morph_${suffix} >= 0.5f)`,
+    [inlets.position]
+  )
+  return { w0, level, framePos }
+}
+
+export const wavetablePrimitive: LoguePrimitive = {
+  id: 'logue/osc/wavetable',
+  outletPolarity: 'audio',
+  sampleImport: 'wavetable',
+  modules: ['osc'],
+  searchTerms: ['wavetable', 'ppg', 'serum', 'scan', 'morph', 'vocal', 'cycle'],
+  // phase_ tab_ (a 4-byte pointer on the ARM target) frames_ len_ lastLevel_ levelOffsets_[]
+  // + 4 param floats
+  stateBytesPerInstance: (9 + WAVETABLE_MAX_LEVELS) * 4,
+  description:
+    "A wavetable oscillator made from a recording: the import cuts single cycles out of a WAV (following its pitch) and lines them up. POSITION scans through them and only changes the timbre; MORPH Smooth crossfades neighbouring frames, Step jumps between them. The pitch always follows the keyboard, and like any wavetable the recording's formants move with the note. Band-limited copies of every frame keep high notes free of aliasing.",
+  inlets: [
+    { name: 'pitch', role: 'control' },
+    { name: 'harmonic', role: 'control' },
+    { name: 'position', role: 'control' }
+  ],
+  memberDecls: (suffix) =>
+    `  float phase_${suffix};\n  const int8_t *tab_${suffix};\n` +
+    `  uint32_t frames_${suffix};\n  uint32_t len_${suffix};\n  uint32_t lastLevel_${suffix};\n` +
+    `  uint32_t levelOffsets_${suffix}[${WAVETABLE_MAX_LEVELS}];\n` +
+    `  float coarse_${suffix};\n  float fine_${suffix};\n  float position_${suffix};\n  float morph_${suffix};\n`,
+  initStatement: (suffix, node) => {
+    const sample = wavetableSampleOf(node)
+    const { frameCount, frameLength } = wavetableShapeOf(sample)
+    return (
+      `    phase_${suffix} = 0.f;\n    tab_${suffix} = ${wavetableTableHelper(sample).key}();\n` +
+      `    frames_${suffix} = ${frameCount}u;\n    len_${suffix} = ${frameLength}u;\n` +
+      `    lastLevel_${suffix} = ${wavetableLevelCount(frameLength) - 1}u;\n` +
+      wavetableLevelOffsets({ frameCount, frameLength })
+        .map((offset, level) => `    levelOffsets_${suffix}[${level}] = ${offset}u;\n`)
+        .join('')
+    )
+  },
+  instanceHelpers: (node) => [wavetableTableHelper(wavetableSampleOf(node))],
+  instanceProblem: (node) => {
+    const sample = node.sample
+    if (!sample) return 'No wavetable loaded -- use "Load WAV…" in the Inspector.'
+    if (sample.encoding !== 'wt8') {
+      return 'This sample is stored for a sample player -- re-import it as a wavetable ("Load WAV…").'
+    }
+    const problem = wavetableShapeProblem(sample)
+    return problem === undefined ? undefined : `The wavetable can't be read: ${problem}.`
+  },
+  blockConstants: (suffix, inlets) => blockDecls(wavetableValues(suffix, inlets)),
+  renderExpr: (suffix, inlets) => {
+    const v = wavetableValues(suffix, inlets)
+    return (
+      `wavetable_step(tab_${suffix}, levelOffsets_${suffix}, frames_${suffix}, len_${suffix}, lastLevel_${suffix}, ` +
+      `phase_${suffix}, ${v.level.ref}, ${v.framePos.ref})`
+    )
+  },
+  advanceStatement: (suffix, inlets) =>
+    `      phase_${suffix} += ${transposedW0(suffix, inlets).ref};\n      if (phase_${suffix} >= 1.f) phase_${suffix} -= 1.f;\n`,
+  helpers: [WAVETABLE_STEP_HELPER, NOTE_W0_HELPER, CLAMPF_HELPER, HARMONIC_RATIO_HELPER],
+  params: [
+    COARSE_PARAM,
+    FINE_PARAM,
+    {
+      name: 'POSITION',
+      unit: PERCENT,
+      nts1mkiiType: 'percent',
+      modulatedBy: { inlet: 'position', shape: 'additive', depth: 100 },
+      min: 0,
+      max: 100,
+      default: 0,
+      setStatement: (suffix, valueExpr) => `position_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'MORPH',
+      unit: WAVETABLE_MORPH_NAME,
+      select: { count: 2, scale: 1, label: 'Morph', names: WAVETABLE_MORPH_NAMES },
+      min: 0,
+      max: 1,
+      default: 0,
+      step: 1,
+      setStatement: (suffix, valueExpr) => `morph_${suffix} = ${valueExpr};`
     }
   ]
 }
