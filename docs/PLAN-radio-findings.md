@@ -124,7 +124,15 @@ Plan (all three; the first two are small):
    `setEffectModule` does for removed knob bindings). Never two sources into one inlet --
    `addNet`'s one-source rule applies.
 
-## Phase 2c -- warnings that point at the fix
+## Phase 2c -- warnings that point at the fix (done 2026-10-03)
+
+Done: the dead-zone warning is for **knob sources only** (user's call -- clipping an LFO's swing
+can be the sound; a bipolar source loses half its swing into any whole-range inlet whatever the
+dial, so a dial-only rule would also fire on an LFO into cutoff at 50). `ParamModulation.depth`/
+`unclamped` back it, pinned against codegen. The VCA warning names `max` (b unwired); `max`/
+`clamp`/`abs` have rectify search terms and `max`'s description says what b unwired does.
+
+Original plan:
 
 - **Additive inlet with a mid-dial and a bipolar source** (new warning): when a bipolar wire
   feeds an additive depth-100 inlet (crossfader/stereo-crossfader `fade`, filter `cutoff`,

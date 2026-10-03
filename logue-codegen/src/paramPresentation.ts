@@ -88,6 +88,24 @@ export interface ParamModulation {
   note?: string
   /** 'replace' only: what the wire should carry, since the dial no longer shows it. */
   expects?: InletExpectation
+  /**
+   * 'additive' only: how far a wired +-1 moves the dial, in the param's own units. Unset, it is
+   * half the param's range -- the house rule (`additiveDepthOf`); set only where codegen uses
+   * another one (the whole-range cutoffs/fade/timbre/dcw/SHAPE). Display-only, but
+   * `logue-additiveDepth.spec.ts` checks it against the generated code.
+   */
+  depth?: number
+  /** 'additive' only: the sum isn't clamped to the param's range (an operand, logic `b`). */
+  unclamped?: boolean
+}
+
+/** How far a wired +-1 moves an additive inlet's dial (see `ParamModulation.depth`). */
+export function additiveDepthOf(spec: {
+  min: number
+  max: number
+  modulatedBy?: ParamModulation
+}): number {
+  return spec.modulatedBy?.depth ?? (spec.max - spec.min) / 2
 }
 
 /**

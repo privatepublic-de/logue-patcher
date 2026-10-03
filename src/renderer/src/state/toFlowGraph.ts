@@ -7,11 +7,11 @@ import {
 import { nodeId } from './nodeId'
 import { portKindsAgree, resolvePorts, type PortInfo, type ResolvedPorts } from '../canvas/ports'
 import { colorForBucket } from '../canvas/portColors'
+import { wireWarning } from '../canvas/wireWarnings'
 import { createWirePolarityResolver, type ResolvedWireBucket } from '../canvas/wirePolarity'
 import { isFixedIoNodeType } from '@logue-codegen/oscInstances'
 import { resolveDeclaredOutletName } from '@logue-codegen/primitives'
 import { resolveNodePrimitive } from './subpatchLibraryStore'
-import { findInletModulation } from '@logue-codegen/paramModulation'
 
 export interface ObjectNodeData extends Record<string, unknown> {
   node: PatchNode
@@ -194,17 +194,14 @@ export function patchDocToFlow(
         // primitive/outlet.
         const bucket = resolvePolarity(source.obj, resolvedOutletName ?? 'out')
         const color = colorForBucket(bucket)
-        const destPrimitive = resolveNodePrimitive(typeById.get(dest.obj) ?? '')
-        const expects =
-          destPrimitive && dest.inlet !== undefined
-            ? findInletModulation(destPrimitive, dest.inlet)?.modulation.expects
-            : undefined
         const warning =
-          !invalid &&
-          bucket !== 'neutral' &&
-          bucket !== 'buffer' &&
-          expects?.warnFrom?.includes(bucket)
-            ? expects.warning
+          !invalid && dest.inlet !== undefined
+            ? wireWarning(
+                doc,
+                bucket,
+                { obj: source.obj, outlet: resolvedOutletName ?? 'out' },
+                { obj: dest.obj, inlet: dest.inlet }
+              )
             : undefined
         const data: NetEdgeData = {
           netIndex,

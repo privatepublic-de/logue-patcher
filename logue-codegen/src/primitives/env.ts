@@ -901,7 +901,7 @@ export const oneKnobAdsrPrimitive: LoguePrimitive = {
       name: 'SHAPE',
       unit: KNOB_ENV_SHAPE,
       nts1mkiiStrings: KNOB_ENV_SHAPE_DEVICE_STRINGS,
-      modulatedBy: { inlet: 'shape', shape: 'additive' },
+      modulatedBy: { inlet: 'shape', shape: 'additive', depth: 100 },
       min: 0,
       max: 100,
       default: 17,

@@ -37,7 +37,7 @@ export const vcaPrimitive: LoguePrimitive = {
           range: 'a 0..1 level, 1 = unity, used as is',
           warnFrom: ['bipolar'],
           warning:
-            'A −1..1 signal here turns the sound upside down for its negative half (ring modulation), so it never fades out. For a tremolo, put a bipolar to unipolar in between.'
+            'A −1..1 signal here turns the sound upside down for its negative half (ring modulation), so it never fades out. For a tremolo, put a bipolar to unipolar in between; to keep only the positive half (an envelope that dips below 0), a max with b unwired.'
         }
       },
       min: 0,

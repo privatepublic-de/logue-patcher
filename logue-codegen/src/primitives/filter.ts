@@ -66,7 +66,7 @@ export const lowpassCheapFilterPrimitive: LoguePrimitive = {
   params: [
     {
       name: 'CUTOFF',
-      modulatedBy: { inlet: 'cutoff', shape: 'additive' },
+      modulatedBy: { inlet: 'cutoff', shape: 'additive', depth: 100 },
       min: 0,
       max: 100,
       default: 100,
@@ -115,7 +115,7 @@ export const highpassCheapFilterPrimitive: LoguePrimitive = {
   params: [
     {
       name: 'CUTOFF',
-      modulatedBy: { inlet: 'cutoff', shape: 'additive' },
+      modulatedBy: { inlet: 'cutoff', shape: 'additive', depth: 100 },
       min: 0,
       max: 100,
       default: 0,
@@ -954,7 +954,7 @@ export const svfFilterPrimitive: LoguePrimitive = {
   params: [
     {
       name: 'CUTOFF',
-      modulatedBy: { inlet: 'cutoff', shape: 'additive' },
+      modulatedBy: { inlet: 'cutoff', shape: 'additive', depth: 100 },
       trackGate: PITCH_TRACKED_GATE,
       min: 0,
       max: 100,

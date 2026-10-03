@@ -17,6 +17,7 @@ import { nodeId } from './nodeId'
 import { autoArrangeNodes, type Size as AutoArrangeSize } from '../canvas/autoArrange'
 import { layoutByFlow } from '../canvas/flowLayout'
 import { outletPolarityChanged } from '../canvas/wirePolarity'
+import { inletWarningsChanged } from '../canvas/wireWarnings'
 import {
   isFixedIoNodeType,
   LOGUE_AUDIO_IN_TYPE,
@@ -352,6 +353,14 @@ function withActiveDoc(
   return next
 }
 
+/** Whether a param edit to `nodeName` changed what the canvas projects for wires: an outlet's
+ *  polarity (`refinePolarity`) or a warning on a wire into it (a knob dead zone). */
+function wiresChanged(before: PatchDocument, after: PatchDocument, nodeName: string): boolean {
+  return (
+    outletPolarityChanged(before, after, nodeName) || inletWarningsChanged(before, after, nodeName)
+  )
+}
+
 /**
  * How every action changes the document: `withActiveDoc` (undo entry, no-op detection), then
  * `dirty`. By default it also bumps `reloadNonce` so the canvas remounts and re-derives edges and
@@ -543,7 +552,7 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
         n.kind === 'obj' &&
         n.name !== undefined &&
         !pendingUndo.nodes.includes(n) &&
-        outletPolarityChanged(pendingUndo, rootDoc!, n.name)
+        wiresChanged(pendingUndo, rootDoc!, n.name)
     )
     set((s) => ({
       past: [...past, pendingUndo].slice(-UNDO_LIMIT),
@@ -659,12 +668,12 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
         })
       )
     // A dial is read live, but wire colours and warnings are projected per mount: remount only
-    // when the edit moves a `refinePolarity` result (clamp's LO crossing 0, scale's FACTOR sign).
+    // when the edit changes one (clamp's LO crossing 0, a FADE that opens a knob dead zone).
     // Never mid-drag (it would unmount the dial being dragged); `endGesture` catches up.
     const remount =
       get().pendingUndo === null &&
       target.name !== undefined &&
-      outletPolarityChanged(activeDoc!, apply(activeDoc!), target.name)
+      wiresChanged(activeDoc!, apply(activeDoc!), target.name)
     commitDoc(get, set, { remount }, apply)
   },
 

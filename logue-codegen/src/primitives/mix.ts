@@ -215,7 +215,7 @@ function crossfaderParams(m: CrossfaderMembers): PrimitiveParamSpec[] {
     {
       name: 'FADE',
       unit: PERCENT,
-      modulatedBy: { inlet: 'fade', shape: 'additive' },
+      modulatedBy: { inlet: 'fade', shape: 'additive', depth: 100 },
       nts1mkiiType: 'percent',
       min: 0,
       max: 100,

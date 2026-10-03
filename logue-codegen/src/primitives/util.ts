@@ -394,7 +394,7 @@ export const delayPrimitive: LoguePrimitive = {
     {
       name: 'FEEDBACK',
       unit: PERCENT,
-      modulatedBy: { inlet: 'feedback', shape: 'additive' },
+      modulatedBy: { inlet: 'feedback', shape: 'additive', depth: 50 },
       min: -100,
       max: 100,
       default: 0,
@@ -1359,7 +1359,7 @@ export const freqShiftPrimitive: LoguePrimitive = {
     {
       name: 'FEEDBACK',
       unit: PERCENT,
-      modulatedBy: { inlet: 'feedback', shape: 'additive' },
+      modulatedBy: { inlet: 'feedback', shape: 'additive', depth: 50 },
       min: -100,
       max: 100,
       default: 0,

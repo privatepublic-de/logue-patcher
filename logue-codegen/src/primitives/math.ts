@@ -354,7 +354,9 @@ export const maxPrimitive: LoguePrimitive = {
     return ins.some((b) => b === undefined || nonNegative(b)) ? 'unipolar' : undefined
   },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
-  description: 'Outputs the larger of two signals, sample by sample.',
+  searchTerms: ['rectify', 'rectifier', 'half-wave', 'positive'],
+  description:
+    'Outputs the larger of two signals, sample by sample. With b unwired (0) it keeps only the positive half: a half-wave rectifier.',
   inlets: [
     { name: 'a', role: 'audio' },
     { name: 'b', role: 'audio' }
@@ -389,6 +391,7 @@ export const clampPrimitive: LoguePrimitive = {
     return hi <= 0 ? 'bipolar' : undefined
   },
   stateBytesPerInstance: 8, // lo_ + hi_, 2 floats
+  searchTerms: ['limit', 'rectify', 'positive'],
   description: 'Clamps a signal to a dialable [LO,HI] range.',
   inlets: [{ name: 'in', role: 'audio' }],
   memberDecls: (suffix) => `  float lo_${suffix};\n  float hi_${suffix};\n`,
@@ -428,6 +431,7 @@ export const absPrimitive: LoguePrimitive = {
     return input === 'gate' ? 'gate' : 'unipolar'
   },
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
+  searchTerms: ['rectify', 'rectifier', 'full-wave'],
   description: 'Outputs the absolute value of a signal (full-wave rectification).',
   inlets: [{ name: 'in', role: 'audio' }],
   memberDecls: () => '',

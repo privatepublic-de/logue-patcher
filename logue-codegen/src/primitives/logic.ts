@@ -64,6 +64,7 @@ export const greaterThanPrimitive: LoguePrimitive = {
       modulatedBy: {
         inlet: 'b',
         shape: 'additive',
+        unclamped: true,
         note: 'b is added to the threshold as-is, not clamped'
       }
     }
@@ -91,6 +92,7 @@ export const lessThanPrimitive: LoguePrimitive = {
       modulatedBy: {
         inlet: 'b',
         shape: 'additive',
+        unclamped: true,
         note: 'b is added to the threshold as-is, not clamped'
       }
     }
@@ -128,6 +130,7 @@ export const equalPrimitive: LoguePrimitive = {
       modulatedBy: {
         inlet: 'b',
         shape: 'additive',
+        unclamped: true,
         note: 'b is added to the threshold as-is, not clamped'
       }
     },

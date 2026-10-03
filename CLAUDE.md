@@ -1121,6 +1121,16 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   (`NetEdgeData.warning`/`inletWarnings`, `toFlowGraph.ts`). Audio into `gain` (a ring modulator)
   isn't flagged. `pitch` counts as COARSE's
   input (`COARSE_PARAM.modulatedBy`, ±24 st on top of it, unclamped).
+  An additive inlet wired straight from a knob reading (`sense/control` with a device control, or
+  a superseded knob reader) gets the same red `!` when its clamp swallows part of the knob's
+  travel (`canvas/wireWarnings.ts`' `knobDeadZoneWarning`, 2026-10-03, the Radio patch's bipolar
+  Depth into a crossfader at FADE 50), naming the dead stretch and the dial range (or outlet)
+  that fixes it. Knob sources only: clipping an LFO's swing can be the sound (user's call). It
+  reads `ParamModulation.depth` -- half the param's range unless set (`additiveDepthOf`; set on
+  the whole-range inlets and delay/freq-shift FEEDBACK's 50), `unclamped` on logic `b` --
+  pinned against codegen by `logue-additiveDepth.spec.ts`. Wire colours and warnings are
+  projected per canvas mount, so `setLogueParam` remounts when an edit changes one
+  (`wiresChanged`), never mid-drag (`endGesture` catches up).
 - **Envelope graph** (`EnvelopeGraph.tsx`, `logue/env/multistage` only): a breakpoint editor at
   the top of the node; its L1-L6/T1-T6 aren't drawn as dials. Drag a point up/down for its
   level, left/right for its time (Shift: fine); a drag is one gesture, so one undo step. The x

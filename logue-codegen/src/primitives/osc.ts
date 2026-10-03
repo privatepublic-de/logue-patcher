@@ -619,7 +619,7 @@ export const additiveOscPrimitive: LoguePrimitive = {
     FINE_PARAM,
     {
       name: 'TIMBRE',
-      modulatedBy: { inlet: 'timbre', shape: 'additive' },
+      modulatedBy: { inlet: 'timbre', shape: 'additive', depth: 100 },
       min: 0,
       max: 100,
       default: 30,
@@ -2295,6 +2295,7 @@ export const phaseDistOscPrimitive: LoguePrimitive = {
       modulatedBy: {
         inlet: 'dcw',
         shape: 'additive',
+        depth: 100,
         note: 'the whole range: an envelope sweeps 0 to 100'
       },
       min: 0,
