@@ -635,6 +635,34 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 36, extra: 0, helpers: [] },
       snapshotHash: '012908465f425a50'
     },
+    'logue/mix/bus-send': {
+      first: 16,
+      extra: 12,
+      helpers: [],
+      unwired: { first: 8, extra: 0, helpers: [] },
+      snapshotHash: '574efcb254356628'
+    },
+    'logue/mix/bus-receive': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 4, extra: 0, helpers: [] },
+      snapshotHash: 'fb1b473a0c1edfc3'
+    },
+    'logue/mix/bus-send-stereo': {
+      first: 16,
+      extra: 12,
+      helpers: [],
+      unwired: { first: 8, extra: 0, helpers: [] },
+      snapshotHash: 'ce0f1ba491fc3493'
+    },
+    'logue/mix/bus-receive-stereo': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 4, extra: 0, helpers: [] },
+      snapshotHash: '97a974b3ae145ea1'
+    },
     'logue/mix/width': {
       first: 92,
       extra: 56,
@@ -1287,6 +1315,34 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 72, extra: 0, helpers: [] },
       snapshotHash: '012908465f425a50'
     },
+    'logue/mix/bus-send': {
+      first: 20,
+      extra: 12,
+      helpers: [],
+      unwired: { first: 8, extra: 0, helpers: [] },
+      snapshotHash: '574efcb254356628'
+    },
+    'logue/mix/bus-receive': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 4, extra: 0, helpers: [] },
+      snapshotHash: 'fb1b473a0c1edfc3'
+    },
+    'logue/mix/bus-send-stereo': {
+      first: 20,
+      extra: 12,
+      helpers: [],
+      unwired: { first: 8, extra: 0, helpers: [] },
+      snapshotHash: 'ce0f1ba491fc3493'
+    },
+    'logue/mix/bus-receive-stereo': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 4, extra: 0, helpers: [] },
+      snapshotHash: '97a974b3ae145ea1'
+    },
     'logue/mix/width': {
       first: 96,
       extra: 76,
@@ -1908,6 +1964,34 @@ export const CODE_SIZE_TABLE: Record<
       helpers: [],
       unwired: { first: 40, extra: 0, helpers: [] },
       snapshotHash: 'e58f5dd040743146'
+    },
+    'logue/mix/bus-send': {
+      first: 20,
+      extra: 8,
+      helpers: [],
+      unwired: { first: 16, extra: 0, helpers: [] },
+      snapshotHash: '8f80b153a30397f2'
+    },
+    'logue/mix/bus-receive': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 8, extra: 0, helpers: [] },
+      snapshotHash: '185f8262303a613a'
+    },
+    'logue/mix/bus-send-stereo': {
+      first: 20,
+      extra: 8,
+      helpers: [],
+      unwired: { first: 16, extra: 0, helpers: [] },
+      snapshotHash: '8f5f2a91008b7c0c'
+    },
+    'logue/mix/bus-receive-stereo': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 8, extra: 0, helpers: [] },
+      snapshotHash: '898429f2f5cbf6fe'
     },
     'logue/mix/width': {
       first: 96,
@@ -2560,6 +2644,34 @@ export const CODE_SIZE_TABLE: Record<
       helpers: [],
       unwired: { first: 108, extra: 0, helpers: [] },
       snapshotHash: 'e58f5dd040743146'
+    },
+    'logue/mix/bus-send': {
+      first: 24,
+      extra: 8,
+      helpers: [],
+      unwired: { first: 12, extra: 0, helpers: [] },
+      snapshotHash: '8f80b153a30397f2'
+    },
+    'logue/mix/bus-receive': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 4, extra: 0, helpers: [] },
+      snapshotHash: '185f8262303a613a'
+    },
+    'logue/mix/bus-send-stereo': {
+      first: 24,
+      extra: 8,
+      helpers: [],
+      unwired: { first: 12, extra: 0, helpers: [] },
+      snapshotHash: '8f5f2a91008b7c0c'
+    },
+    'logue/mix/bus-receive-stereo': {
+      first: 0,
+      extra: 0,
+      helpers: [],
+      unwired: { first: 4, extra: 0, helpers: [] },
+      snapshotHash: '898429f2f5cbf6fe'
     },
     'logue/mix/width': {
       first: 92,

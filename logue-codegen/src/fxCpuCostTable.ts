@@ -676,6 +676,46 @@ export const FX_CPU_COST_TABLE: Record<
     },
     snapshotHash: 'd9827f1376cc7742'
   },
+  'logue/mix/bus-receive': {
+    variants: {
+      base: {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      }
+    },
+    snapshotHash: 'fb1b473a0c1edfc3'
+  },
+  'logue/mix/bus-receive-stereo': {
+    variants: {
+      base: {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      }
+    },
+    snapshotHash: '97a974b3ae145ea1'
+  },
+  'logue/mix/bus-send': {
+    variants: {
+      base: {
+        first: { cycles: 5, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 6, sdram: 0 }
+      }
+    },
+    snapshotHash: '574efcb254356628'
+  },
+  'logue/mix/bus-send-stereo': {
+    variants: {
+      base: {
+        first: { cycles: 5, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 7, sdram: 0 }
+      }
+    },
+    snapshotHash: 'ce0f1ba491fc3493'
+  },
   'logue/mix/crossfader': {
     variants: {
       base: {

@@ -91,6 +91,11 @@ export {
   crossfaderPrimitive,
   panPrimitive,
   panMix2Primitive,
+  busSendPrimitive,
+  busReceivePrimitive,
+  busSendStereoPrimitive,
+  busReceiveStereoPrimitive,
+  BUS_SEND_GAIN_PARAM,
   widthPrimitive,
   stereoMixer2Primitive,
   stereoCrossfaderPrimitive

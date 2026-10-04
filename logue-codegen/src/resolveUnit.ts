@@ -17,7 +17,21 @@ import {
   type LogueKnob
 } from './oscParams'
 import { flattenSubpatches, type SubpatchDefinitions } from './subpatches'
+import { BUS_LOOP_HINT, resolveBuses } from './buses'
+import { findLoguePrimitive } from './primitives'
 import { findUnitKind, MODULE_LABEL } from './unitKinds'
+
+/**
+ * A document as codegen sees it: subpatches flattened, then buses chained (`buses.ts`). Every
+ * consumer goes through this, so the gauges and the build agree on what a unit contains.
+ */
+export function flattenUnit(
+  doc: PatchDocument,
+  subpatches: SubpatchDefinitions,
+  maxLabelLength?: number
+): PatchDocument {
+  return resolveBuses(flattenSubpatches(doc, subpatches, maxLabelLength))
+}
 
 /**
  * Subpatches flattened, the graph resolved, and every active primitive checked against
@@ -38,7 +52,20 @@ export function resolvePlatformGraph(
       `${MODULE_LABEL[module]} units can't be built for the ${PLATFORM_DISPLAY_NAME[platform]} yet.`
     )
   }
-  const graph = resolveAudioGraph(flattenSubpatches(doc, subpatches, maxLabelLength))
+  const flat = flattenUnit(doc, subpatches, maxLabelLength)
+  let graph: ResolvedAudioGraph
+  try {
+    graph = resolveAudioGraph(flat)
+  } catch (e) {
+    if (
+      e instanceof UnsupportedLogueNodeError &&
+      e.message.startsWith('Graph has a feedback loop') &&
+      flat.nodes.some((n) => n.kind === 'obj' && findLoguePrimitive(n.type)?.internal)
+    ) {
+      throw new UnsupportedLogueNodeError(e.message + BUS_LOOP_HINT)
+    }
+    throw e
+  }
   assertPrimitivesSupportPlatform(graph.activeInstances, platform)
   assertPrimitivesSupportModule(graph.activeInstances, module)
   return graph

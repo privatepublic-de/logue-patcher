@@ -188,6 +188,18 @@ export const CPU_COST_TABLE: Record<
   'logue/math/one-minus': { variants: { base: 0 }, worst: 0, snapshotHash: 'f4a6e757bc9dd221' },
   'logue/math/scale': { variants: { base: 0 }, worst: 0, snapshotHash: '33fcee3c312305e9' },
   'logue/math/subtract': { variants: { base: 0 }, worst: 0, snapshotHash: 'd9827f1376cc7742' },
+  'logue/mix/bus-receive': { variants: { base: 0 }, worst: 0, snapshotHash: 'fb1b473a0c1edfc3' },
+  'logue/mix/bus-receive-stereo': {
+    variants: { base: 0 },
+    worst: 0,
+    snapshotHash: '97a974b3ae145ea1'
+  },
+  'logue/mix/bus-send': { variants: { base: 0 }, worst: 0, snapshotHash: '574efcb254356628' },
+  'logue/mix/bus-send-stereo': {
+    variants: { base: 0 },
+    worst: 0,
+    snapshotHash: 'ce0f1ba491fc3493'
+  },
   'logue/mix/crossfader': {
     variants: { base: 16, control: 16 },
     worst: 16,

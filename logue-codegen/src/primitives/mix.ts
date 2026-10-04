@@ -620,6 +620,108 @@ function prefixed<T>(tag: string, values: Record<'l' | 'r', T>): Record<string, 
   return { [`l${tag}`]: values.l, [`r${tag}`]: values.r }
 }
 
+/** A send's level: `mix2`'s GAIN, but unity by default (a send adds its source as it is). */
+export const BUS_SEND_GAIN_PARAM: PrimitiveParamSpec = {
+  name: 'GAIN',
+  unit: MIX_GAIN_DB,
+  min: 0,
+  max: 100,
+  default: 100,
+  setStatement: (suffix, valueExpr) => `gain_${suffix} = ${valueExpr} * 0.01f;`
+}
+
+/**
+ * `logue/mix/bus-send`: what a placed `logue/mix/send` becomes in `resolveBuses` (`buses.ts`).
+ * `thru` is the previous send on the same bus, so a bus is a chain of `thru + in*GAIN` -- the
+ * same arithmetic as `mix2`s wired through `thru` by hand.
+ */
+export const busSendPrimitive: LoguePrimitive = {
+  id: 'logue/mix/bus-send',
+  internal: true,
+  pure: true,
+  outletPolarity: 'inherit',
+  stateBytesPerInstance: 4, // gain_
+  description: 'One send on a bus (internal: placed as logue/mix/send).',
+  inlets: [
+    { name: 'in', role: 'audio' },
+    { name: 'thru', role: 'audio' }
+  ],
+  memberDecls: (suffix) => `  float gain_${suffix};\n`,
+  renderExpr: (suffix, inlets) => `(${mixTerms(inlets.thru, [[inlets.in, `gain_${suffix}`]])})`,
+  advanceStatement: () => '',
+  params: [BUS_SEND_GAIN_PARAM]
+}
+
+/** `logue/mix/bus-receive`: a placed `logue/mix/receive`, reading its bus's last send. */
+export const busReceivePrimitive: LoguePrimitive = {
+  id: 'logue/mix/bus-receive',
+  internal: true,
+  pure: true,
+  outletPolarity: 'inherit',
+  stateBytesPerInstance: 0,
+  description: 'Reads a bus (internal: placed as logue/mix/receive).',
+  inlets: [{ name: 'bus', role: 'audio' }],
+  memberDecls: () => '',
+  renderExpr: (_suffix, inlets) => `(${inlets.bus ?? '0.f'})`,
+  advanceStatement: () => ''
+}
+
+/** `logue/mix/bus-send-stereo`: `bus-send` for a stereo bus, one GAIN for both sides. */
+export const busSendStereoPrimitive: LoguePrimitive = {
+  id: 'logue/mix/bus-send-stereo',
+  internal: true,
+  pure: true,
+  outletPolarity: 'inherit',
+  stateBytesPerInstance: 4, // gain_
+  description: 'One send on a stereo bus (internal: placed as logue/mix/send-stereo).',
+  inlets: [
+    { name: 'l', role: 'audio' },
+    { name: 'r', role: 'audio' },
+    { name: 'lThru', role: 'audio' },
+    { name: 'rThru', role: 'audio' }
+  ],
+  outlets: [{ name: 'l' }, { name: 'r' }],
+  memberDecls: (suffix) => `  float gain_${suffix};\n`,
+  renderExpr: () => {
+    throw new Error(
+      'logue/mix/bus-send-stereo is multi-outlet -- use renderOutletStatements, not renderExpr'
+    )
+  },
+  renderOutletStatements: (suffix, inlets) => {
+    const side = (s: 'l' | 'r'): string =>
+      `      float y_${suffix}_${s} = ${mixTerms(inlets[`${s}Thru`], [[inlets[s], `gain_${suffix}`]])};\n`
+    return side('l') + side('r') + `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`
+  },
+  advanceStatement: () => '',
+  params: [BUS_SEND_GAIN_PARAM]
+}
+
+/** `logue/mix/bus-receive-stereo`: a placed `logue/mix/receive-stereo`. */
+export const busReceiveStereoPrimitive: LoguePrimitive = {
+  id: 'logue/mix/bus-receive-stereo',
+  internal: true,
+  pure: true,
+  outletPolarity: 'inherit',
+  stateBytesPerInstance: 0,
+  description: 'Reads a stereo bus (internal: placed as logue/mix/receive-stereo).',
+  inlets: [
+    { name: 'l', role: 'audio' },
+    { name: 'r', role: 'audio' }
+  ],
+  outlets: [{ name: 'l' }, { name: 'r' }],
+  memberDecls: () => '',
+  renderExpr: () => {
+    throw new Error(
+      'logue/mix/bus-receive-stereo is multi-outlet -- use renderOutletStatements, not renderExpr'
+    )
+  },
+  renderOutletStatements: (suffix, inlets) =>
+    `      float y_${suffix}_l = ${inlets.l ?? '0.f'};\n` +
+    `      float y_${suffix}_r = ${inlets.r ?? '0.f'};\n` +
+    `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`,
+  advanceStatement: () => ''
+}
+
 /**
  * `logue/mix/width`: stereo width by mid/side -- `mid = (l+r)/2`, `side = (l-r)/2 * WIDTH`, out
  * `mid +- side`. WIDTH 0 is the mono sum on both sides (at the same level, unlike Axoloti

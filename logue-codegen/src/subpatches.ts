@@ -13,6 +13,7 @@ import {
   type PrimitiveParamSpec,
   type WirePolarityBucket
 } from './primitives'
+import { busPseudoPrimitive } from './buses'
 import {
   LOGUE_AUDIO_IN_TYPE,
   LOGUE_AUDIO_OUT_TYPE,
@@ -165,6 +166,8 @@ export function createSubpatchAwareResolver(defs: SubpatchDefinitions): Primitiv
   const resolve: PrimitiveResolver = (type) => {
     if (type === LOGUE_SUBPATCH_INLET_TYPE) return SUBPATCH_INLET_PRIMITIVE
     if (type === LOGUE_SUBPATCH_OUTLET_TYPE) return SUBPATCH_OUTLET_PRIMITIVE
+    const bus = busPseudoPrimitive(type)
+    if (bus) return bus
     if (!isSubpatchInstanceType(type)) return findLoguePrimitive(type)
     if (memo.has(type)) return memo.get(type)
     if (stack.has(type)) return undefined

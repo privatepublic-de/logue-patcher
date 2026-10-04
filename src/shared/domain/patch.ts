@@ -22,6 +22,10 @@ export interface ObjNode extends PatchNodeBase {
    *  document-level table, so copy/paste and subpatch flattening carry it without extra work;
    *  codegen dedupes identical samples by content hash. */
   sample?: SampleAsset
+  /** Only on the bus nodes (`logue/mix/send`/`receive` and their stereo pair): the bus name, one
+   *  namespace per unit across subpatches. Absent reads as `''`, a bus like any other
+   *  (`logue-codegen/src/buses.ts`). */
+  bus?: string
 }
 
 /**

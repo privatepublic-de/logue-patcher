@@ -9,7 +9,8 @@ import { findAliasedFieldValue, findLoguePrimitive } from '@logue-codegen/primit
 import { resolveAudioGraph } from '@logue-codegen/oscInstances'
 import { supersededKnobBinding } from '@logue-codegen/renamedFields'
 import { findUnitKind, UNIT_KINDS } from '@logue-codegen/unitKinds'
-import { flattenSubpatches, isSubpatchInstanceType } from '@logue-codegen/subpatches'
+import { isSubpatchInstanceType } from '@logue-codegen/subpatches'
+import { flattenUnit } from '@logue-codegen/resolveUnit'
 import { resolveNodePrimitive, subpatchDefinitions } from './subpatchLibraryStore'
 import { nodeId } from './nodeId'
 
@@ -162,7 +163,7 @@ export function computeCrossPlatformExposureWarnings(
 ): CrossPlatformExposureWarning[] {
   let activeInstances: ReturnType<typeof resolveAudioGraph>['activeInstances']
   try {
-    ;({ activeInstances } = resolveAudioGraph(flattenSubpatches(rootDoc, subpatchDefinitions())))
+    ;({ activeInstances } = resolveAudioGraph(flattenUnit(rootDoc, subpatchDefinitions())))
   } catch {
     return []
   }

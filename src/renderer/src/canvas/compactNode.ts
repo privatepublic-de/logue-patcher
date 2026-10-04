@@ -14,6 +14,7 @@ export function isCompactPrimitive(type: string): boolean {
   const primitive = findLoguePrimitive(type)
   return (
     primitive !== undefined &&
+    !primitive.internal &&
     (primitive.params?.length ?? 0) === 0 &&
     ((primitive.inlets?.length ?? 0) <= 1 ||
       (primitive.inlets?.length === 2 && /^logue\/(math|logic)\//.test(primitive.id))) &&

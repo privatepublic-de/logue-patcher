@@ -325,6 +325,8 @@ function decodeObjNode(
     )
   }
   if (r.sample !== undefined) node.sample = decodeSampleAsset(r.sample, `${what}.sample`)
+  const bus = optionalString(r.bus, `${what}.bus`)
+  if (bus !== undefined) node.bus = bus
   return node
 }
 function encodeObjNode(n: ObjNode): Record<string, unknown> {
@@ -334,6 +336,7 @@ function encodeObjNode(n: ObjNode): Record<string, unknown> {
     params: n.params.map(encodeParamValue)
   }
   if (n.sample !== undefined) out.sample = encodeSampleAsset(n.sample)
+  if (n.bus !== undefined) out.bus = n.bus
   return out
 }
 

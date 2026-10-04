@@ -65,6 +65,10 @@ import {
   mixer2Primitive,
   panPrimitive,
   panMix2Primitive,
+  busSendPrimitive,
+  busReceivePrimitive,
+  busSendStereoPrimitive,
+  busReceiveStereoPrimitive,
   stereoCrossfaderPrimitive,
   stereoMixer2Primitive,
   widthPrimitive
@@ -232,6 +236,10 @@ const PRIMITIVES: LoguePrimitive[] = [
   reverseTapPrimitive,
   panPrimitive,
   panMix2Primitive,
+  busSendPrimitive,
+  busReceivePrimitive,
+  busSendStereoPrimitive,
+  busReceiveStereoPrimitive,
   widthPrimitive,
   chancePrimitive,
   roundRobinPrimitive

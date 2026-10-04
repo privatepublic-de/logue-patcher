@@ -198,7 +198,7 @@ export function listInsertablePrimitives(module?: LogueModule): PrimitiveCatalog
   // 2026-09-30). No `module` (a subpatch definition) offers everything.
   const ids = recognizedLoguePrimitiveIds().filter((id) => {
     const p = findLoguePrimitive(id)
-    return !p?.supersededBy && worksIn(p?.modules, module)
+    return !p?.supersededBy && !p?.internal && worksIn(p?.modules, module)
   })
   return ids.map((id) => ({
     id,

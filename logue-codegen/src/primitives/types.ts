@@ -274,6 +274,11 @@ export interface LoguePrimitive {
    */
   supersededBy?: string
   /**
+   * What a bus node becomes once `resolveBuses` (`buses.ts`) has chained it: never offered in the
+   * palette, never placed by hand. The user places the bus nodes, which aren't registry entries.
+   */
+  internal?: true
+  /**
    * Extra words palette search matches, for a word people use for this primitive that isn't
    * its name or a former id: "invert" means -x to some and 1-x to others, so both `negate` and
    * `one-minus` list it.
