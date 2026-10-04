@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 94 primitives, 5 of them superseded and hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 95 primitives, 5 of them superseded and hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -101,10 +101,10 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-94 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+95 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
 history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (15:
-sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (8:
-lowpass-cheap/highpass-cheap/comb/string/svf/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
+sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (9:
+lowpass-cheap/highpass-cheap/comb/string/svf/ladder/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (15: constant/unipolar-to-bipolar/bipolar-to-unipolar/
 glide/slew/sample-hold/sample-delay/delay/long-delay/quantize/freq-shift/buffer/buffer-tap/grain/reverse-tap), `shape` (2: wavefolder/soft-clip), `math` (11: negate/one-minus/curve/add/subtract/multiply/scale/min/max/
@@ -832,6 +832,47 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   (user's call, 2026-09-30), whose range reduction linked ~3.2 KB: the xd auto-wah example went
   5540 -> 1476 B of a modfx's 6 KB, and TRACK with every input wired 276 -> 206 cycles (xd
   emulator). No hardware pass of the new one yet.
+- **`filter/ladder`** (2026-10-04): a Moog-style 24 dB/oct lowpass, Zavalishin's ZDF/TPT
+  ladder (four bilinear one-poles, the loop solved linearly for an output estimate) with the
+  cubic soft clip on the input + feedback sum, where the ladder's differential pair sits. It bounds
+  self-oscillation, and a hot input (DRIVE, 1-10x, `+0..+20 dB`) swamps the feedback the way the
+  hardware does. bass-support's TONE is a separate 2-pole and stays as it is.
+  - `FB_DRIVE` (additive `fbDrive`): a second soft clip on the OUTPUT node, through which both the
+    fed-back estimate and the heard output pass. It is pushed by `t*(4+6t)` (1.4x at 25, 10x at
+    100) and scaled back, so only the clipping changes, not the loop gain. Makeup on the heard
+    output only (`1 + 0.3f^2/(1+f)`). Harness, saw at RESONANCE 90: h12 -50 -> -23 dB, h20 -71 ->
+    -32 dB, rms within +2/-2 dB. Self-oscillation: 3rd harmonic -52 -> -25 dB, +3 dB, pitch
+    unchanged. The first version clipped only the feedback, before the four stages: they filtered
+    its harmonics away and it just limited the resonance and brought the bass back (resonant
+    peak -19 dB). At 0 the clip is off (c 0, bound 1e30): the plain ladder up to rounding. Every
+    ladder pays for it (~26 cycles for the two clips plus register pressure: 87 -> 118 base).
+    Skipping it at 0 would save ~20, but the CPU gauge can't see param values. No hardware pass.
+  - `RESONANCE` is linear, `k = 4.8*t`, so it self-oscillates from ~84 %, on the cutoff within
+    0.4 ct (harness, notes 24-108). Below that point the peak sits under the cutoff, -45 ct at
+    k 3.6, as on any ladder. Half the passband loss (`1/(1+k)`) is made up at the input
+    (`1 + 0.5k`): about -4 dB is left at high resonance instead of -14 (user's taste call, open).
+  - A ~-120 dB LCG noise on the input lets it start oscillating from silence: ~170 ms at C4,
+    ~0.7 s at C2, ~1.6 s at C1. Self-oscillation runs at ~-15 dBFS RMS.
+  - Free `CUTOFF` is a note (`LADDER_NOTE_LO` 15.5 + 1.2 st per percent, 20 Hz..20.5 kHz) through
+    `note_w0`, so the additive `cutoff` (depth 100) sweeps exponentially. The dial shows Hz
+    (`LADDER_CUTOFF_HZ`). `TRACK`/`COARSE`/`FINE`/`pitch` are svf's. `g = svf_tan(pi*w0)` with
+    w0 capped at 0.45.
+  - Unwired, G/p/q are block constants (`ladder_step`). A moving input is control-rate
+    (`ladder_ctl`, like `pan_ctl`): G/p/q are worked out every 16 samples and ramped linearly in
+    between (the clip's pair steps), so audio-rate filter FM is smoothed to ~3 kHz. Computed per
+    sample, a saw with an ADSR into `cutoff` measured 402 xd emulator cycles as a whole unit
+    (before FB_DRIVE); control-rate, with FB_DRIVE, 324 (estimate 270..395). The four stages and
+    the ramp are unrolled (115 -> 87 base before FB_DRIVE; 284 -> 244 moving). Now 118 base,
+    `heavy-moving-cutoff` (an LFO into `cutoff`, LFO included) 244, which counts toward the knob
+    maximum once a control input is wired. The `control` variants are hoisted constants (119),
+    the known gap. xd fx: 116 still, ~250 moving (`fastpow2f` stand-in).
+  - Harness (`scripts/runLadderHarness.ts`, xd, ASan/UBSan, noise response vs input):
+    -0.04 dB at 50 Hz, -12.03 dB at the cutoff, -25.8 dB/oct an octave up. A full-scale saw at
+    DRIVE 100 reaches the output's clip, and a fuzz with every inlet moving at notes 0-127 is
+    clean.
+  - Builds (`scripts/stageLadder.ts`: `lp-xd-ladder`/`-env`/`-osc`, `lp-nts1-*`): only leaf calls
+    below the xd's `process`, and the RAM estimate equals the bss (108 B an instance). Both fx sweeps link.
+    No hardware pass yet.
 - **`filter/formant`**: 3 ZDF bandpasses on Peterson & Barney formants, `VOWEL` order
   `u o a e i` (alphabetical makes F2 jump). `CHARACTER` (2026-09-29) blends the male table (0, the
   original) -> women's (50) -> children's (100) in note space via the leaf `formant_note`
@@ -1628,6 +1669,9 @@ Mechanics (`logue-codegen/src/subpatches.ts`, dependency-free, definitions alway
 - `env/adsr`/`env/one-knob-adsr` (2026-10-02) are harness-, link- and emulator-checked only:
   no listening pass, and the NTS-1 mkII SHAPE name display (a 101-entry `strings` row) hasn't
   been seen on a device. Staged: `lp-xd-oneknob`(`-lfo`), `lp-nts1-oneknob`(`-lfo`).
+- `filter/ladder` (2026-10-04) is harness-, link- and emulator-checked only. No listening pass
+  yet, and the half bass compensation and k_max 4.8 are untested by ear. Staged:
+  `lp-xd-ladder`/`-env`/`-osc` and the `lp-nts1-*` equivalents (FB_DRIVE on menu param 3).
 - `filter/hilbert`/`util/freq-shift` and the freq-shifter example are harness- and link-checked
   only; no listening pass on either device yet (staged as `lp-fx-freqshift`/`lp-xdfx-freqshift`).
 - `logue/osc/exciter`'s tone/decay/strike-train constants (`EXCITER_HELD_DECAY_RATE_MAX`/

@@ -22,7 +22,8 @@ import {
   hilbertPrimitive,
   lowpassCheapFilterPrimitive,
   pluckedStringPrimitive,
-  svfFilterPrimitive
+  svfFilterPrimitive,
+  ladderFilterPrimitive
 } from './filter'
 import { vcaPrimitive } from './gain'
 import {
@@ -177,6 +178,7 @@ const PRIMITIVES: LoguePrimitive[] = [
   phaseDistOscPrimitive,
   bassSupportPrimitive,
   svfFilterPrimitive,
+  ladderFilterPrimitive,
   formantFilterPrimitive,
   sensePitchPrimitive,
   senseControlPrimitive,

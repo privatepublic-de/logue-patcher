@@ -348,6 +348,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 552, extra: 372, helpers: [] },
       snapshotHash: 'c762be0833d80be7'
     },
+    'logue/filter/ladder': {
+      first: 1174,
+      extra: 960,
+      helpers: ['memset'],
+      unwired: { first: 982, extra: 784, helpers: ['memset'] },
+      snapshotHash: '14f53da66bd476e6'
+    },
     'logue/filter/formant': {
       first: 284,
       extra: 232,
@@ -949,6 +956,13 @@ export const CODE_SIZE_TABLE: Record<
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 436, extra: 316, helpers: ['Fx::note_w0(float)'] },
       snapshotHash: 'c762be0833d80be7'
+    },
+    'logue/filter/ladder': {
+      first: 1294,
+      extra: 1228,
+      helpers: ['Fx::note_w0(float)', 'memset'],
+      unwired: { first: 886, extra: 776, helpers: ['Fx::note_w0(float)', 'memset'] },
+      snapshotHash: '14f53da66bd476e6'
     },
     'logue/filter/formant': {
       first: 302,
@@ -1596,6 +1610,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 605, extra: 599, helpers: [] },
       snapshotHash: '6536ded8663fbbfe'
     },
+    'logue/filter/ladder': {
+      first: 1284,
+      extra: 1030,
+      helpers: ['memset'],
+      unwired: { first: 1120, extra: 846, helpers: ['memset'] },
+      snapshotHash: 'cc8996b4ce647780'
+    },
     'logue/filter/formant': {
       first: 507,
       extra: 232,
@@ -2195,6 +2216,13 @@ export const CODE_SIZE_TABLE: Record<
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 501, extra: 495, helpers: ['Fx::note_w0(float)'] },
       snapshotHash: '6536ded8663fbbfe'
+    },
+    'logue/filter/ladder': {
+      first: 1472,
+      extra: 1192,
+      helpers: ['Fx::note_w0(float)', 'memset'],
+      unwired: { first: 1068, extra: 792, helpers: ['Fx::note_w0(float)', 'memset'] },
+      snapshotHash: 'cc8996b4ce647780'
     },
     'logue/filter/formant': {
       first: 514,

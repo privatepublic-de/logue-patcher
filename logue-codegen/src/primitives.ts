@@ -48,6 +48,7 @@ export {
   combFilterPrimitive,
   pluckedStringPrimitive,
   svfFilterPrimitive,
+  ladderFilterPrimitive,
   formantFilterPrimitive
 } from './primitives/filter'
 export { vcaPrimitive } from './primitives/gain'

@@ -694,6 +694,31 @@ export const FOLLOWER_SENS_DB: ParamUnit = {
 export const WAVEFOLDER_DRIVE_DB = linearDbUnit(1, 0.07)
 // `driveGainExpr(..., 0.09)` -- primitives.ts:1789 (`saturatorPrimitive`'s own call site).
 export const SOFTCLIP_DRIVE_DB = linearDbUnit(1, 0.09)
+// `logue/filter/ladder`'s DRIVE: `1.f + raw * 0.09f`, the saturator's own curve.
+export const LADDER_DRIVE_DB = linearDbUnit(1, 0.09)
+/** `logue/filter/ladder`'s free CUTOFF is a note, `LADDER_NOTE_LO + raw * LADDER_NOTE_SPAN / 100`:
+ *  20 Hz at 0, ~20.5 kHz at 100, exponential in between. */
+export const LADDER_NOTE_LO = 15.5
+export const LADDER_NOTE_SPAN = 120
+export const LADDER_CUTOFF_HZ = ladderCutoffHzUnit()
+
+function ladderCutoffHzUnit(): ParamUnit {
+  return {
+    toDisplay(raw) {
+      const hz = 440 * 2 ** ((LADDER_NOTE_LO + (raw * LADDER_NOTE_SPAN) / 100 - 69) / 12)
+      if (hz >= 1000) return `${(hz / 1000).toFixed(hz >= 10000 ? 1 : 2)} kHz`
+      return `${hz.toFixed(hz >= 100 ? 0 : 1)} Hz`
+    },
+    parseInput(text) {
+      const match = text.trim().match(/^([\d.]+)\s*(khz|hz)?$/i)
+      if (!match) return undefined
+      const n = Number.parseFloat(match[1])
+      if (!Number.isFinite(n) || n <= 0) return undefined
+      const hz = match[2]?.toLowerCase() === 'khz' ? n * 1000 : n
+      return ((69 + 12 * Math.log2(hz / 440) - LADDER_NOTE_LO) * 100) / LADDER_NOTE_SPAN
+    }
+  }
+}
 
 function trackWidget(label: string): BooleanParamWidget {
   return { onValue: 100, offValue: 0, threshold: TRACK_ON_THRESHOLD, label }

@@ -146,4 +146,18 @@ describe('paramUnits', () => {
     expect(findParamUnit('logue/filter/svf', 'COARSE')?.toDisplay(3)).toBe('+3 st')
     expect(findParamUnit('logue/filter/svf', 'FINE')?.toDisplay(25)).toBe('+25 ct')
   })
+
+  it('ladder CUTOFF shows its note-domain cutoff in Hz, and a typed frequency round-trips', () => {
+    // note = 15.5 + 1.2 * raw (LADDER_NOTE_LO/SPAN), 440 Hz at note 69.
+    const cutoff = findParamUnit('logue/filter/ladder', 'CUTOFF')
+    expect(cutoff?.toDisplay(0)).toBe('20.0 Hz')
+    expect(cutoff?.toDisplay(60)).toBe('1.28 kHz')
+    expect(cutoff?.toDisplay(100)).toBe('20.5 kHz')
+    expect(cutoff?.parseInput('440 Hz')).toBeCloseTo((69 - 15.5) / 1.2, 9)
+    expect(cutoff?.parseInput('1.28k')).toBeUndefined()
+    expect(cutoff?.parseInput('2 kHz')).toBeCloseTo(
+      (69 + 12 * Math.log2(2000 / 440) - 15.5) / 1.2,
+      9
+    )
+  })
 })

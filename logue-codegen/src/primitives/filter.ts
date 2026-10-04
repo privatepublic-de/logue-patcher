@@ -1,6 +1,10 @@
 import {
   ALLPASS_MS,
   COMB_CUTOFF_MS,
+  LADDER_CUTOFF_HZ,
+  LADDER_DRIVE_DB,
+  LADDER_NOTE_LO,
+  LADDER_NOTE_SPAN,
   NEEDS_TRACK_GATE,
   PERCENT,
   PITCH_TRACKED_GATE,
@@ -18,6 +22,8 @@ import {
   FINE_PARAM,
   HILBERT_STATE_FLOATS,
   HILBERT_STEP_HELPER,
+  hashSuffixToSeed,
+  isBlockInvariant,
   NOTE_W0_HELPER,
   ONEPOLE_HELPER,
   TRACK_ON_RAW_THRESHOLD,
@@ -943,6 +949,320 @@ export const svfFilterPrimitive: LoguePrimitive = {
       max: 100,
       default: 0,
       setStatement: (suffix, valueExpr) => `resonancePercent_${suffix} = ${valueExpr};`
+    },
+    { ...COARSE_PARAM, trackGate: NEEDS_TRACK_GATE },
+    { ...FINE_PARAM, trackGate: NEEDS_TRACK_GATE },
+    {
+      name: 'TRACK',
+      booleanWidget: TRACK_WIDGET,
+      min: 0,
+      max: 100,
+      default: 0,
+      setStatement: (suffix, valueExpr) => `track_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/**
+ * A Moog-style transistor ladder: four one-pole lowpasses in series (24 dB/oct) with the last
+ * one's output fed back, inverted, to the input.
+ *
+ * - Topology: Zavalishin's zero-delay-feedback (TPT) ladder. The linear loop is solved exactly
+ *   for an estimate of the output, the input stage's saturator is applied to `in - k*estimate`,
+ *   and the four stages then run on that. Each stage is the bilinear one-pole, so the resonant
+ *   peak sits exactly on the cutoff (each stage -45 degrees and 1/sqrt(2) there) and
+ *   self-oscillation starts at exactly `k = 4` for any cutoff.
+ * - The saturator (the cubic soft clip, +-1 at +-1.5) sits where the ladder's differential pair
+ *   does: on the sum of input and feedback. It bounds the self-oscillation, and a hot input
+ *   swamps the feedback, so DRIVE thins the resonance the way the hardware does.
+ * - `FB_DRIVE` puts a second soft clip on the OUTPUT node: the fed-back estimate and the heard
+ *   output both go through it, pushed by `t*(4 + 6t)` (0..10x) and scaled back, so the loop gain
+ *   stays and only the clipping changes. The resonance (and self-oscillation) turns squarer and
+ *   the output gains upper harmonics; a makeup gain on the heard output (`1 + 0.3f^2/(1+f)`) keeps
+ *   the level within ~+-2 dB. A first version clipped only the feedback, before the four stages:
+ *   they filtered the clip's harmonics away and it just limited the resonance. At 0 the clip is
+ *   off (`c` 0, bound 1e30, makeup 1): the plain ladder.
+ * - `RESONANCE` is linear, `k = 4.8*t`: self-oscillation from ~84 %, on the cutoff within 0.4
+ *   ct (harness). Below it the resonant peak sits under the cutoff (-45 ct at k = 3.6), as on any
+ *   ladder: the stages' own rolloff tilts the peak. The passband drops by `1/(1+k)` as resonance
+ *   rises (-14 dB at k = 4); half of that is made up at the input (`1 + 0.5k`), which also
+ *   drives the saturator harder, so ~-4.4 dB is left.
+ * - A ~-120 dB LCG noise is added to the input so the filter can self-oscillate from silence
+ *   (an exactly zero state is an equilibrium even when it's unstable). From silence it takes
+ *   ~170 ms to start at C4, ~0.7 s at C2: louder seed noise would be audible, a larger k_max
+ *   would leave less of RESONANCE below oscillation.
+ * - Free `CUTOFF` is a note (`LADDER_NOTE_LO` + 1.2 st per percent: 20 Hz..20 kHz, exponential)
+ *   through `note_w0`, so a wired `cutoff` sweeps in pitch. `TRACK`/`COARSE`/`FINE`/`pitch` are
+ *   `svf`'s. `g = svf_tan(pi*w0)` with w0 capped at 0.45.
+ * - Unwired, every coefficient is a block constant. A moving `cutoff`/`pitch`/`resonance`/`drive`
+ *   is control-rate (`ladder_ctl`): the coefficients are worked out every 16 samples (note_w0,
+ *   svf_tan, two divides: ~190 xd emulator cycles each time) and ramped linearly in between, like
+ *   `pan_ctl` (the clip's pair steps). Per sample that cost 402 cycles for a saw + ADSR-swept
+ *   ladder, so audio-rate filter FM is smoothed to ~3 kHz instead.
+ */
+const LADDER_K_MAX = 4.8
+const LADDER_BASS_COMP = 0.5
+const LADDER_RESONANCE_INLET_DEPTH = 50
+const LADDER_DRIVE_INLET_DEPTH = 50
+const LADDER_FB_DRIVE_INLET_DEPTH = 50
+/** FB_DRIVE's boost into the clip: `t*(4 + 6t)`, 1.4x at 25, 3.5x at 50, 10x at 100. */
+const LADDER_FB_MAKEUP = 0.3
+
+const LADDER_STEP_HELPER: HelperBlock = {
+  key: 'ladder_step',
+  code: `  // One sample of the ZDF ladder (see logue/filter/ladder's doc comment). G = g/(1+g) per
+  // stage; with a = 1/(1+k*G^4) the solved output is e*in + a*S (e = a*G^4*pre, S the four
+  // states' part of it). FB_DRIVE's clip sits on the output node: the fed-back estimate and the
+  // heard output both go through it (clamped to +-b, minus c times the cube; c 0 = off).
+  // s: the four stages.
+  static inline __attribute__((always_inline)) float ladder_clip(float y, float c, float b)
+  {
+    y = y < -b ? -b : (y > b ? b : y);
+    return y - c * y * y * y;
+  }
+
+  static inline __attribute__((always_inline)) float ladder_step(float *s, uint32_t *seed, float in, float G, float pre, float e, float a, float k, float m, float c, float b)
+  {
+    *seed = *seed * 1664525u + 1013904223u;
+    const float x = in + (float)(int32_t)*seed * 4.66e-16f;
+    const float S = (1.f - G) * (s[3] + G * (s[2] + G * (s[1] + G * s[0])));
+    const float fb = k * ladder_clip(e * x + a * S, c, b);
+    float u = pre * x - fb;
+    u = u < -1.5f ? -1.5f : (u > 1.5f ? 1.5f : u);
+    u = u - 0.148148148f * u * u * u;
+    float v;
+    v = G * (u - s[0]); u = v + s[0]; s[0] = u + v;
+    v = G * (u - s[1]); u = v + s[1]; s[1] = u + v;
+    v = G * (u - s[2]); u = v + s[2]; s[2] = u + v;
+    v = G * (u - s[3]); u = v + s[3]; s[3] = u + v;
+    return ladder_clip(u, c, b) * m;
+  }
+
+  static inline __attribute__((always_inline)) float ladder_g(float w0)
+  {
+    const float g = svf_tan(3.14159265f * (w0 < 0.45f ? w0 : 0.45f));
+    return g / (1.f + g);
+  }
+
+  // The bass made up at the input, times DRIVE.
+  static inline __attribute__((always_inline)) float ladder_pre(float k, float drive)
+  {
+    return drive * (1.f + ${LADDER_BASS_COMP}f * k);
+  }
+
+  static inline __attribute__((always_inline)) float ladder_a(float G, float k)
+  {
+    const float G2 = G * G;
+    return 1.f / (1.f + k * G2 * G2);
+  }
+
+  // e = a*G^4*pre (see ladder_step).
+  static inline __attribute__((always_inline)) float ladder_e(float G, float a, float pre)
+  {
+    const float G2 = G * G;
+    return a * G2 * G2 * pre;
+  }
+
+  // FB_DRIVE's clip of the feedback, boosted by f and scaled back by 1/f: the cubic soft clip
+  // (+-1 at +-1.5) in the feedback's own units is fb - (4/27)f^2*fb^3 up to |fb| = 1.5/f.
+  static inline __attribute__((always_inline)) float ladder_fb_c(float f)
+  {
+    return 0.148148148f * f * f;
+  }
+
+  static inline __attribute__((always_inline)) float ladder_fb_b(float f)
+  {
+    return f > 0.f ? 1.5f / f : 1e30f;
+  }
+
+  // Makeup on the heard output (not the fed-back one): the clip caps it at 1/f.
+  static inline __attribute__((always_inline)) float ladder_fb_m(float f)
+  {
+    return 1.f + ${LADDER_FB_MAKEUP}f * f * f / (1.f + f);
+  }
+
+  // A moving input at control rate: every 16th call works out G/pre/e/a/k/makeup for the cutoff
+  // note, RESONANCE and DRIVE and sets c[6..11] so c[0..5] ramp there linearly over the next 16
+  // samples. The clip's c[12]/c[13] step instead: ramped separately they'd stop matching, and the
+  // cubic would turn back past its bound.
+  static inline __attribute__((always_inline)) void ladder_ctl(uint32_t *n, float *c, float note, float k, float drive, float fbDrive)
+  {
+    if (((*n)++ & 15u) == 0u)
+    {
+      const float G = ladder_g(note_w0(note));
+      const float a = ladder_a(G, k);
+      const float pre = ladder_pre(k, drive);
+      c[6] = (G - c[0]) * 0.0625f;
+      c[7] = (pre - c[1]) * 0.0625f;
+      c[8] = (ladder_e(G, a, pre) - c[2]) * 0.0625f;
+      c[9] = (a - c[3]) * 0.0625f;
+      c[10] = (k - c[4]) * 0.0625f;
+      c[11] = (ladder_fb_m(fbDrive) - c[5]) * 0.0625f;
+      c[12] = ladder_fb_c(fbDrive);
+      c[13] = ladder_fb_b(fbDrive);
+    }
+    c[0] += c[6];
+    c[1] += c[7];
+    c[2] += c[8];
+    c[3] += c[9];
+    c[4] += c[10];
+    c[5] += c[11];
+  }
+`
+}
+
+interface LadderValues {
+  /** The cutoff as a note: the played one with TRACK, else CUTOFF's. */
+  note: BlockValue
+  k: BlockValue
+  drive: BlockValue
+  /** FB_DRIVE's boost, 0..10. */
+  fbDrive: BlockValue
+  /** Set while nothing moves: the coefficients as block constants. */
+  still?: Record<'G' | 'a' | 'pre' | 'e' | 'm' | 'c' | 'b', BlockValue>
+}
+
+function ladderValues(suffix: string, inlets: Record<string, string | undefined>): LadderValues {
+  const cutoff01 =
+    inlets.cutoff !== undefined
+      ? `clampf(cutoff_${suffix} + (${inlets.cutoff}), 0.f, 1.f)`
+      : `cutoff_${suffix}`
+  const pitch = inlets.pitch !== undefined ? ` + (${inlets.pitch}) * ${COARSE_PARAM.max}.f` : ''
+  const tracked = `note_ + noteFine_ * (1.f/255.f) + coarse_${suffix} + fine_${suffix}${pitch}`
+  const noteExpr = `(track_${suffix} >= ${TRACK_ON_RAW_THRESHOLD}.f ? ${tracked} : ${LADDER_NOTE_LO}f + ${cutoff01} * ${LADDER_NOTE_SPAN}.f)`
+  const resonance =
+    inlets.resonance !== undefined
+      ? additiveInletExpr(
+          'resonancePercent',
+          suffix,
+          inlets.resonance,
+          LADDER_RESONANCE_INLET_DEPTH
+        )
+      : `resonancePercent_${suffix}`
+  const drive =
+    inlets.drive !== undefined
+      ? additiveInletExpr('drivePercent', suffix, inlets.drive, LADDER_DRIVE_INLET_DEPTH)
+      : `drivePercent_${suffix}`
+  const fbDrive =
+    inlets.fbDrive !== undefined
+      ? additiveInletExpr('fbDrivePercent', suffix, inlets.fbDrive, LADDER_FB_DRIVE_INLET_DEPTH)
+      : `fbDrivePercent_${suffix}`
+  const noteInputs = [inlets.cutoff, inlets.pitch]
+  const values: LadderValues = {
+    note: blockValue('blkLadNote', suffix, noteExpr, noteInputs),
+    k: blockValue('blkLadK', suffix, `(${resonance}) * ${(LADDER_K_MAX / 100).toFixed(3)}f`, [
+      inlets.resonance
+    ]),
+    drive: blockValue('blkLadDrv', suffix, `(1.f + (${drive}) * 0.09f)`, [inlets.drive]),
+    fbDrive: blockValue(
+      'blkLadFbDrv',
+      suffix,
+      `((${fbDrive}) * (0.04f + 0.0006f * (${fbDrive})))`,
+      [inlets.fbDrive]
+    )
+  }
+  const all = [...noteInputs, inlets.resonance, inlets.drive, inlets.fbDrive]
+  if (all.every(isBlockInvariant)) {
+    const G = blockValue('blkLadG', suffix, `ladder_g(note_w0(${values.note.ref}))`, all)
+    const a = blockValue('blkLadA', suffix, `ladder_a(${G.ref}, ${values.k.ref})`, all)
+    const k = values.k.ref
+    const pre = blockValue('blkLadPre', suffix, `ladder_pre(${k}, ${values.drive.ref})`, all)
+    values.still = {
+      G,
+      a,
+      pre,
+      e: blockValue('blkLadE', suffix, `ladder_e(${G.ref}, ${a.ref}, ${pre.ref})`, all),
+      m: blockValue('blkLadM', suffix, `ladder_fb_m(${values.fbDrive.ref})`, all),
+      c: blockValue('blkLadC', suffix, `ladder_fb_c(${values.fbDrive.ref})`, all),
+      b: blockValue('blkLadB', suffix, `ladder_fb_b(${values.fbDrive.ref})`, all)
+    }
+  }
+  return values
+}
+
+export const ladderFilterPrimitive: LoguePrimitive = {
+  id: 'logue/filter/ladder',
+  outletPolarity: 'inherit',
+  // ladS_[4] + ladSeed_ + ladCtl_ + ladC_[14] + cutoff_ + resonancePercent_ + drivePercent_ +
+  // fbDrivePercent_ + coarse_ + fine_ + track_ (ladCtl_/ladC_ only used while an input moves)
+  stateBytesPerInstance: 108,
+  description:
+    'A Moog-style 24 dB/oct resonant lowpass ladder: four poles with saturated feedback, self-oscillating at the top of RESONANCE. DRIVE pushes the input stage into saturation, FB DRIVE clips the resonance itself; TRACK puts the cutoff on the played note.',
+  searchTerms: ['moog', 'ladder', '24db', 'lowpass', 'resonant'],
+  inlets: [
+    { name: 'in', role: 'audio' },
+    { name: 'cutoff', trackGate: PITCH_TRACKED_GATE, role: 'control' },
+    { name: 'resonance', role: 'control' },
+    { name: 'drive', role: 'control' },
+    { name: 'fbDrive', role: 'control' },
+    { name: 'pitch', trackGate: NEEDS_TRACK_GATE, role: 'control' }
+  ],
+  memberDecls: (suffix) =>
+    `  float ladS_${suffix}[4];\n  uint32_t ladSeed_${suffix};\n  uint32_t ladCtl_${suffix};\n  float ladC_${suffix}[14];\n  float cutoff_${suffix};\n  float resonancePercent_${suffix};\n  float drivePercent_${suffix};\n  float fbDrivePercent_${suffix};\n  float coarse_${suffix};\n  float fine_${suffix};\n  float track_${suffix};\n`,
+  initStatement: (suffix) =>
+    `    for (int i = 0; i < 4; ++i) ladS_${suffix}[i] = 0.f;\n    for (int i = 0; i < 14; ++i) ladC_${suffix}[i] = 0.f;\n    ladCtl_${suffix} = 0;\n    ladSeed_${suffix} = ${hashSuffixToSeed(suffix)}u;\n`,
+  blockConstants: (suffix, inlets) => {
+    const v = ladderValues(suffix, inlets)
+    return blockDecls({
+      note: v.note,
+      k: v.k,
+      drive: v.drive,
+      fbDrive: v.fbDrive,
+      ...(v.still ?? {})
+    })
+  },
+  renderExpr: (suffix, inlets) => {
+    const v = ladderValues(suffix, inlets)
+    const inExpr = inlets.in ?? '0.f'
+    if (v.still) {
+      const { G, pre, e, a, m, c, b } = v.still
+      return `ladder_step(ladS_${suffix}, &ladSeed_${suffix}, ${inExpr}, ${G.ref}, ${pre.ref}, ${e.ref}, ${a.ref}, ${v.k.ref}, ${m.ref}, ${c.ref}, ${b.ref})`
+    }
+    const c = `ladC_${suffix}`
+    return (
+      `(ladder_ctl(&ladCtl_${suffix}, ${c}, ${v.note.ref}, ${v.k.ref}, ${v.drive.ref}, ${v.fbDrive.ref}), ` +
+      `ladder_step(ladS_${suffix}, &ladSeed_${suffix}, ${inExpr}, ${c}[0], ${c}[1], ${c}[2], ${c}[3], ${c}[4], ${c}[5], ${c}[12], ${c}[13]))`
+    )
+  },
+  advanceStatement: () => '',
+  helpers: [LADDER_STEP_HELPER, SVF_TAN_HELPER, CLAMPF_HELPER, NOTE_W0_HELPER],
+  params: [
+    {
+      name: 'CUTOFF',
+      modulatedBy: { inlet: 'cutoff', shape: 'additive', depth: 100 },
+      trackGate: PITCH_TRACKED_GATE,
+      unit: LADDER_CUTOFF_HZ,
+      min: 0,
+      max: 100,
+      default: 60,
+      setStatement: (suffix, valueExpr) => `cutoff_${suffix} = ${valueExpr} * 0.01f;`
+    },
+    {
+      name: 'RESONANCE',
+      modulatedBy: { inlet: 'resonance', shape: 'additive' },
+      unit: PERCENT,
+      min: 0,
+      max: 100,
+      default: 20,
+      setStatement: (suffix, valueExpr) => `resonancePercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'DRIVE',
+      modulatedBy: { inlet: 'drive', shape: 'additive' },
+      unit: LADDER_DRIVE_DB,
+      min: 0,
+      max: 100,
+      default: 0,
+      setStatement: (suffix, valueExpr) => `drivePercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'FB_DRIVE',
+      modulatedBy: { inlet: 'fbDrive', shape: 'additive' },
+      unit: PERCENT,
+      min: 0,
+      max: 100,
+      default: 0,
+      setStatement: (suffix, valueExpr) => `fbDrivePercent_${suffix} = ${valueExpr};`
     },
     { ...COARSE_PARAM, trackGate: NEEDS_TRACK_GATE },
     { ...FINE_PARAM, trackGate: NEEDS_TRACK_GATE },

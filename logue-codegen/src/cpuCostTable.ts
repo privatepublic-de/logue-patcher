@@ -57,6 +57,17 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: '4dc6fa6c0e39cc62'
   },
   'logue/filter/hilbert': { variants: { base: 103 }, worst: 103, snapshotHash: 'f56fb7646016882f' },
+  'logue/filter/ladder': {
+    variants: {
+      base: 118,
+      control: 119,
+      TRACK: 118,
+      'TRACK+control': 119,
+      'heavy-moving-cutoff': 244
+    },
+    worst: 244,
+    snapshotHash: '14f53da66bd476e6'
+  },
   'logue/filter/lowpass-cheap': {
     variants: { base: 15, control: 16 },
     worst: 16,

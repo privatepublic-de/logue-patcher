@@ -211,6 +211,36 @@ export const FX_CPU_COST_TABLE: Record<
     },
     snapshotHash: 'f56fb7646016882f'
   },
+  'logue/filter/ladder': {
+    variants: {
+      base: {
+        first: { cycles: 116, sdram: 0 },
+        shared: { cycles: -24, sdram: 0 },
+        extra: { cycles: 142, sdram: 0 }
+      },
+      control: {
+        first: { cycles: 251, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 247, sdram: 0 }
+      },
+      TRACK: {
+        first: { cycles: 116, sdram: 0 },
+        shared: { cycles: -24, sdram: 0 },
+        extra: { cycles: 142, sdram: 0 }
+      },
+      'TRACK+control': {
+        first: { cycles: 250, sdram: 0 },
+        shared: { cycles: 1, sdram: 0 },
+        extra: { cycles: 248, sdram: 0 }
+      },
+      'heavy-moving-cutoff': {
+        first: { cycles: 249, sdram: 0 },
+        shared: { cycles: -5, sdram: 0 },
+        extra: { cycles: 207, sdram: 0 }
+      }
+    },
+    snapshotHash: '14f53da66bd476e6'
+  },
   'logue/filter/lowpass-cheap': {
     variants: {
       base: {

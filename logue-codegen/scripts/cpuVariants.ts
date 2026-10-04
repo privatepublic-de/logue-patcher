@@ -226,6 +226,18 @@ export function variants(id: string, unit: UnitBuilder): Array<MeasureJob & { ke
     })
     jobs.push({ key: 'heavy-moving-position', name: `${tag}-moving`, doc })
   }
+  if (id === 'logue/filter/ladder') {
+    // CUTOFF from a moving source (an envelope or LFO, the filter's usual use): svf_tan and two
+    // divides a sample (ladder_step_moving) instead of block constants. The LFO's own cost is
+    // included.
+    const doc = unit(id, [], 'audio')
+    doc.nodes.push({ kind: 'obj', type: 'logue/lfo/sine-lfo', name: 'src', x: 0, y: 0, params: [] })
+    doc.nets.push({
+      sources: [{ obj: 'src', outlet: 'out' }],
+      dests: [{ obj: 'n', inlet: 'cutoff' }]
+    })
+    jobs.push({ key: 'heavy-moving-cutoff', name: `${tag}-moving`, doc })
+  }
   if (id === 'logue/util/grain') {
     // Capturing all the time (a buffer read and a table write a sample, against looping's one
     // read): the longest grain, retriggered while the last is still recording -- what
