@@ -2,7 +2,7 @@
 
 Plan drafted 2026-10-04; decisions confirmed the same day (all five defaults). Status: phase 1
 (import analysis, `wt8` data model, codec) and phase 2 (the primitive: harness, builds, emulator,
-tables) done 2026-10-04; phases 3 (Inspector) and 4 (hardware) open. Origin: `osc/granular` with SYNC on bends pitch while
+tables) done 2026-10-04; phase 3 (Inspector) done the same day; phase 4 (hardware) open. Origin: `osc/granular` with SYNC on bends pitch while
 POSITION moves (each grain is a slice one NOTE period long of material whose own period is
 different, so scanning drifts the material's phase from grain to grain: a Doppler shift of
 about `f * v`, v = scan speed in seconds of material per second). The user asked for "more
@@ -261,6 +261,36 @@ since the harness compares the unit against it. MORPH is a select (Smooth/Step).
   cap freezes the UI for a few seconds: run it in a worker, or at least show a busy state.
 - Verified in the built app (`run-desktop`): import a vocal, scrub, swap granular <-> wavetable
   and see the expected problem/offer.
+
+### Phase 3 results (2026-10-04)
+
+- `canvas/WavetableSection.tsx` (its own component, not a third branch of `SampleSection`): the
+  cycle at the node's POSITION, drawn large (the device's level-0 blend, Smooth or Step:
+  `sample/wavetableView.ts`); under it a strip of every frame (phase downwards, sign as colour,
+  size as strength) that sets POSITION when dragged, one undo step (`beginGesture`/`endGesture`;
+  the write keeps the param's slot and name); Frames / Points / Level (Even out / As recorded,
+  `importWavetable`'s new `evenLevels`) with each choice's share of both devices; what the import
+  found (pitched vs skipped time, the sung range, a harmonic ceiling from a low-rate file);
+  re-import from the stored path; and a message plus re-import offer when the node holds a
+  granular or sample-player sample (the other two players got the matching wording).
+- Preview: an OscillatorNode with the cycle as a PeriodicWave (`cycleHarmonics`, no
+  normalization, so level differences between frames are heard), middle C, updated as POSITION
+  moves -- not the TypeScript read the plan named: the browser band-limits it, which sounds like
+  the device's tables short of their aliasing, and it follows a scrub live with no worker.
+- The import runs in the renderer behind an "Analysing…" state (a paint before it starts); no
+  worker: ~0.2-0.4 s per 2 s of audio, a few seconds at the 30 s cap.
+- **Found in the app**: a synthetic vowel sweep (a formant moving past the harmonics) came out
+  "Sung A3–C7" -- the tracker locked onto a harmonic for ~60 ms whenever the formant sat on one,
+  and those frames were cycles of that harmonic. `pitchTrack.ts` now checks for a much cleaner
+  whole multiple of YIN's period (long locks under a steady formant) and re-measures hops more
+  than ~1.6 st from their 200 ms context (short locks that look clean), with tests for both. Known
+  miss, documented there: a narrow formant between two harmonics over a weak fundamental can
+  repeat at (n+1)/n of the pitch for as long as it lasts; catching it risks octave-low tables.
+  The soul vocal's result didn't change.
+- Checked in the built app (`run-desktop`): empty state, a missing file's error, the soul vocal
+  imported (G#3–D#4, 1.29 s used), a drag on the strip (POSITION 51, the node's dial following),
+  one Undo back to 0 and a second removing the import, Play/Stop and scrubbing while playing, and
+  a granular sample on a wavetable node (message, re-import from the stored path).
 
 ## Phase 4: hardware
 

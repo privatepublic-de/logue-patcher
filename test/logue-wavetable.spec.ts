@@ -16,6 +16,11 @@ import {
   wavetableLevel,
   renderWavetable
 } from '../logue-codegen/src/sample/wavetableRead'
+import {
+  cycleHarmonics,
+  wavetableFrameAt,
+  wavetableFrames
+} from '../logue-codegen/src/sample/wavetableView'
 import type { ObjNode, PatchDocument, SampleAsset } from '../src/shared/domain/patch'
 import { testPcm8SampleAsset, testWavetableAsset } from './support/testSample'
 
@@ -137,5 +142,30 @@ describe('logue/osc/wavetable', () => {
   it('never reads a level shorter than the minimum', () => {
     expect(WAVETABLE_MIN_LEVEL_LENGTH).toBe(64)
     expect(wavetableLevelLength(128, 4)).toBe(64)
+  })
+})
+
+describe('the Inspector view of a wavetable', () => {
+  const frames = wavetableFrames(testWavetableAsset(4, 128))
+
+  it('blends the neighbouring frames like the device (Smooth) or takes the nearest (Step)', () => {
+    // POSITION 50 of 4 frames is frame 1.5.
+    const mid = wavetableFrameAt(frames, 0.5, false)
+    mid.forEach((v, i) => expect(v).toBeCloseTo((frames[1][i] + frames[2][i]) / 2, 6))
+    expect(Array.from(wavetableFrameAt(frames, 0.5, true))).toEqual(Array.from(frames[2]))
+    expect(Array.from(wavetableFrameAt(frames, 1, false))).toEqual(Array.from(frames[3]))
+  })
+
+  it("gives a cycle's harmonics in createPeriodicWave's terms", () => {
+    const cycle = Float32Array.from(
+      { length: 128 },
+      (_, j) => 0.5 * Math.sin((2 * Math.PI * 3 * j) / 128)
+    )
+    const { real, imag } = cycleHarmonics(cycle, 8)
+    expect(imag[3]).toBeCloseTo(0.5, 6)
+    for (let k = 1; k <= 8; k++) {
+      expect(real[k]).toBeCloseTo(0, 6)
+      if (k !== 3) expect(imag[k]).toBeCloseTo(0, 6)
+    }
   })
 })

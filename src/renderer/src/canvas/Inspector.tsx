@@ -49,6 +49,7 @@ import { isNodeTrackGated } from './trackGateState'
 import { stripLoguePrefix } from '../browser/loguePrimitiveCatalog'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu'
 import SampleSection from './SampleSection'
+import WavetableSection from './WavetableSection'
 import { SlotBadges } from './ParamDial'
 import WarningLine from '../build/WarningLine'
 import { hasDeviceControl, ALL_LOGUE_PLATFORMS } from '../state/exposedLogueParams'
@@ -337,6 +338,8 @@ function Inspector(): React.JSX.Element {
   const removeParamValue = useOptionalPatchStore((s) => s.removeParamValue)
   const removeNodeWires = useOptionalPatchStore((s) => s.removeNodeWires)
   const setNodeSample = useOptionalPatchStore((s) => s.setNodeSample)
+  const beginGesture = useOptionalPatchStore((s) => s.beginGesture)
+  const endGesture = useOptionalPatchStore((s) => s.endGesture)
   useSubpatchLibraryStore((s) => s.version)
   const inSubpatch = rootDoc?.settings.subpatch === true
   const [collapsed, setCollapsed] = useState(false)
@@ -634,6 +637,35 @@ function Inspector(): React.JSX.Element {
             onSampleChange={(sample, rootNote) => setNodeSample(selectedNodeId!, sample, rootNote)}
           />
         )}
+      {!collapsed &&
+        selectedNode?.kind === 'obj' &&
+        selectedPrimitive?.sampleImport === 'wavetable' &&
+        (() => {
+          const positionParam = selectedNode.params.find((p) => p.name === 'POSITION')
+          const position = Number(positionParam?.value ?? 0)
+          return (
+            <WavetableSection
+              key={selectedNodeId}
+              sample={selectedNode.sample}
+              position={Number.isFinite(position) ? position : 0}
+              step={Number(selectedNode.params.find((p) => p.name === 'MORPH')?.value ?? 0) >= 0.5}
+              onPositionChange={(value, phase) => {
+                if (phase === 'begin') beginGesture()
+                // Keeps the param's device slot and name: setLogueParam writes both.
+                setLogueParam(
+                  selectedNodeId!,
+                  'POSITION',
+                  String(value),
+                  positionParam?.logueParamIndex,
+                  positionParam?.label
+                )
+                if (phase === 'end') endGesture()
+              }}
+              // A wavetable has no ROOT: its pitch is the played note.
+              onSampleChange={(sample) => setNodeSample(selectedNodeId!, sample, undefined)}
+            />
+          )
+        })()}
       {/* Always last -- a brief, plain-language blurb (LoguePrimitive.description) explaining
           what the selected primitive actually does, for a user who doesn't already know this
           registry by heart. Bottom-of-panel placement is deliberate: Name/params are things a

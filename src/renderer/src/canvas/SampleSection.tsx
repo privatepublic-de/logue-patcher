@@ -382,9 +382,11 @@ function SampleSection({
           )}
           {wrongEncoding && (
             <span className="inspector__description inspector__description--warning">
-              {plain
-                ? 'This sample was imported for granular (mu-law, resampled). It plays, converted -- re-import it to keep the file at its own rate as 8-bit.'
-                : 'This sample was imported as linear 8-bit for the sample player; granular needs it re-imported.'}
+              {sample.encoding === 'wt8'
+                ? `This node holds a wavetable (single cycles), which ${plain ? 'the sample player' : 'granular'} can't play -- load the WAV again.`
+                : plain
+                  ? 'This sample was imported for granular (mu-law, resampled). It plays, converted -- re-import it to keep the file at its own rate as 8-bit.'
+                  : 'This sample was imported as linear 8-bit for the sample player; granular needs it re-imported.'}
             </span>
           )}
           {notices.map((n) => (

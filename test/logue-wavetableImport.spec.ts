@@ -179,6 +179,46 @@ describe('importWavetable', () => {
     expect(result.medianNote).toBeCloseTo(69 + 12 * Math.log2(150 / 440), 1)
   })
 
+  it('stays on the fundamental under a strong high formant (no harmonic locks)', () => {
+    // A formant at ~2 kHz over a weak 220 Hz fundamental: alone, YIN's first dip locked onto
+    // the 9th harmonic for ~60 ms at a time.
+    const amp = (k: number): number => Math.exp(-((k * 220 - 2000) ** 2) / (2 * 250 ** 2)) + 0.3 / k
+    const result = importWavetable(
+      toWav(
+        tone(1, RATE, () => 220, amp),
+        RATE
+      ),
+      'ee.wav',
+      32,
+      256
+    )
+    expect(result.highestNote).toBeLessThan(57.5)
+    expect(result.lowestNote).toBeGreaterThan(56.5)
+  })
+
+  it('stays on the fundamental while a vowel-like formant sweeps (short locks)', () => {
+    // 220 Hz rising 2 semitones with 5.5 Hz vibrato, a formant sweeping 500 Hz to 2.3 kHz and
+    // back: as it passes a harmonic the tone repeats cleanly at that harmonic for ~60 ms, which
+    // only the 200 ms context check caught (a frame was measured at C7).
+    const hz = (t: number): number =>
+      220 * 2 ** ((0.4 * Math.sin(2 * Math.PI * 5.5 * t) + (2 * t) / 2.4) / 12)
+    const sweep = new Float64Array(Math.round(2.4 * RATE))
+    let phase = 0
+    for (let i = 0; i < sweep.length; i++) {
+      const t = i / RATE
+      const f = hz(t)
+      const formant = 500 + 1800 * (0.5 - 0.5 * Math.cos((2 * Math.PI * t) / 2.4))
+      for (let k = 1; k * f < 0.45 * RATE; k++) {
+        const g = Math.exp(-((k * f - formant) ** 2) / (2 * 250 ** 2)) + 0.3 / k
+        sweep[i] += g * Math.sin(k * phase)
+      }
+      phase += (2 * Math.PI * f) / RATE
+    }
+    const result = importWavetable(toWav(sweep, RATE), 'sweep.wav', 32, 256)
+    expect(result.lowestNote).toBeGreaterThan(56.5)
+    expect(result.highestNote).toBeLessThan(59.6)
+  })
+
   it('aligns frames with no fundamental to each other', () => {
     const amp = (k: number): number => (k >= 2 && k <= 6 ? 1 / k : 0)
     const result = importWavetable(

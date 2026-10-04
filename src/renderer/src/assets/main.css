@@ -1460,6 +1460,11 @@ input[type='checkbox'].param-widget__checkbox-input:checked {
   touch-action: none;
 }
 
+.inspector__wavetable-strip {
+  cursor: ew-resize;
+  touch-action: none;
+}
+
 .inspector__sample-loop {
   display: flex;
   align-items: center;

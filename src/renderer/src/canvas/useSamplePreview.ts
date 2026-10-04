@@ -7,7 +7,7 @@ const MIN_BUFFER_RATE = 3000
 let sharedContext: AudioContext | null = null
 
 // Created on the first Play, not at load: Chromium only lets a context start after a user gesture.
-function audioContext(): AudioContext {
+export function audioContext(): AudioContext {
   sharedContext ??= new AudioContext()
   return sharedContext
 }

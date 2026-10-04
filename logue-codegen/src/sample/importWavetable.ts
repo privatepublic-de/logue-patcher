@@ -70,7 +70,9 @@ export function importWavetable(
   sourceName: string,
   frameCount: number,
   frameLength: number,
-  sourcePath?: string
+  sourcePath?: string,
+  /** False keeps the recording's own level from frame to frame ("as recorded"). */
+  evenLevels = true
 ): ImportedWavetable {
   const wav = decodeWav(wavBytes)
   const rate = wav.sampleRate
@@ -120,7 +122,7 @@ export function importWavetable(
   }
 
   const frames = cycles.map((c) => synthesizeCycle(c, frameLength))
-  evenOutLevels(frames, cycles)
+  if (evenLevels) evenOutLevels(frames, cycles)
   const stored = quantizeFrames(frames, frameLength)
 
   const asset: SampleAsset = {
