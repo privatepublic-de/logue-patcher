@@ -711,6 +711,18 @@ summary.library-panel__section-title:hover {
   background-color: color-mix(in srgb, var(--color-status-warning) 15%, transparent);
 }
 
+/* A mixer that also sends its output onto a bus: the bus, like a send node's title. */
+.patch-node__bus-badge {
+  font-size: 10px;
+  line-height: 1.3;
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--color-text);
+  background-color: color-mix(in srgb, currentColor 14%, transparent);
+}
+
 /* `logue/sense/control`: which device control it is on the build target. Unbound, the node is
    dimmed (it outputs a constant there) and the badge takes the warning tint. */
 .patch-node__control-badge {

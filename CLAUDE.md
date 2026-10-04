@@ -1465,6 +1465,14 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   each bus -- sends sorted by node name, every receive fed from the last send, none = `0.f`.
   Nothing downstream knows buses exist: a bus nobody receives is unreachable (no code), fan-out is
   free, CPU is the same as hand-wired `thru` mixers (a send ~5-7 xd fx emulator cycles, a receive 0).
+- **Mixers send directly** (user's ask, same day): `LoguePrimitive.busOutlets` (`['out']` on
+  `mix2`/`crossfader`, `['l','r']` on `stereo-mix2`/`pan-mix2`/`pan`/`stereo-crossfader`) lets a
+  mixer carry `bus` itself -- the Inspector's "Send to bus" (empty = none), a `→ verb` header
+  badge. `resolveBuses` first expands it into a unity send `<mixer>__bus` fed from those outlets
+  (`withDirectSendsExpanded`), so the result is a hand-placed send's code and the outlets stay
+  wireable; everything else (`busesIn`, warnings, colours, layout, presets) counts it as a send
+  via `busRoleOf`/`isStereoOnBus`. Replace with... keeps a sender's bus on a mixer, not a
+  receive's (a reader would turn into a writer). A `bus` on any other type is ignored.
 - **Global scope**: one namespace per unit, so a send inside a subpatch reaches the root's bus
   (two instances of a definition holding a send+receive pair share it). Mono and stereo nodes on
   one bus are a `BusResolutionError`. A loop through a bus is an ordinary cycle; the error gains

@@ -19,7 +19,7 @@ import {
   restrictedPlatforms
 } from '../browser/loguePrimitiveCatalog'
 import { isSubpatchInstanceType } from '@logue-codegen/subpatches'
-import { busNodeRole } from '@logue-codegen/buses'
+import { busNodeRole, sendsDirectToBus } from '@logue-codegen/buses'
 import { presentationKeyOf, type PrimitiveParamSpec } from '@logue-codegen/primitives'
 import { resolveNodePrimitive, useSubpatchLibraryStore } from '../state/subpatchLibraryStore'
 import { openSubpatchDefinition } from '../state/openSubpatchDefinition'
@@ -352,6 +352,14 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
           {subtitle && (
             <span className="patch-node__type" data-tooltip={rawType}>
               {subtitle}
+            </span>
+          )}
+          {node.kind === 'obj' && sendsDirectToBus(node) && (
+            <span
+              className="patch-node__bus-badge"
+              data-tooltip={`Also sends its output onto bus "${node.bus}" (change it in the Inspector)`}
+            >
+              → {node.bus || '(no name)'}
             </span>
           )}
           {/* One combined badge, not one per platform -- see restrictedPlatforms' own doc

@@ -44,7 +44,7 @@ import {
   type ParamTrackGate
 } from '@logue-codegen/paramTrackGate'
 import type { ObjNode, PatchDocument } from '@shared/domain/patch'
-import { busesIn, isBusNodeType, isStereoBusNodeType } from '@logue-codegen/buses'
+import { busOutletsOf, busesIn, isBusNodeType, isStereoOnBus } from '@logue-codegen/buses'
 import type { LogueParamSlot, LogueKnobBinding } from '@shared/domain/paramValueTypes'
 import { describeExposedSlots } from '../state/exposedLogueParams'
 import { isNodeTrackGated } from './trackGateState'
@@ -343,20 +343,23 @@ function BusField({
   doc: PatchDocument
 }): React.JSX.Element {
   const setNodeBus = useOptionalPatchStore((s) => s.setNodeBus)
+  // A mixer (`busOutlets`) sends to a bus only while one is named; a bus node always has one.
+  const mixer = !isBusNodeType(node.type)
   const bus = node.bus ?? ''
-  const stereo = isStereoBusNodeType(node.type)
+  const stereo = isStereoOnBus(node)
   const buses = busesIn(doc.nodes)
-  const here = buses.find((b) => b.name === bus)
+  const here = mixer && node.bus === undefined ? undefined : buses.find((b) => b.name === bus)
   const listId = `bus-names-${nodeIdValue}`
   const count = (n: number, what: string): string => `${n} ${what}${n === 1 ? '' : 's'}`
   return (
     <>
       <label className="inspector__field inspector__field--inline">
-        <span>Bus</span>
+        <span>{mixer ? 'Send to bus' : 'Bus'}</span>
         <input
           key={bus}
           list={listId}
           defaultValue={bus}
+          placeholder={mixer ? `none (a ${stereo ? 'stereo ' : ''}bus name)` : undefined}
           onBlur={(e) => setNodeBus?.(nodeIdValue, e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.currentTarget.blur()
@@ -621,7 +624,7 @@ function Inspector(): React.JSX.Element {
       )}
       {!collapsed &&
         selectedNode?.kind === 'obj' &&
-        isBusNodeType(selectedNode.type) &&
+        (isBusNodeType(selectedNode.type) || busOutletsOf(selectedNode.type) !== undefined) &&
         rootDoc && <BusField nodeIdValue={selectedNodeId!} node={selectedNode} doc={rootDoc} />}
       {!collapsed && selectedNode?.kind === 'obj' && paramSpecs.length > 0 && rootDoc && (
         <div className="inspector__params">

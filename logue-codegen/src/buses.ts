@@ -1,6 +1,7 @@
 import type { Net, ObjNode, PatchDocument } from '../../src/shared/domain/patch'
 import {
   BUS_SEND_GAIN_PARAM,
+  findLoguePrimitive,
   type LoguePrimitive,
   type PrimitiveInletSpec,
   type PrimitiveOutletSpec
@@ -76,6 +77,27 @@ export function busNodeRole(type: string): 'send' | 'receive' | undefined {
 
 export function isStereoBusNodeType(type: string): boolean {
   return BUS_NODE_KINDS[type]?.stereo === true
+}
+
+/** The outlet(s) a node of `type` can put straight onto a bus (`LoguePrimitive.busOutlets`). */
+export function busOutletsOf(type: string): readonly string[] | undefined {
+  return findLoguePrimitive(type)?.busOutlets
+}
+
+/** A mixer with `bus` set: it sends its own output onto that bus, no send node needed. */
+export function sendsDirectToBus(node: PatchDocument['nodes'][number]): node is ObjNode {
+  return node.kind === 'obj' && node.bus !== undefined && busOutletsOf(node.type) !== undefined
+}
+
+/** A node's part on its bus: a bus node's own role, `'send'` for a mixer sending directly. */
+export function busRoleOf(node: PatchDocument['nodes'][number]): 'send' | 'receive' | undefined {
+  if (node.kind !== 'obj') return undefined
+  return busNodeRole(node.type) ?? (sendsDirectToBus(node) ? 'send' : undefined)
+}
+
+/** Whether a node on a bus is on a stereo one. */
+export function isStereoOnBus(node: ObjNode): boolean {
+  return isStereoBusNodeType(node.type) || busOutletsOf(node.type)?.length === 2
 }
 
 /** A bus node's bus name; an unnamed one is the bus `''`. */
@@ -163,7 +185,8 @@ export const BUS_NODE_TYPES = Object.keys(BUS_NODE_KINDS)
  * returned as the same object. Run on a flattened document (`flattenUnit`), so a bus is shared
  * across subpatch instances.
  */
-export function resolveBuses(doc: PatchDocument): PatchDocument {
+export function resolveBuses(input: PatchDocument): PatchDocument {
+  const doc = withDirectSendsExpanded(input)
   const busNodes = doc.nodes.filter((n): n is ObjNode => n.kind === 'obj' && isBusNodeType(n.type))
   if (busNodes.length === 0) return doc
 
@@ -216,6 +239,55 @@ export function resolveBuses(doc: PatchDocument): PatchDocument {
   }
 }
 
+/**
+ * A mixer sending directly becomes a mixer plus a unity send fed from its bus outlet(s), named
+ * after it (`<mixer>__bus`), so the chain below sorts it next to its mixer. The mixer keeps its
+ * outlets for wires. Bit-identical to placing that send by hand.
+ */
+function withDirectSendsExpanded(doc: PatchDocument): PatchDocument {
+  const direct = doc.nodes.filter(sendsDirectToBus)
+  if (direct.length === 0) return doc
+  const taken = new Set(doc.nodes.map((n) => n.name))
+  const added: ObjNode[] = []
+  const nets: Net[] = [...doc.nets]
+  for (const mixer of direct) {
+    const outlets = busOutletsOf(mixer.type)!
+    const stereo = outlets.length === 2
+    let name = `${mixer.name}__bus`
+    for (let k = 2; taken.has(name); k++) name = `${mixer.name}__bus${k}`
+    taken.add(name)
+    added.push({
+      kind: 'obj',
+      type: stereo ? LOGUE_BUS_SEND_STEREO_TYPE : LOGUE_BUS_SEND_TYPE,
+      name,
+      x: mixer.x,
+      y: mixer.y,
+      params: [{ name: 'GAIN', value: String(BUS_SEND_GAIN_PARAM.max) }],
+      bus: mixer.bus
+    })
+    const inlets = stereo ? ['l', 'r'] : ['in']
+    outlets.forEach((outlet, i) =>
+      nets.push({
+        sources: [{ obj: mixer.name!, outlet }],
+        dests: [{ obj: name, inlet: inlets[i] }]
+      })
+    )
+  }
+  return {
+    ...doc,
+    nodes: [
+      ...doc.nodes.map((n) => {
+        if (!sendsDirectToBus(n)) return n
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { bus: _bus, ...rest } = n
+        return rest
+      }),
+      ...added
+    ],
+    nets
+  }
+}
+
 /** Appended to a feedback-loop error in a document with buses: a bus closes a loop like a wire. */
 export const BUS_LOOP_HINT =
   ' A bus counts as a wire here: a send fed (through any path) from a receive of its own bus closes a loop too.'
@@ -234,9 +306,10 @@ export interface BusSummary {
 export function busesIn(nodes: readonly PatchDocument['nodes'][number][]): BusSummary[] {
   const byName = new Map<string, BusSummary>()
   for (const node of nodes) {
-    if (node.kind !== 'obj' || !isBusNodeType(node.type)) continue
+    const role = busRoleOf(node)
+    if (role === undefined || node.kind !== 'obj') continue
     const name = busNameOf(node)
-    const stereo = isStereoBusNodeType(node.type)
+    const stereo = isStereoOnBus(node)
     let bus = byName.get(name)
     if (!bus) {
       bus = { name, stereo, mixed: false, sends: [], receives: [] }
@@ -244,7 +317,7 @@ export function busesIn(nodes: readonly PatchDocument['nodes'][number][]): BusSu
     } else if (bus.stereo !== stereo) {
       bus.mixed = true
     }
-    ;(busNodeRole(node.type) === 'send' ? bus.sends : bus.receives).push(node)
+    ;(role === 'send' ? bus.sends : bus.receives).push(node)
   }
   return [...byName.values()]
 }
@@ -274,7 +347,8 @@ export function busProblems(
   const buses = new Map(busesIn(unitNodes).map((b) => [b.name, b]))
   const definition = doc.settings.subpatch === true
   for (const node of doc.nodes) {
-    if (node.kind !== 'obj' || !isBusNodeType(node.type) || node.name === undefined) continue
+    const role = busRoleOf(node)
+    if (role === undefined || node.kind !== 'obj' || node.name === undefined) continue
     const name = busNameOf(node)
     const shown = name || '(no name)'
     const bus = buses.get(name)
@@ -282,10 +356,13 @@ export function busProblems(
       problems.set(node.name, `Bus "${shown}" has both mono and stereo nodes, which won't build.`)
     } else if (definition || !bus) {
       continue
-    } else if (busNodeRole(node.type) === 'receive' && bus.sends.length === 0) {
+    } else if (role === 'receive' && bus.sends.length === 0) {
       problems.set(node.name, `Nothing sends to bus "${shown}": this receive outputs silence.`)
-    } else if (busNodeRole(node.type) === 'send' && bus.receives.length === 0) {
-      problems.set(node.name, `Nothing receives bus "${shown}": this send isn't heard.`)
+    } else if (role === 'send' && bus.receives.length === 0) {
+      problems.set(
+        node.name,
+        `Nothing receives bus "${shown}": ${isBusNodeType(node.type) ? "this send isn't heard" : "this mixer's output isn't heard there"}.`
+      )
     }
   }
   return problems

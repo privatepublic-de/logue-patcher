@@ -234,6 +234,62 @@ describe('buses', () => {
     expect(nts1.unitCc + nts1.oscH).toMatch(/gain_s_a = .*shape01_/)
   })
 
+  it('a mixer with a bus set sends its own output there, no send node', () => {
+    const d = doc(
+      [
+        obj('logue/osc/saw', 'a'),
+        obj('logue/osc/square', 'b'),
+        obj('logue/osc/sine', 'c'),
+        obj('logue/mix/mix2', 'm', { bus: 'mix' }),
+        send('s_c', 'mix'),
+        receive('rx', 'mix'),
+        obj(LOGUE_AUDIO_OUT_TYPE, 'out')
+      ],
+      [
+        wire('a', 'out', 'm', 'in1'),
+        wire('b', 'out', 'm', 'in2'),
+        wire('c', 'out', 's_c', 'in'),
+        wire('rx', 'out', 'out', 'in')
+      ]
+    )
+    const cpp = xd(d)
+    expect(cpp).toContain('float y_m = (((y_a) * gain1_m) + ((y_b) * gain2_m));')
+    expect(cpp).toContain('float y_m__bus = (((y_m) * gain_m__bus));')
+    expect(cpp).toContain('gain_m__bus = 100 * 0.01f;')
+    expect(cpp).toContain('float y_s_c = ((y_m__bus) + ((y_c) * gain_s_c));')
+    expect(cpp).toContain('float y_rx = (y_s_c);')
+  })
+
+  it('a stereo mixer sends both sides; a mono one on a stereo bus is an error', () => {
+    const stereo = doc(
+      [
+        obj('logue/osc/saw', 'a'),
+        obj('logue/mix/pan', 'p', { bus: 'out' }),
+        obj(LOGUE_BUS_RECEIVE_STEREO_TYPE, 'rx', { bus: 'out' }),
+        obj('logue/mix/mix2', 'r_only'),
+        obj(LOGUE_AUDIO_OUT_TYPE, 'out')
+      ],
+      [
+        wire('a', 'out', 'p', 'in'),
+        wire('rx', 'r', 'r_only', 'in1'),
+        wire('r_only', 'out', 'out', 'in')
+      ]
+    )
+    const cpp = xd(stereo)
+    expect(cpp).toMatch(/float y_p__bus_r = \(\(y_p_r\) \* gain_p__bus\);/)
+    expect(cpp).toContain('float y_rx_r = y_p__bus_r;')
+    stereo.nodes.push(obj('logue/mix/crossfader', 'xf', { bus: 'out' }))
+    expect(() => xd(stereo)).toThrow(/Bus "out" has both mono and stereo nodes/)
+  })
+
+  it('a bus field on a node that cannot send is ignored', () => {
+    const d = doc(
+      [obj('logue/osc/saw', 'a', { bus: 'mix' }), obj(LOGUE_AUDIO_OUT_TYPE, 'out')],
+      [wire('a', 'out', 'out', 'in')]
+    )
+    expect(resolveBuses(d)).toBe(d)
+  })
+
   it('the canvas resolves the placed bus types to stand-ins the registry never lists', () => {
     const resolve = createSubpatchAwareResolver(new Map())
     expect(resolve(LOGUE_BUS_SEND_TYPE)?.params?.map((p) => p.name)).toEqual(['GAIN'])

@@ -225,3 +225,46 @@ describe('bus nodes on the canvas', () => {
     expect(defaultBusName(d, false)).toBe('bus1')
   })
 })
+
+describe('mixers sending straight to a bus', () => {
+  it('setNodeBus names the bus, an empty name stops sending; Replace with... keeps it among mixers', () => {
+    store.getState().insertSpecialObject('logue/mix/mix2', 'mix2', 0, 0)
+    expect(busOf(store.getState().rootDoc!, 'mix2')).toBeUndefined()
+    store.getState().setNodeBus('mix2', 'verb')
+    expect(busOf(store.getState().rootDoc!, 'mix2')).toBe('verb')
+    store.getState().replaceNode('mix2', 'logue/mix/crossfader')
+    const xf = store
+      .getState()
+      .rootDoc!.nodes.find((n) => n.kind === 'obj' && n.type === 'logue/mix/crossfader')!
+    expect((xf as ObjNode).bus).toBe('verb')
+    store.getState().setNodeBus(xf.name!, '  ')
+    expect('bus' in store.getState().rootDoc!.nodes.find((n) => n.name === xf.name)!).toBe(false)
+    store.getState().setNodeBus(xf.name!, 'verb')
+    store.getState().replaceNode(xf.name!, 'logue/gain/vca')
+    expect(store.getState().rootDoc!.nodes.some((n) => 'bus' in n)).toBe(false)
+  })
+
+  it('counts as a send: colours, warnings, presets and layout', () => {
+    const d = doc(
+      [
+        obj(LOGUE_AUDIO_OUT_TYPE, 'out'),
+        obj(LOGUE_BUS_RECEIVE_TYPE, 'rx', { bus: 'mod' }),
+        obj('logue/mix/mix2', 'm', { bus: 'mod' }),
+        obj('logue/mix/mix2', 'lonely', { bus: 'nobody' }),
+        obj('logue/lfo/sine-lfo', 'lfo')
+      ],
+      [wire('lfo', 'out', 'm', 'in1'), wire('rx', 'out', 'out', 'in')]
+    )
+    const resolve = createWirePolarityResolver(d, new Map(d.nodes.map((n) => [n.name!, n.type])))
+    expect(resolve('rx', 'out')).toBe('bipolar')
+    const problems = busProblems(d, d.nodes)
+    expect([...problems.keys()]).toEqual(['lonely'])
+    expect(problems.get('lonely')).toMatch(/this mixer's output isn't heard there/)
+    expect(busPresetEntries(JSON.parse(busPresetKey(d))).map((e) => e.label)).toContain(
+      'receive mod'
+    )
+    const laid = layoutByFlow(d)
+    const x = (name: string): number => laid.find((n) => n.name === name)!.x
+    expect(x('m')).toBeLessThan(x('rx'))
+  })
+})

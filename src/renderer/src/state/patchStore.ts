@@ -26,7 +26,13 @@ import {
 import { isEffectModule } from '@logue-codegen/unitKinds'
 import { normalizeRenamedFields } from '@logue-codegen/renamedFields'
 import { isSubpatchInstanceType } from '@logue-codegen/subpatches'
-import { defaultBusName, isBusNodeType, isStereoBusNodeType } from '@logue-codegen/buses'
+import {
+  busOutletsOf,
+  busRoleOf,
+  defaultBusName,
+  isBusNodeType,
+  isStereoBusNodeType
+} from '@logue-codegen/buses'
 import { deviceLayout, layoutModuleOf, slotsForOrder } from './exposedLogueParams'
 import { resolveNodePrimitive } from './subpatchLibraryStore'
 import {
@@ -288,7 +294,8 @@ export interface PatchStoreState {
     bus?: string
   ) => void
   /** Sets a bus node's bus name (`ObjNode.bus`): the canvas title's double-click and the
-   *  Inspector. Remounts, since a bus decides wire colours and warnings elsewhere. */
+   *  Inspector -- also a mixer's (`busOutlets`), where an empty name stops it sending. Remounts,
+   *  since a bus decides wire colours and warnings elsewhere. */
   setNodeBus: (id: string, bus: string) => void
   /**
    * Places a nameless `comment` node with empty text and immediately arms `pendingEditNodeId`
@@ -864,16 +871,20 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
               ? initialFreeLabelParam(doc, newType, n.name ?? '', spec)
               : { name: spec.name, value: String(spec.default) }
           })
-          // Among the bus node types the bus stays (a send turned receive reads the same bus);
-          // anything else drops it.
+          // Among the bus node types the bus stays (a send turned receive reads the same bus); a
+          // mixer keeps a sender's bus (a send's or another mixer's), so it sends directly; a
+          // receive's would turn a reader into a writer, so that and anything else drops it.
           const { bus, ...rest } = n
-          return isBusNodeType(newType)
-            ? {
-                ...rest,
-                type: newType,
-                params,
-                bus: bus ?? defaultBusName(doc, isStereoBusNodeType(newType))
-              }
+          if (isBusNodeType(newType)) {
+            return {
+              ...rest,
+              type: newType,
+              params,
+              bus: bus ?? defaultBusName(doc, isStereoBusNodeType(newType))
+            }
+          }
+          return busOutletsOf(newType) && bus !== undefined && busRoleOf(n) === 'send'
+            ? { ...rest, type: newType, params, bus }
             : { ...rest, type: newType, params }
         })
 
@@ -1031,11 +1042,17 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
   setNodeBus: (id, bus) => {
     const trimmed = bus.trim()
     commitDoc(get, set, {}, (doc) => {
-      const nodes = doc.nodes.map((n, i) =>
-        nodeId(n, i) === id && n.kind === 'obj' && isBusNodeType(n.type) && n.bus !== trimmed
-          ? { ...n, bus: trimmed }
-          : n
-      )
+      const nodes = doc.nodes.map((n, i) => {
+        if (nodeId(n, i) !== id || n.kind !== 'obj') return n
+        if (isBusNodeType(n.type)) return n.bus === trimmed ? n : { ...n, bus: trimmed }
+        if (!busOutletsOf(n.type)) return n
+        // A mixer: an empty name stops it sending.
+        if (trimmed) return n.bus === trimmed ? n : { ...n, bus: trimmed }
+        if (n.bus === undefined) return n
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { bus: _bus, ...rest } = n
+        return rest
+      })
       return nodes.every((n, i) => n === doc.nodes[i]) ? doc : withNodes(doc, nodes)
     })
   },

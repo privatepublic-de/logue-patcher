@@ -281,6 +281,12 @@ export interface LoguePrimitive {
    */
   internal?: true
   /**
+   * The outlet(s) this node can put straight onto a bus (`ObjNode.bus`) with no send node: one
+   * (`['out']`) for a mono bus, `['l', 'r']` for a stereo one. Set on the mixers; `resolveBuses`
+   * adds a unity send fed from them, so the outlets stay wireable as well.
+   */
+  busOutlets?: readonly string[]
+  /**
    * Extra words palette search matches, for a word people use for this primitive that isn't
    * its name or a former id: "invert" means -x to some and 1-x to others, so both `negate` and
    * `one-minus` list it.

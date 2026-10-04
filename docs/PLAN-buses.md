@@ -69,6 +69,7 @@ one multiply-add per send, a receive is a copy GCC folds.
 - Warnings (`unresolvedReferences`-style badges): a receive whose bus has no send, a send whose
   bus has no receive -- root documents only (inside a definition the other end is usually in the
   root patch), counting sends/receives inside used subpatch definitions.
+- Done after phase 2: mixers send straight onto a bus (`busOutlets`, see CLAUDE.md).
 - Optional, later: hovering a send/receive highlights its partners; a "rename bus everywhere".
 
 ## Measurement and tests

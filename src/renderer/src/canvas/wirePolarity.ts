@@ -1,6 +1,14 @@
-import type { PatchDocument } from '@shared/domain/patch'
+import type { ObjNode, PatchDocument } from '@shared/domain/patch'
 import { LOGUE_SUBPATCH_INLET_TYPE } from '@logue-codegen/subpatches'
-import { busNameOf, busNodeRole, isStereoBusNodeType } from '@logue-codegen/buses'
+import {
+  busNameOf,
+  busNodeRole,
+  busOutletsOf,
+  busRoleOf,
+  isBusNodeType,
+  isStereoBusNodeType,
+  isStereoOnBus
+} from '@logue-codegen/buses'
 import {
   findSingleWiredSource,
   isBufferInlet,
@@ -106,16 +114,22 @@ export function createWirePolarityResolver(
     const receive = doc.nodes.find((n) => n.kind === 'obj' && n.name === nodeName)
     if (receive?.kind !== 'obj') return 'audio'
     const bus = busNameOf(receive)
-    const inlet = isStereoBusNodeType(receive.type) ? outletName : 'in'
+    const stereo = isStereoBusNodeType(receive.type)
+    const side = stereo ? outletName : undefined
     const inherited = doc.nodes
       .filter(
-        (n) =>
+        (n): n is ObjNode =>
           n.kind === 'obj' &&
-          busNodeRole(n.type) === 'send' &&
+          busRoleOf(n) === 'send' &&
           busNameOf(n) === bus &&
-          isStereoBusNodeType(n.type) === isStereoBusNodeType(receive.type)
+          isStereoOnBus(n) === stereo
       )
-      .map((send) => inletBucket(send.name ?? '', inlet))
+      .map((send) =>
+        // A send node carries what's wired into it; a mixer sending directly, its own outlet.
+        isBusNodeType(send.type)
+          ? inletBucket(send.name ?? '', side ?? 'in')
+          : resolve(send.name ?? '', side ?? busOutletsOf(send.type)![0])
+      )
       .filter((bucket): bucket is ResolvedWireBucket => bucket !== undefined)
     return inherited.length === 0
       ? 'audio'

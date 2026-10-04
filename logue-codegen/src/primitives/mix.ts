@@ -55,6 +55,7 @@ function mixTerms(bus: string | undefined, inputs: [string | undefined, string][
  */
 export const mixer2Primitive: LoguePrimitive = {
   id: 'logue/mix/mix2',
+  busOutlets: ['out'],
   pure: true,
   outletPolarity: 'inherit',
   stateBytesPerInstance: 8, // gain1_ + gain2_, 2 floats
@@ -276,6 +277,7 @@ function crossfaderParams(m: CrossfaderMembers): PrimitiveParamSpec[] {
  */
 export const crossfaderPrimitive: LoguePrimitive = {
   id: 'logue/mix/crossfader',
+  busOutlets: ['out'],
   outletPolarity: 'inherit',
   stateBytesPerInstance: 16, // fadePercent_, xfLaw_, xfG_[2]
   description:
@@ -306,6 +308,7 @@ export const crossfaderPrimitive: LoguePrimitive = {
  */
 export const stereoCrossfaderPrimitive: LoguePrimitive = {
   id: 'logue/mix/stereo-crossfader',
+  busOutlets: ['l', 'r'],
   outletPolarity: 'inherit',
   stateBytesPerInstance: 16, // stxFadePercent_, stxLaw_, stxG_[2]
   description:
@@ -351,6 +354,7 @@ export const stereoCrossfaderPrimitive: LoguePrimitive = {
  */
 export const stereoMixer2Primitive: LoguePrimitive = {
   id: 'logue/mix/stereo-mix2',
+  busOutlets: ['l', 'r'],
   pure: true,
   outletPolarity: 'inherit',
   stateBytesPerInstance: 8, // gain1_ + gain2_, 2 floats
@@ -457,6 +461,7 @@ const PAN_CTL_HELPER: HelperBlock = {
  */
 export const panPrimitive: LoguePrimitive = {
   id: 'logue/mix/pan',
+  busOutlets: ['l', 'r'],
   outletPolarity: 'inherit',
   // panPercent_, panCtl_, panG_[4] (6 x 4 B; the last two only used while `pan` is wired).
   stateBytesPerInstance: 24,
@@ -540,6 +545,7 @@ function panMixBlockValues(
  */
 export const panMix2Primitive: LoguePrimitive = {
   id: 'logue/mix/pan-mix2',
+  busOutlets: ['l', 'r'],
   outletPolarity: 'inherit',
   // gain1_ gain2_ pan1Percent_ pan2Percent_ pmCtl1_ pmCtl2_ pmG1_[4] pmG2_[4] (14 x 4 B; the
   // ctl/G members only used while a pan is wired)
