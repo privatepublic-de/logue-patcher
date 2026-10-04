@@ -1471,7 +1471,10 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   badge. `resolveBuses` first expands it into a unity send `<mixer>__bus` fed from those outlets
   (`withDirectSendsExpanded`), so the result is a hand-placed send's code and the outlets stay
   wireable; everything else (`busesIn`, warnings, colours, layout, presets) counts it as a send
-  via `busRoleOf`/`isStereoOnBus`. Replace with... keeps a sender's bus on a mixer, not a
+  via `busRoleOf`/`busKindOf`. A MONO mixer fits either kind of bus (`busKindOf` 'either', user's
+  call): on a bus with any stereo node its one outlet feeds both sides of a stereo send, at unity
+  each (+3 dB against a centred `pan`); a bus of mono mixers alone stays mono. Send/receive nodes
+  keep their kind, so a mono send node on a stereo bus is still `mixed`. Replace with... keeps a sender's bus on a mixer, not a
   receive's (a reader would turn into a writer). A `bus` on any other type is ignored.
 - **Global scope**: one namespace per unit, so a send inside a subpatch reaches the root's bus
   (two instances of a definition holding a send+receive pair share it). Mono and stereo nodes on

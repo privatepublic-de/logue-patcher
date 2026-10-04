@@ -7,7 +7,7 @@ import {
   busRoleOf,
   isBusNodeType,
   isStereoBusNodeType,
-  isStereoOnBus
+  busKindOf
 } from '@logue-codegen/buses'
 import {
   findSingleWiredSource,
@@ -122,13 +122,14 @@ export function createWirePolarityResolver(
           n.kind === 'obj' &&
           busRoleOf(n) === 'send' &&
           busNameOf(n) === bus &&
-          isStereoOnBus(n) === stereo
+          busKindOf(n) !== (stereo ? 'mono' : 'stereo')
       )
       .map((send) =>
-        // A send node carries what's wired into it; a mixer sending directly, its own outlet.
+        // A send node carries what's wired into it; a mixer sending directly, its own outlet
+        // (a mono one feeds both sides of a stereo bus from its one outlet).
         isBusNodeType(send.type)
           ? inletBucket(send.name ?? '', side ?? 'in')
-          : resolve(send.name ?? '', side ?? busOutletsOf(send.type)![0])
+          : resolve(send.name ?? '', mixerOutlet(busOutletsOf(send.type)!, side))
       )
       .filter((bucket): bucket is ResolvedWireBucket => bucket !== undefined)
     return inherited.length === 0
@@ -136,6 +137,10 @@ export function createWirePolarityResolver(
       : new Set(inherited).size === 1
         ? inherited[0]
         : 'neutral'
+  }
+
+  function mixerOutlet(outlets: readonly string[], side: string | undefined): string {
+    return outlets.length === 2 && side !== undefined ? side : outlets[0]
   }
 
   /** What arrives at one inlet, `undefined` while it's unwired. A buffer wire into a signal

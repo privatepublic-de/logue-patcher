@@ -267,4 +267,19 @@ describe('mixers sending straight to a bus', () => {
     const x = (name: string): number => laid.find((n) => n.name === name)!.x
     expect(x('m')).toBeLessThan(x('rx'))
   })
+
+  it('a mono mixer joins a stereo bus without making it mixed, and colours both sides', () => {
+    const d = doc(
+      [
+        obj(LOGUE_BUS_RECEIVE_STEREO_TYPE, 'rx', { bus: 'out' }),
+        obj('logue/mix/mix2', 'm', { bus: 'out' }),
+        obj('logue/lfo/sine-lfo', 'lfo')
+      ],
+      [wire('lfo', 'out', 'm', 'in1')]
+    )
+    expect(busProblems(d, d.nodes).size).toBe(0)
+    const resolve = createWirePolarityResolver(d, new Map(d.nodes.map((n) => [n.name!, n.type])))
+    expect(resolve('rx', 'l')).toBe('bipolar')
+    expect(resolve('rx', 'r')).toBe('bipolar')
+  })
 })

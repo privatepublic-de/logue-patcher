@@ -95,9 +95,14 @@ export function busRoleOf(node: PatchDocument['nodes'][number]): 'send' | 'recei
   return busNodeRole(node.type) ?? (sendsDirectToBus(node) ? 'send' : undefined)
 }
 
-/** Whether a node on a bus is on a stereo one. */
-export function isStereoOnBus(node: ObjNode): boolean {
-  return isStereoBusNodeType(node.type) || busOutletsOf(node.type)?.length === 2
+/**
+ * What a node on a bus needs the bus to be. A mono mixer sending directly fits either: on a bus
+ * with a stereo node it adds its output to both sides (user's call, 2026-10-04); send and receive
+ * nodes keep their own kind, so a mono send onto a stereo bus is still an error.
+ */
+export function busKindOf(node: ObjNode): 'mono' | 'stereo' | 'either' {
+  if (isBusNodeType(node.type)) return isStereoBusNodeType(node.type) ? 'stereo' : 'mono'
+  return busOutletsOf(node.type)?.length === 2 ? 'stereo' : 'either'
 }
 
 /** A bus node's bus name; an unnamed one is the bus `''`. */
@@ -247,12 +252,19 @@ export function resolveBuses(input: PatchDocument): PatchDocument {
 function withDirectSendsExpanded(doc: PatchDocument): PatchDocument {
   const direct = doc.nodes.filter(sendsDirectToBus)
   if (direct.length === 0) return doc
+  const stereoBuses = new Set(
+    busesIn(doc.nodes)
+      .filter((b) => b.stereo)
+      .map((b) => b.name)
+  )
   const taken = new Set(doc.nodes.map((n) => n.name))
   const added: ObjNode[] = []
   const nets: Net[] = [...doc.nets]
   for (const mixer of direct) {
-    const outlets = busOutletsOf(mixer.type)!
-    const stereo = outlets.length === 2
+    const own = busOutletsOf(mixer.type)!
+    const stereo = own.length === 2 || stereoBuses.has(busNameOf(mixer))
+    // A mono mixer on a stereo bus feeds both sides from its one outlet.
+    const outlets = stereo && own.length === 1 ? [own[0], own[0]] : own
     let name = `${mixer.name}__bus`
     for (let k = 2; taken.has(name); k++) name = `${mixer.name}__bus${k}`
     taken.add(name)
@@ -295,7 +307,8 @@ export const BUS_LOOP_HINT =
 /** What one bus in a document holds -- for the canvas (insert presets, warnings, colours). */
 export interface BusSummary {
   name: string
-  /** Set when every node on it is stereo; `mixed` when both kinds are (an export error). */
+  /** Set when a stereo node is on it (a mono mixer then sends to both sides); `mixed` when a
+   *  mono send/receive node is too (an export error). */
   stereo: boolean
   mixed: boolean
   sends: ObjNode[]
@@ -305,20 +318,24 @@ export interface BusSummary {
 /** Every bus `nodes` use, in order of first appearance. */
 export function busesIn(nodes: readonly PatchDocument['nodes'][number][]): BusSummary[] {
   const byName = new Map<string, BusSummary>()
+  // A mono send/receive node on it: with a stereo node that's the export error `mixed`.
+  const monoFixed = new Map<string, boolean>()
   for (const node of nodes) {
     const role = busRoleOf(node)
     if (role === undefined || node.kind !== 'obj') continue
     const name = busNameOf(node)
-    const stereo = isStereoOnBus(node)
     let bus = byName.get(name)
     if (!bus) {
-      bus = { name, stereo, mixed: false, sends: [], receives: [] }
+      bus = { name, stereo: false, mixed: false, sends: [], receives: [] }
       byName.set(name, bus)
-    } else if (bus.stereo !== stereo) {
-      bus.mixed = true
+      monoFixed.set(name, false)
     }
+    const kind = busKindOf(node)
+    if (kind === 'stereo') bus.stereo = true
+    if (kind === 'mono') monoFixed.set(name, true)
     ;(role === 'send' ? bus.sends : bus.receives).push(node)
   }
+  for (const bus of byName.values()) bus.mixed = bus.stereo && monoFixed.get(bus.name) === true
   return [...byName.values()]
 }
 

@@ -44,7 +44,7 @@ import {
   type ParamTrackGate
 } from '@logue-codegen/paramTrackGate'
 import type { ObjNode, PatchDocument } from '@shared/domain/patch'
-import { busOutletsOf, busesIn, isBusNodeType, isStereoOnBus } from '@logue-codegen/buses'
+import { busKindOf, busOutletsOf, busesIn, isBusNodeType } from '@logue-codegen/buses'
 import type { LogueParamSlot, LogueKnobBinding } from '@shared/domain/paramValueTypes'
 import { describeExposedSlots } from '../state/exposedLogueParams'
 import { isNodeTrackGated } from './trackGateState'
@@ -346,7 +346,7 @@ function BusField({
   // A mixer (`busOutlets`) sends to a bus only while one is named; a bus node always has one.
   const mixer = !isBusNodeType(node.type)
   const bus = node.bus ?? ''
-  const stereo = isStereoOnBus(node)
+  const kind = busKindOf(node)
   const buses = busesIn(doc.nodes)
   const here = mixer && node.bus === undefined ? undefined : buses.find((b) => b.name === bus)
   const listId = `bus-names-${nodeIdValue}`
@@ -359,7 +359,7 @@ function BusField({
           key={bus}
           list={listId}
           defaultValue={bus}
-          placeholder={mixer ? `none (a ${stereo ? 'stereo ' : ''}bus name)` : undefined}
+          placeholder={mixer ? `none (a ${kind === 'stereo' ? 'stereo ' : ''}bus name)` : undefined}
           onBlur={(e) => setNodeBus?.(nodeIdValue, e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.currentTarget.blur()
@@ -367,7 +367,12 @@ function BusField({
         />
         <datalist id={listId}>
           {buses
-            .filter((b) => b.stereo === stereo && !b.mixed && b.name !== bus)
+            .filter(
+              (b) =>
+                !b.mixed &&
+                b.name !== bus &&
+                (kind === 'either' || b.stereo === (kind === 'stereo'))
+            )
             .map((b) => (
               <option key={b.name} value={b.name} />
             ))}
@@ -375,7 +380,7 @@ function BusField({
       </label>
       {here && (
         <p className="inspector__hint">
-          {stereo ? 'Stereo bus' : 'Bus'} &ldquo;{bus || '(no name)'}&rdquo; here:{' '}
+          {here.stereo ? 'Stereo bus' : 'Bus'} &ldquo;{bus || '(no name)'}&rdquo; here:{' '}
           {count(here.sends.length, 'send')}, {count(here.receives.length, 'receive')}
           {here.mixed ? " -- mixes mono and stereo nodes, which won't build" : ''}
         </p>
