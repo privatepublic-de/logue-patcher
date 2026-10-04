@@ -24,6 +24,8 @@ export interface PortInfo {
    * the neutral colour rather than guessing.
    */
   role?: LogueInletRole
+  /** Display text instead of `name` (`PrimitiveInletSpec.label`). */
+  label?: string
   /** A port a wire still references but the node no longer declares (a subpatch definition
    *  that dropped it, a Replace with... onto a type without it) -- kept as a handle (drawn
    *  broken) so the wire stays visible and can be disconnected, instead of vanishing. */
@@ -90,7 +92,11 @@ export function resolvePorts(
     const primitive = resolveNodePrimitive(node.type)
     if (primitive) {
       const declared: ResolvedPorts = {
-        inlets: (primitive.inlets ?? []).map((inlet) => ({ name: inlet.name, role: inlet.role })),
+        inlets: (primitive.inlets ?? []).map((inlet) => ({
+          name: inlet.name,
+          role: inlet.role,
+          ...(inlet.label !== undefined ? { label: inlet.label } : {})
+        })),
         outlets: (primitive.outlets ?? [{ name: 'out' }]).map((outlet) => ({ name: outlet.name }))
       }
       const wired = wiredPortNames(nodeName, nets)

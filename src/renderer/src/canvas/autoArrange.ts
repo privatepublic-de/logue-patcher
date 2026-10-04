@@ -98,7 +98,7 @@ function estimateObjectSize(node: PatchNode, ports: ResolvedPorts): Size {
 
   const titleWidth = title.length * CHAR_WIDTH_BOLD_12 + HEADER_PADDING_X
   const inletColWidth =
-    Math.max(0, ...ports.inlets.map((p) => p.name.length * CHAR_WIDTH_SMALL_10)) + PORT_COL_PADDING
+    Math.max(0, ...ports.inlets.map((p) => (p.label ?? p.name).length * CHAR_WIDTH_SMALL_10)) + PORT_COL_PADDING
   const outletColWidth =
     Math.max(0, ...ports.outlets.map((p) => p.name.length * CHAR_WIDTH_SMALL_10)) + PORT_COL_PADDING
   const portsWidth =

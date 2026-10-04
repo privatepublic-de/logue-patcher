@@ -64,7 +64,7 @@ export const mixer2Primitive: LoguePrimitive = {
   inlets: [
     { name: 'in1', role: 'audio' },
     { name: 'in2', role: 'audio' },
-    { name: 'thru', role: 'audio' }
+    { name: 'thru', role: 'audio', label: 'in thru' }
   ],
   memberDecls: (suffix) => `  float gain1_${suffix};\n  float gain2_${suffix};\n`,
   renderExpr: (suffix, inlets) =>
@@ -362,8 +362,8 @@ export const stereoMixer2Primitive: LoguePrimitive = {
     { name: 'r1', role: 'audio' },
     { name: 'l2', role: 'audio' },
     { name: 'r2', role: 'audio' },
-    { name: 'l', role: 'audio' },
-    { name: 'r', role: 'audio' }
+    { name: 'l', role: 'audio', label: 'l-thru' },
+    { name: 'r', role: 'audio', label: 'r-thru' }
   ],
   outlets: [{ name: 'l' }, { name: 'r' }],
   memberDecls: (suffix) => `  float gain1_${suffix};\n  float gain2_${suffix};\n`,
@@ -464,8 +464,8 @@ export const panPrimitive: LoguePrimitive = {
     'Places a mono signal in the stereo field (equal power) and adds it onto the stereo bus coming in on l/r -- chain several pans to mix them.',
   inlets: [
     { name: 'in', role: 'audio' },
-    { name: 'l', role: 'audio' },
-    { name: 'r', role: 'audio' },
+    { name: 'l', role: 'audio', label: 'l-thru' },
+    { name: 'r', role: 'audio', label: 'r-thru' },
     { name: 'pan', role: 'control' }
   ],
   outlets: [{ name: 'l' }, { name: 'r' }],
@@ -550,8 +550,8 @@ export const panMix2Primitive: LoguePrimitive = {
   inlets: [
     { name: 'in1', role: 'audio' },
     { name: 'in2', role: 'audio' },
-    { name: 'l', role: 'audio' },
-    { name: 'r', role: 'audio' },
+    { name: 'l', role: 'audio', label: 'l-thru' },
+    { name: 'r', role: 'audio', label: 'r-thru' },
     { name: 'pan1', role: 'control' },
     { name: 'pan2', role: 'control' }
   ],

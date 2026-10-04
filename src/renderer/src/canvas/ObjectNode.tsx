@@ -285,7 +285,7 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
                   `patch-node__handle ${inletShapeClassForRole(inlet.role)}` +
                   (inlet.stale ? ' patch-node__handle--stale' : '')
                 }
-                data-tooltip={inlets.length > 1 ? inlet.name : undefined}
+                data-tooltip={inlets.length > 1 ? (inlet.label ?? inlet.name) : undefined}
                 style={{
                   top: inletTops[i],
                   backgroundColor: inletColors[inlet.name] ?? colorForRole(inlet.role)
@@ -432,7 +432,9 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
                   // Keeps every label in the column lined up once any inlet has a marker.
                   hasInletMarkers && <span className="patch-node__inlet-mod" aria-hidden="true" />
                 )}
-                {inlets.length > 1 && <span className="patch-node__port-label">{port.name}</span>}
+                {inlets.length > 1 && (
+                  <span className="patch-node__port-label">{port.label ?? port.name}</span>
+                )}
                 {inletGate && <InletTrackBadge id={id} gate={inletGate} />}
               </div>
             )

@@ -42,6 +42,9 @@ export interface PrimitiveInletSpec {
    * decide; an optional field with a default would silently mis-colour the next inlet added.
    */
   role: LogueInletRole
+  /** What the canvas shows instead of `name` (`mix2`'s `thru` reads "in thru"). Display only:
+   *  nets, files and codegen use `name`, so a label can change without a rename alias. */
+  label?: string
   /** When this inlet is only read with its primitive's `TRACK`/`SYNC` in one position -- shown
    *  as a badge on the canvas port (`paramPresentation.ts`). */
   trackGate?: ParamTrackGate
