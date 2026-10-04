@@ -64,6 +64,7 @@ import {
   crossfaderPrimitive,
   mixer2Primitive,
   panPrimitive,
+  panMix2Primitive,
   stereoCrossfaderPrimitive,
   stereoMixer2Primitive,
   widthPrimitive
@@ -230,6 +231,7 @@ const PRIMITIVES: LoguePrimitive[] = [
   grainPrimitive,
   reverseTapPrimitive,
   panPrimitive,
+  panMix2Primitive,
   widthPrimitive,
   chancePrimitive,
   roundRobinPrimitive

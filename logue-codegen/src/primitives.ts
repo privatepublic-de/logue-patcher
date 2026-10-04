@@ -90,6 +90,7 @@ export {
   mixer2Primitive,
   crossfaderPrimitive,
   panPrimitive,
+  panMix2Primitive,
   widthPrimitive,
   stereoMixer2Primitive,
   stereoCrossfaderPrimitive

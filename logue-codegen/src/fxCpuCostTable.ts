@@ -716,6 +716,21 @@ export const FX_CPU_COST_TABLE: Record<
     },
     snapshotHash: 'd139dc1b3b1c3b34'
   },
+  'logue/mix/pan-mix2': {
+    variants: {
+      base: {
+        first: { cycles: 12, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 10, sdram: 0 }
+      },
+      control: {
+        first: { cycles: 67, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 65, sdram: 0 }
+      }
+    },
+    snapshotHash: '6464e3e0e076302a'
+  },
   'logue/mix/stereo-crossfader': {
     variants: {
       base: {

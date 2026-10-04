@@ -628,6 +628,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 84, extra: 60, helpers: [] },
       snapshotHash: 'd139dc1b3b1c3b34'
     },
+    'logue/mix/pan-mix2': {
+      first: 216,
+      extra: 204,
+      helpers: [],
+      unwired: { first: 176, extra: 160, helpers: [] },
+      snapshotHash: '6464e3e0e076302a'
+    },
     'logue/mix/width': {
       first: 92,
       extra: 56,
@@ -1273,6 +1280,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 112, extra: 64, helpers: [] },
       snapshotHash: 'd139dc1b3b1c3b34'
     },
+    'logue/mix/pan-mix2': {
+      first: 404,
+      extra: 356,
+      helpers: [],
+      unwired: { first: 212, extra: 164, helpers: [] },
+      snapshotHash: '6464e3e0e076302a'
+    },
     'logue/mix/width': {
       first: 96,
       extra: 76,
@@ -1887,6 +1901,13 @@ export const CODE_SIZE_TABLE: Record<
       helpers: [],
       unwired: { first: 96, extra: 56, helpers: [] },
       snapshotHash: '62ccf9014c7ba69e'
+    },
+    'logue/mix/pan-mix2': {
+      first: 220,
+      extra: 200,
+      helpers: [],
+      unwired: { first: 180, extra: 156, helpers: [] },
+      snapshotHash: 'e3c13e6d92c35023'
     },
     'logue/mix/width': {
       first: 96,
@@ -2532,6 +2553,13 @@ export const CODE_SIZE_TABLE: Record<
       helpers: [],
       unwired: { first: 152, extra: 60, helpers: [] },
       snapshotHash: '62ccf9014c7ba69e'
+    },
+    'logue/mix/pan-mix2': {
+      first: 424,
+      extra: 356,
+      helpers: [],
+      unwired: { first: 248, extra: 172, helpers: [] },
+      snapshotHash: 'e3c13e6d92c35023'
     },
     'logue/mix/width': {
       first: 92,

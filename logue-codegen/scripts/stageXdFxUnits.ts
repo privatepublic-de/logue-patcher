@@ -237,6 +237,31 @@ const staged = [
       ]
     )
   ),
+  // pan-mix2 (2026-10-04): input L into in1, R into in2, GAIN 100, PAN1 on Time from hard left,
+  // PAN2 on Depth from hard right -- a plain pass-through at the defaults.
+  stage(
+    'lp-xdfx-panmix',
+    'LP FX Pan Mix',
+    doc(
+      'modfx',
+      [
+        IN,
+        obj('pm', 'logue/mix/pan-mix2', [
+          { name: 'GAIN1', value: '100' },
+          { name: 'PAN1', value: '-100', ...onKnob('time') },
+          { name: 'GAIN2', value: '100' },
+          { name: 'PAN2', value: '100', ...onKnob('depth') }
+        ]),
+        OUT
+      ],
+      [
+        wire('in', 'l', 'pm', 'in1'),
+        wire('in', 'r', 'pm', 'in2'),
+        wire('pm', 'l', 'out', 'l'),
+        wire('pm', 'r', 'out', 'r')
+      ]
+    )
+  ),
   // A stereo echo pair of 2.7 s lines (2 x 512 KB): Time moves the left line only, the right
   // stays at 0.73 s, so a mono input comes out audibly stereo (with both on Time, the xd's mono
   // voice gave identical sides: user, 2026-09-30). Depth = feedback, Shift+Depth = mix.

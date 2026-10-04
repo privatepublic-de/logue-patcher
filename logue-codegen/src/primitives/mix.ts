@@ -482,6 +482,111 @@ export const panPrimitive: LoguePrimitive = {
   ]
 }
 
+/** One input's left/right gains (GAIN times the equal-power pan), once per block while its pan
+ *  is unwired. */
+function panMixBlockValues(
+  suffix: string,
+  n: 1 | 2,
+  pan: string | undefined
+): Record<'l' | 'r', BlockValue> {
+  const p =
+    pan !== undefined
+      ? additiveInletExpr(`pan${n}Percent`, suffix, pan, PAN_INLET_DEPTH, -100, 100)
+      : `pan${n}Percent_${suffix}`
+  const side = (sign: '-' | '+'): string =>
+    `gain${n}_${suffix} * xfade_sqrtf(clampf((100.f ${sign} (${p})) * 0.005f, 0.f, 1.f))`
+  return {
+    l: blockValue(`blkPmL${n}`, suffix, side('-'), [pan]),
+    r: blockValue(`blkPmR${n}`, suffix, side('+'), [pan])
+  }
+}
+
+/**
+ * `logue/mix/pan-mix2`: two mono inputs, each with its own GAIN and PAN (`pan`'s equal-power law,
+ * -3 dB a side at the center), summed onto a stereo pair. One node instead of two chained `pan`s
+ * plus a VCA each. Unwired, each input's two gains (GAIN folded in) are block constants; a wired
+ * `pan1`/`pan2` follows at control rate, ramped (`pan_ctl`), with GAIN multiplied per sample.
+ * GAIN defaults to 70 (-3 dB): two in-phase full-scale sources at the center then peak at ~0.99.
+ */
+export const panMix2Primitive: LoguePrimitive = {
+  id: 'logue/mix/pan-mix2',
+  outletPolarity: 'inherit',
+  // gain1_ gain2_ pan1Percent_ pan2Percent_ pmCtl1_ pmCtl2_ pmG1_[4] pmG2_[4] (14 x 4 B; the
+  // ctl/G members only used while a pan is wired)
+  stateBytesPerInstance: 56,
+  description:
+    'A panning mixer: two mono inputs, each with its own gain and stereo position (equal power), summed onto a stereo pair.',
+  searchTerms: ['panning', 'mixer', 'stereo', 'sum', 'balance'],
+  inlets: [
+    { name: 'in1', role: 'audio' },
+    { name: 'in2', role: 'audio' },
+    { name: 'pan1', role: 'control' },
+    { name: 'pan2', role: 'control' }
+  ],
+  outlets: [{ name: 'l' }, { name: 'r' }],
+  memberDecls: (suffix) =>
+    `  float gain1_${suffix};\n  float gain2_${suffix};\n  float pan1Percent_${suffix};\n  float pan2Percent_${suffix};\n` +
+    `  uint32_t pmCtl1_${suffix};\n  uint32_t pmCtl2_${suffix};\n  float pmG1_${suffix}[4];\n  float pmG2_${suffix}[4];\n`,
+  initStatement: (suffix) =>
+    `    pmCtl1_${suffix} = 0u;\n    pmCtl2_${suffix} = 0u;\n` +
+    `    for (int k = 0; k < 4; ++k) { pmG1_${suffix}[k] = 0.f; pmG2_${suffix}[k] = 0.f; }\n`,
+  blockConstants: (suffix, inlets) =>
+    blockDecls({
+      ...prefixed('1', panMixBlockValues(suffix, 1, inlets.pan1)),
+      ...prefixed('2', panMixBlockValues(suffix, 2, inlets.pan2))
+    }),
+  renderExpr: () => {
+    throw new Error(
+      'logue/mix/pan-mix2 is multi-outlet -- use renderOutletStatements, not renderExpr'
+    )
+  },
+  renderOutletStatements: (suffix, inlets) => {
+    let pre = ''
+    const gains = ([1, 2] as const).map((n) => {
+      const pan = inlets[`pan${n}`]
+      if (isBlockInvariant(pan)) {
+        const g = panMixBlockValues(suffix, n, pan)
+        return { l: g.l.ref, r: g.r.ref }
+      }
+      pre += `      pan_ctl(&pmCtl${n}_${suffix}, pmG${n}_${suffix}, pan${n}Percent_${suffix} + (${pan}) * ${PAN_INLET_DEPTH}.f);\n`
+      return {
+        l: `gain${n}_${suffix} * pmG${n}_${suffix}[0]`,
+        r: `gain${n}_${suffix} * pmG${n}_${suffix}[1]`
+      }
+    })
+    const x1 = inlets.in1 ?? '0.f'
+    const x2 = inlets.in2 ?? '0.f'
+    const side = (s: 'l' | 'r'): string =>
+      `      float y_${suffix}_${s} = (${x1}) * (${gains[0][s]}) + (${x2}) * (${gains[1][s]});\n`
+    return pre + side('l') + side('r') + `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`
+  },
+  advanceStatement: () => '',
+  helpers: [CLAMPF_HELPER, XFADE_SQRTF_HELPER, PAN_CTL_HELPER],
+  params: ([1, 2] as const).flatMap((n): PrimitiveParamSpec[] => [
+    {
+      name: `GAIN${n}`,
+      unit: MIX_GAIN_DB,
+      min: 0,
+      max: 100,
+      default: 70,
+      setStatement: (suffix, valueExpr) => `gain${n}_${suffix} = ${valueExpr} * 0.01f;`
+    },
+    {
+      name: `PAN${n}`,
+      unit: PERCENT,
+      modulatedBy: { inlet: `pan${n}`, shape: 'additive' },
+      min: -100,
+      max: 100,
+      default: 0,
+      setStatement: (suffix, valueExpr) => `pan${n}Percent_${suffix} = ${valueExpr};`
+    }
+  ])
+}
+
+function prefixed<T>(tag: string, values: Record<'l' | 'r', T>): Record<string, T> {
+  return { [`l${tag}`]: values.l, [`r${tag}`]: values.r }
+}
+
 /**
  * `logue/mix/width`: stereo width by mid/side -- `mid = (l+r)/2`, `side = (l-r)/2 * WIDTH`, out
  * `mid +- side`. WIDTH 0 is the mono sum on both sides (at the same level, unlike Axoloti

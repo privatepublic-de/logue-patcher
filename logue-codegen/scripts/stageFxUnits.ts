@@ -10,6 +10,7 @@
  * - ring (modfx): a sine ring modulator, TIME = the sine's COARSE (+-24 st around middle C,
  *   the fixed note an effect gets), DEPTH = the crossfader from dry to ring.
  * - haas (revfx): right channel through util/delay (TIME = DEPTH knob, 0.1..20 ms), left dry.
+ * - panmix (modfx): L/R through logue/mix/pan-mix2; TIME pans the left input, DEPTH the right.
  * - echo / sync (delfx, phase 4): a stereo pair of 2.7 s logue/util/long-delay lines in SDRAM;
  *   TIME = time (or, synced, the DIVISION), DEPTH = FEEDBACK, MIX = MIX.
  * - slap (modfx): a 0.34 s pair (2 x 64 KB of the modfx's 256 KB), a slow sine on `time`.
@@ -338,6 +339,32 @@ const staged = [
         OUT
       ],
       [wire('in', 'l', 'out', 'l'), wire('in', 'r', 'd', 'in'), wire('d', 'out', 'out', 'r')]
+    )
+  ),
+  // pan-mix2 (2026-10-04): input L into in1, R into in2, GAIN 100, PAN1 on TIME from hard left,
+  // PAN2 on DEPTH from hard right -- a plain pass-through at the defaults; TIME sweeps the left
+  // input across, DEPTH the right one.
+  stage(
+    'lp-fx-panmix',
+    'LP FX Pan Mix',
+    doc(
+      'modfx',
+      [
+        IN,
+        obj('pm', 'logue/mix/pan-mix2', [
+          { name: 'GAIN1', value: '100' },
+          { name: 'PAN1', value: '-100', logueKnob: { nts1mkii: 'time' } },
+          { name: 'GAIN2', value: '100' },
+          { name: 'PAN2', value: '100', logueKnob: { nts1mkii: 'depth' } }
+        ]),
+        OUT
+      ],
+      [
+        wire('in', 'l', 'pm', 'in1'),
+        wire('in', 'r', 'pm', 'in2'),
+        wire('pm', 'l', 'out', 'l'),
+        wire('pm', 'r', 'out', 'r')
+      ]
     )
   )
 ]

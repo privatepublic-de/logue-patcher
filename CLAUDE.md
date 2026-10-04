@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 95 primitives, 5 of them superseded and hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 96 primitives, 5 of them superseded and hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -101,9 +101,9 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-95 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+96 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
 history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (15:
-sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (9:
+sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (7: mix2/crossfader/pan/pan-mix2/width/stereo-mix2/stereo-crossfader), `filter` (9:
 lowpass-cheap/highpass-cheap/comb/string/svf/ladder/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (15: constant/unipolar-to-bipolar/bipolar-to-unipolar/
@@ -895,6 +895,17 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   wired from a per-block value it stays a block constant. **`mix/width`**:
   mid/side, WIDTH 0 = the mid on both sides (level-kept, unlike grain-mill's L+R), 100 = as is;
   not above 100 (the xd manifest's +-100 cap, found when a 0..200 range failed the manifest test).
+- **`mix/pan-mix2`** (2026-10-04): a panning mixer, two mono inputs (`in1`/`in2`) each with
+  GAIN (0..100 = x0..x1, shown in dB like `mix2`) and PAN (`pan`'s equal-power law, -3 dB a side
+  at the center), summed onto `l`/`r`. GAIN defaults to 70 (-3 dB), so two in-phase full-scale
+  inputs at the center peak at 0.99. Additive `pan1`/`pan2` (depth 100); no gain inlets (use a
+  VCA). Unwired, each input's two gains (GAIN folded in) are block constants; a moving pan uses
+  `pan`'s `pan_ctl` (every 16 samples, ramped), with GAIN multiplied per sample. Harness
+  (`scripts/runPanMixHarness.ts`): every gain within 3e-8 of `GAIN*sqrt((100-+PAN)/200)`, hard
+  left/right exact, an LFO on `pan1` keeps l^2+r^2 within 0.0014 %. xd emulator: 4 cycles in an
+  oscillator; in an xd effect 12 still, ~65 with both pans moving. State 56 B (= the xd bss over
+  a pass-through). Staged: `lp-fx-panmix` / `lp-xdfx-panmix` (modfx, L/R in, TIME pans the left
+  input, DEPTH the right, a pass-through at the defaults). No hardware pass yet.
 - **`mix/stereo-crossfader` + `mix/stereo-mix2`** (2026-10-03): `crossfader`/`mix2` for a stereo
   pair (`l1`/`r1`, `l2`/`r2` in; `l`/`r` out), so an effect's dry/wet is one node with ONE FADE
   (one device control) -- every effect example had a crossfader pair whose dials had to match,

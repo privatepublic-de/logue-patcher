@@ -199,6 +199,11 @@ export const CPU_COST_TABLE: Record<
     worst: 4,
     snapshotHash: 'd139dc1b3b1c3b34'
   },
+  'logue/mix/pan-mix2': {
+    variants: { base: 4, control: 4 },
+    worst: 4,
+    snapshotHash: '6464e3e0e076302a'
+  },
   'logue/mix/stereo-crossfader': {
     variants: { base: 15, control: 15 },
     worst: 15,
