@@ -146,7 +146,7 @@ different cost dimension from per-instance state), `params?` (`PrimitiveParamSpe
 `name/min/max/default`, optional `freeLabel`/`step`), `renamedParams?`/`renamedInlets?`
 (`FieldAlias[]` — see rename-safety below), `noteOnStatement?`/`noteOffStatement?`
 (always-emitted hooks into a real `noteOn`/`noteOff` on both platforms, harmlessly empty when
-unused). `shortLabel?` (header text instead of the id: `uni→bi`, `−x`, `z⁻¹`) and `defaultName?` (a
+unused). `shortLabel?` (header text instead of the id: `uni→bi`, `−x`, `z⁻¹`, `a−b`) and `defaultName?` (a
 new instance's name: `u2b`/`b2u`) are display-only; palette search matches both.
 
 **Presentation metadata lives on the specs** (2026-09-28; it used to be four side tables keyed by
@@ -1161,10 +1161,12 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   `WarningLine`s (`build/WarningLine.tsx`) that expand to the explanation.
   A node's header is ONE category-tinted row: the name in bold (double-click to rename), the type
   muted on the right, taking only leftover width (`.patch-node__type`; `autoArrange.ts`' size
-  estimate counts the name alone). A param-less primitive with at most one inlet and one outlet
-  (`canvas/compactNode.ts`' `isCompactPrimitive`: the polarity converters, negate, one-minus, abs,
-  edge, sample-delay, sense/gate; 2026-10-04) is drawn as that header row ALONE, jacks on its
-  edges, sized by its content -- unless it has a badge to show (an issue, Renamed, Only on).
+  estimate counts the name alone). A param-less primitive with one outlet and at most one inlet,
+  or two for `math/*`/`logic/*` (`canvas/compactNode.ts`' `isCompactPrimitive`: the polarity
+  converters, negate, one-minus, abs, edge, sample-delay, sense/gate, add/subtract/multiply/min/
+  max, and/or/xor;
+  2026-10-04) is drawn as that header row ALONE, jacks on its edges (two operands stacked on the
+  left, `a` on top, the jack's tooltip naming it), sized by its content -- unless it has a badge to show (an issue, Renamed, Only on).
   `autoArrange.ts`/`freeSpot.ts` estimate it from the same predicate. No canvas text is under 10px (the user zooms the whole UI for
   reading; small badges didn't scale usefully).
   There's no toolbar strip above the canvas: undo/redo/arrange-by-flow are `ControlButton`s under

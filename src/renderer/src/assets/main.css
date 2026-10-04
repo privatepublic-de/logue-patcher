@@ -689,6 +689,12 @@ summary.library-panel__section-title:hover {
   flex: 0 0 auto;
 }
 
+/* Room for two inlet jacks, one above the other, on the left edge. */
+.patch-node--compact-2 .patch-node__title-row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 /* An advisory-only "this primitive has no equivalent on the currently viewed platform" badge,
    pushed to the row's own far edge (`.patch-node__title-row`
    is a flex row for exactly this) same as `.patch-node__port-badge`'s `margin-left: auto` trick.

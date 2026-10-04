@@ -71,7 +71,8 @@ export function findFreeSpot(
  */
 export function estimateNodeSize(type: string): { width: number; height: number } {
   if (type === 'patch/comment') return { width: 140, height: 40 }
-  if (isCompactPrimitive(type)) return { width: 110, height: 30 }
+  if (isCompactPrimitive(type))
+    return { width: 110, height: (resolveNodePrimitive(type)?.inlets?.length ?? 0) > 1 ? 38 : 30 }
   const spec = resolveNodePrimitive(type)
   const ports = Math.max(spec?.inlets?.length ?? 0, spec?.outlets?.length ?? 1)
   const params = spec?.params?.length ?? 0

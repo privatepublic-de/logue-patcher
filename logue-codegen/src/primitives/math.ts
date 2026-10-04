@@ -45,6 +45,7 @@ const pair = (ctx: PolarityRefineContext, x: string, y: string): [InletBucket, I
  */
 export const multiplyPrimitive: LoguePrimitive = {
   id: 'logue/math/multiply',
+  shortLabel: 'a×b',
   pure: true,
   outletPolarity: 'inherit',
   refinePolarity: (ctx) => {
@@ -207,6 +208,7 @@ export const curvePrimitive: LoguePrimitive = {
  */
 export const addPrimitive: LoguePrimitive = {
   id: 'logue/math/add',
+  shortLabel: 'a+b',
   pure: true,
   outletPolarity: 'inherit',
   refinePolarity: (ctx) => {
@@ -233,6 +235,7 @@ export const addPrimitive: LoguePrimitive = {
  */
 export const subtractPrimitive: LoguePrimitive = {
   id: 'logue/math/subtract',
+  shortLabel: 'a−b',
   pure: true,
   outletPolarity: 'inherit',
   refinePolarity: (ctx) => {
@@ -319,6 +322,7 @@ export const scalePrimitive: LoguePrimitive = {
  */
 export const minPrimitive: LoguePrimitive = {
   id: 'logue/math/min',
+  shortLabel: 'min',
   pure: true,
   outletPolarity: 'inherit',
   refinePolarity: (ctx) => {
@@ -346,6 +350,7 @@ export const minPrimitive: LoguePrimitive = {
 /** `max`'s mirror -- see `minPrimitive`'s own doc comment for why this is a plain ternary, not `fmaxf`. */
 export const maxPrimitive: LoguePrimitive = {
   id: 'logue/math/max',
+  shortLabel: 'max',
   pure: true,
   outletPolarity: 'inherit',
   refinePolarity: (ctx) => {

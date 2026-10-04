@@ -154,6 +154,7 @@ export const equalPrimitive: LoguePrimitive = {
  */
 export const andPrimitive: LoguePrimitive = {
   id: 'logue/logic/and',
+  shortLabel: 'a∧b',
   pure: true,
   outletPolarity: 'gate',
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
@@ -171,6 +172,7 @@ export const andPrimitive: LoguePrimitive = {
 /** Logic OR -- see `andPrimitive`'s own doc comment for the shared gate-read/unwired convention. */
 export const orPrimitive: LoguePrimitive = {
   id: 'logue/logic/or',
+  shortLabel: 'a∨b',
   pure: true,
   outletPolarity: 'gate',
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
@@ -188,6 +190,7 @@ export const orPrimitive: LoguePrimitive = {
 /** Logic XOR -- see `andPrimitive`'s own doc comment for the shared gate-read/unwired convention. */
 export const xorPrimitive: LoguePrimitive = {
   id: 'logue/logic/xor',
+  shortLabel: 'a⊻b',
   pure: true,
   outletPolarity: 'gate',
   stateBytesPerInstance: 0, // stateless, memberDecls is empty

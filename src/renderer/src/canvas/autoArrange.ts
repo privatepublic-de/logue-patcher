@@ -92,7 +92,7 @@ function estimateObjectSize(node: PatchNode, ports: ResolvedPorts): Size {
         headerTypeLabel(node.type).length * CHAR_WIDTH_SMALL_10 +
         COMPACT_PADDING_X +
         BORDERS,
-      height: HEADER_PADDING_Y - 4 + TITLE_LINE_HEIGHT + BORDERS
+      height: HEADER_PADDING_Y - 4 + TITLE_LINE_HEIGHT + BORDERS + (ports.inlets.length > 1 ? 8 : 0)
     }
   }
 

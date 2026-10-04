@@ -5,12 +5,20 @@ import { headerTypeLabel, isCompactPrimitive } from '../src/renderer/src/canvas/
 import { estimateNodeSize } from '../src/renderer/src/canvas/autoArrange'
 
 describe('compact nodes', () => {
-  it('are the param-less one-in/one-out primitives', () => {
+  it('are the param-less one-out primitives with one inlet, or two for math and logic', () => {
     const compact = recognizedLoguePrimitiveIds().filter(isCompactPrimitive).sort()
     expect(compact).toEqual(
       [
+        'logue/logic/and',
         'logue/logic/edge',
+        'logue/logic/or',
+        'logue/logic/xor',
         'logue/math/abs',
+        'logue/math/add',
+        'logue/math/max',
+        'logue/math/min',
+        'logue/math/multiply',
+        'logue/math/subtract',
         'logue/math/negate',
         'logue/math/one-minus',
         'logue/sense/gate',
@@ -21,10 +29,10 @@ describe('compact nodes', () => {
     )
   })
 
-  it('never include a subpatch instance, io node or two-inlet operator', () => {
+  it('never include a subpatch instance, io node or a two-inlet node outside math/logic', () => {
     expect(isCompactPrimitive('sub/anything')).toBe(false)
     expect(isCompactPrimitive('logue/io/audio-out')).toBe(false)
-    expect(isCompactPrimitive('logue/math/add')).toBe(false)
+    expect(isCompactPrimitive('logue/util/sample-hold')).toBe(false)
   })
 
   it('every shortLabel is short and every defaultName a valid node name', () => {

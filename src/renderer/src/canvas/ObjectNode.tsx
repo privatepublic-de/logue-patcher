@@ -145,7 +145,7 @@ function InletModulationMarker({
  * line; showing only one of them when the name is the default was rejected -- nodes would differ
  * in layout for an invisible reason, and the name would have nowhere to be edited. The type takes
  * only the space left over (it never widens a node) and gives way to the badges first. A
- * compact primitive (compactNode.ts) is that row alone, with its two jacks on the row's edges.
+ * compact primitive (compactNode.ts) is that row alone, with its jacks on the row's edges.
  */
 function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JSX.Element {
   const {
@@ -255,20 +255,24 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
   const compact =
     node.kind === 'obj' &&
     isCompactPrimitive(node.type) &&
-    inlets.length <= 1 &&
+    inlets.length <= 2 &&
     outlets.length === 1 &&
     node.params.length === 0 &&
     unresolvedReferences.length === 0 &&
     ownPlatforms.length === 0
 
   if (compact) {
-    const inlet = inlets[0]
     const outlet = outlets[0]
+    // Two operands share the left edge, a above b; the jack's tooltip names it.
+    const inletTops = inlets.length === 2 ? ['30%', '70%'] : ['50%']
     return (
-      <div className={`patch-node patch-node--compact${selected ? ' patch-node--selected' : ''}`}>
+      <div
+        className={`patch-node patch-node--compact${inlets.length === 2 ? ' patch-node--compact-2' : ''}${selected ? ' patch-node--selected' : ''}`}
+      >
         <div className="patch-node__title-row" style={titlebarStyle}>
-          {inlet && (
+          {inlets.map((inlet, i) => (
             <span
+              key={inlet.name}
               className="patch-node__compact-jack patch-node__compact-jack--in"
               data-port-name={inlet.name}
               data-port-direction="in"
@@ -281,10 +285,14 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
                   `patch-node__handle ${inletShapeClassForRole(inlet.role)}` +
                   (inlet.stale ? ' patch-node__handle--stale' : '')
                 }
-                style={{ backgroundColor: inletColors[inlet.name] ?? colorForRole(inlet.role) }}
+                data-tooltip={inlets.length > 1 ? inlet.name : undefined}
+                style={{
+                  top: inletTops[i],
+                  backgroundColor: inletColors[inlet.name] ?? colorForRole(inlet.role)
+                }}
               />
             </span>
-          )}
+          ))}
           {titleElement}
           <span className="patch-node__type" data-tooltip={rawType}>
             {subtitle}
