@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 93 primitives, 5 of them superseded and hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 94 primitives, 5 of them superseded and hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -101,13 +101,13 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-93 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+94 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
 history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (15:
 sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (6: mix2/crossfader/pan/width/stereo-mix2/stereo-crossfader), `filter` (8:
 lowpass-cheap/highpass-cheap/comb/string/svf/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
-the superseded shape/shape-2/cutoff/resonance/param), `util` (14: constant/unipolar-to-bipolar/bipolar-to-unipolar/
-glide/sample-hold/sample-delay/delay/long-delay/quantize/freq-shift/buffer/buffer-tap/grain/reverse-tap), `shape` (2: wavefolder/soft-clip), `math` (11: negate/one-minus/curve/add/subtract/multiply/scale/min/max/
+the superseded shape/shape-2/cutoff/resonance/param), `util` (15: constant/unipolar-to-bipolar/bipolar-to-unipolar/
+glide/slew/sample-hold/sample-delay/delay/long-delay/quantize/freq-shift/buffer/buffer-tap/grain/reverse-tap), `shape` (2: wavefolder/soft-clip), `math` (11: negate/one-minus/curve/add/subtract/multiply/scale/min/max/
 clamp/abs), `logic` (10: greater-than/less-than/equal/and/or/xor/schmitt/edge/chance/round-robin), `mux` (3: mux2/
 mux4/demux2).
 
@@ -244,6 +244,9 @@ matching when adding a new one):
   the loop: `freq-shift` built its wired SHIFT into a loop-local `sh_` and stopped compiling once a
   per-block shift was hoisted (caught by the code-size run; `logue-hoisting.spec.ts` now wires
   every primitive's inlets from constants and checks no pre-loop code names a loop-local).
+- A primitive's members must not be named `y_<suffix>`: that's every instance's per-sample output
+  local, which shadows the member inside the loop (`util/slew`'s first version stepped an
+  uninitialised local; `logue-memberNames.spec.ts` pins it).
 - `helpers` is `HelperBlock | HelperBlock[]` specifically for a primitive needing two genuinely
   independent helpers with no real dependency between them — `dependsOn` only ever resolves
   against the small, fixed `HELPER_REGISTRY` (the `polyblep` family); don't assume it works as
@@ -958,6 +961,16 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   modulation): unwired `b` compares against the dial, `THRESHOLD=0` with `b` wired compares two
   signals. `equal` needs `TOLERANCE` (exact float equality is unreachable). `schmitt` adds
   `HYSTERESIS` for a dead band.
+- **`util/slew`** (2026-10-04): a slew limiter with separate `RISE`/`FALL` (the envelopes'
+  `8000*t^3` ms curve, `MSEG_STAGE_MS`) and `MODE` Linear (fixed speed: the time is for a change
+  of 1, so a bigger jump takes longer -- glide's character) / Exponential (a one-pole per
+  direction: every jump lands within 1 % of its target at the set time, `ln 100` like `adsr`).
+  Additive `rise`/`fall` (depth 50); block constants unwired, re-read every 16 samples when moving
+  (`slew_rate_ctl`). 0 is a true pass-through (the step lands exactly on the target; a saw through
+  RISE/FALL 0 is bit-exact). Kept beside `glide` (user's call): glide is the one-knob portamento,
+  and growing it would have changed old patches. Harness (`scripts/runSlewHarness.ts`, xd,
+  ASan/UBSan): every jump time within a sample or two of the curve in both modes, wired paths
+  clean. xd emulator 25 base. No hardware pass yet.
 - **`math/scale`** and **`util/glide`** overlap existing nodes on purpose: `scale` saves a
   VCA+negate pair for control signals; `glide` is a linear slew limiter, a different character
   from `lowpass-cheap`'s exponential lag. `scale`'s factor is `FACTOR/100 * RANGE` (RANGE a select

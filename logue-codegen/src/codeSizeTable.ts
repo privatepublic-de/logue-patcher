@@ -547,6 +547,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 124, extra: 72, helpers: [] },
       snapshotHash: '006a80d815345ce6'
     },
+    'logue/util/slew': {
+      first: 352,
+      extra: 232,
+      helpers: [],
+      unwired: { first: 264, extra: 128, helpers: [] },
+      snapshotHash: 'e3861ecccecfc253'
+    },
     'logue/util/sample-delay': {
       first: 64,
       extra: 16,
@@ -1134,6 +1141,13 @@ export const CODE_SIZE_TABLE: Record<
       helpers: [],
       unwired: { first: 148, extra: 52, helpers: [] },
       snapshotHash: '006a80d815345ce6'
+    },
+    'logue/util/slew': {
+      first: 428,
+      extra: 252,
+      helpers: [],
+      unwired: { first: 300, extra: 104, helpers: [] },
+      snapshotHash: 'e3861ecccecfc253'
     },
     'logue/util/sample-delay': {
       first: 84,
@@ -1779,6 +1793,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 132, extra: 155, helpers: [] },
       snapshotHash: '7506a1ae4eb21ddf'
     },
+    'logue/util/slew': {
+      first: 344,
+      extra: 377,
+      helpers: [],
+      unwired: { first: 256, extra: 281, helpers: [] },
+      snapshotHash: 'bbf766ecc1632195'
+    },
     'logue/util/sample-delay': {
       first: 76,
       extra: 0,
@@ -2366,6 +2387,13 @@ export const CODE_SIZE_TABLE: Record<
       helpers: [],
       unwired: { first: 148, extra: 150, helpers: [] },
       snapshotHash: '7506a1ae4eb21ddf'
+    },
+    'logue/util/slew': {
+      first: 444,
+      extra: 407,
+      helpers: [],
+      unwired: { first: 312, extra: 279, helpers: [] },
+      snapshotHash: 'bbf766ecc1632195'
     },
     'logue/util/sample-delay': {
       first: 88,

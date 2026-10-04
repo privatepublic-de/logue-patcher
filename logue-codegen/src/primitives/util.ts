@@ -7,9 +7,12 @@ import {
   FREEZE_WIDGET,
   FREQ_SHIFT_HZ,
   LONG_DELAY_RANGE_NAME,
+  MSEG_STAGE_MS,
   NEEDS_TEMPO_SYNC_GATE,
   PERCENT,
   QUANTIZE_SCALE,
+  SLEW_MODE_NAME,
+  SLEW_MODE_NAMES,
   ROOT_NOTE,
   TEMPO_DIVISION_NAME,
   TEMPO_SYNC_WIDGET
@@ -244,6 +247,175 @@ export const glidePrimitive: LoguePrimitive = {
       max: 100,
       default: 0,
       setStatement: (suffix, valueExpr) => `glidePercent_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/** Exponential MODE: the rate that lands within 1 % of a jump at the set time (ln 100, `env/adsr`'s
+ *  ADSR_EXP_K). */
+const SLEW_EXP_K = '4.6052f'
+
+const SLEW_RATE_HELPER: HelperBlock = {
+  key: 'slew_rate',
+  code: `  // A RISE/FALL percent as a per-sample rate on the envelopes' curve (8000*t^3 ms: 1 s at 50,
+  // 8 s at 100), times k. Under one sample it's "instant": a rate no step can reach.
+  static float slew_rate(float percent, float k)
+  {
+    float t = percent * 0.01f;
+    float samples = t * t * t * 384000.f;
+    if (samples < 1.f) return 1.0e30f;
+    return k / samples;
+  }
+`
+}
+
+/** How often a wired rise/fall time is re-read: as `env_rate_ctl`. */
+const SLEW_RATE_CONTROL_PERIOD = 16
+
+const SLEW_RATE_CTL_HELPER: HelperBlock = {
+  key: 'slew_rate_ctl',
+  code: `  // A wired rise/fall time at control rate: every ${SLEW_RATE_CONTROL_PERIOD}th call clamps the percent and converts it;
+  // in between the cached rate is returned.
+  static inline __attribute__((always_inline)) float slew_rate_ctl(uint32_t *n, float *rate, float percent, float k)
+  {
+    if ((*n)++ & ${SLEW_RATE_CONTROL_PERIOD - 1}u) return *rate;
+    percent = percent < 0.f ? 0.f : (percent > 100.f ? 100.f : percent);
+    *rate = slew_rate(percent, k);
+    return *rate;
+  }
+`
+}
+
+const SLEW_LIMIT_STEP_HELPER: HelperBlock = {
+  key: 'slew_limit_step',
+  code: `  // Moves *y toward target: by at most rise/fall per sample (linear), or by that share of the
+  // way (exponential, capped at all of it). Lands exactly on the target, so a step within reach
+  // (or a time of 0) passes the input through unchanged.
+  static float slew_limit_step(float *y, float target, float rise, float fall, float expMode)
+  {
+    float d = target - *y;
+    if (expMode >= 0.5f)
+    {
+      float c = d > 0.f ? rise : fall;
+      *y = c >= 1.f ? target : *y + d * c;
+    }
+    else if (d > rise) *y += rise;
+    else if (d < -fall) *y -= fall;
+    else *y = target;
+    return *y;
+  }
+`
+}
+
+const SLEW_TIME_INLET_DEPTH = 50
+
+/** One direction's rate: per block while its inlet is unwired, at control rate while it moves. */
+function slewRateValue(
+  suffix: string,
+  inlets: Record<string, string | undefined>,
+  stage: 'rise' | 'fall'
+): BlockValue {
+  const wired = inlets[stage]
+  const k = `(mode_${suffix} >= 0.5f ? ${SLEW_EXP_K} : 1.f)`
+  const expr =
+    wired !== undefined && !isBlockInvariant(wired)
+      ? `slew_rate_ctl(&${stage}Ctl_${suffix}, &${stage}Rate_${suffix}, ${stage}Percent_${suffix} + (${wired}) * ${SLEW_TIME_INLET_DEPTH}.f, ${k})`
+      : wired !== undefined
+        ? `slew_rate(${additiveInletExpr(`${stage}Percent`, suffix, wired, SLEW_TIME_INLET_DEPTH)}, ${k})`
+        : `slew_rate(${stage}Percent_${suffix}, ${k})`
+  const blk = stage === 'rise' ? 'blkSlewRise' : 'blkSlewFall'
+  return blockValue(blk, suffix, expr, [wired])
+}
+
+function slewBlockValues(
+  suffix: string,
+  inlets: Record<string, string | undefined>
+): Record<'rise' | 'fall', BlockValue> {
+  return {
+    rise: slewRateValue(suffix, inlets, 'rise'),
+    fall: slewRateValue(suffix, inlets, 'fall')
+  }
+}
+
+/**
+ * A slew limiter with separate RISE and FALL times, where `glide` has one linear rate for both.
+ * MODE Linear moves at a fixed speed: RISE/FALL is the time a change of 1 takes (all of 0..1,
+ * half of -1..1), so a bigger jump takes longer -- glide's character. MODE Exponential is a
+ * one-pole whose rate depends on the direction: every jump lands within 1 % of its target at the
+ * set time, whatever its size. With a fast RISE and a slow FALL on a rectified signal it's an
+ * envelope follower; on a stepped pitch, an up-only or down-only portamento.
+ *
+ * Times use the envelopes' cubic curve (`mseg_rate_from_percent`/`adsr_rate`, one display unit),
+ * and 0 is a true pass-through: the step lands exactly on its target. `rise`/`fall` are additive
+ * (depth 50); unwired they're block constants, moving they're re-read every 16 samples. The
+ * output member isn't `y_`: that's the name codegen gives every instance's per-sample output.
+ */
+export const slewPrimitive: LoguePrimitive = {
+  id: 'logue/util/slew',
+  outletPolarity: 'inherit',
+  // slewY_ + risePercent_ + fallPercent_ + mode_ + riseCtl_/riseRate_ + fallCtl_/fallRate_, 8 x 4 B
+  stateBytesPerInstance: 32,
+  description:
+    'A slew limiter with separate rise and fall times. Linear moves at a fixed speed (the time is for a change of 1, so bigger jumps take longer); Exponential gives every jump the same time.',
+  searchTerms: ['lag', 'smooth', 'portamento', 'rise', 'fall'],
+  inlets: [
+    { name: 'in', role: 'audio' },
+    { name: 'rise', role: 'control' },
+    { name: 'fall', role: 'control' }
+  ],
+  memberDecls: (suffix) =>
+    `  float slewY_${suffix};
+  float risePercent_${suffix};
+  float fallPercent_${suffix};
+  float mode_${suffix};
+` +
+    `  uint32_t riseCtl_${suffix};
+  float riseRate_${suffix};
+  uint32_t fallCtl_${suffix};
+  float fallRate_${suffix};
+`,
+  initStatement: (suffix) =>
+    `    slewY_${suffix} = 0.f;
+    riseCtl_${suffix} = 0u;
+    riseRate_${suffix} = 0.f;
+    fallCtl_${suffix} = 0u;
+    fallRate_${suffix} = 0.f;
+`,
+  blockConstants: (suffix, inlets) => blockDecls(slewBlockValues(suffix, inlets)),
+  renderExpr: (suffix, inlets) => {
+    const v = slewBlockValues(suffix, inlets)
+    return `slew_limit_step(&slewY_${suffix}, ${inlets.in ?? '0.f'}, ${v.rise.ref}, ${v.fall.ref}, mode_${suffix})`
+  },
+  advanceStatement: () => '',
+  helpers: [CLAMPF_HELPER, SLEW_RATE_HELPER, SLEW_RATE_CTL_HELPER, SLEW_LIMIT_STEP_HELPER],
+  params: [
+    {
+      name: 'RISE',
+      unit: MSEG_STAGE_MS,
+      modulatedBy: { inlet: 'rise', shape: 'additive' },
+      min: 0,
+      max: 100,
+      default: 30,
+      setStatement: (suffix, valueExpr) => `risePercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'FALL',
+      unit: MSEG_STAGE_MS,
+      modulatedBy: { inlet: 'fall', shape: 'additive' },
+      min: 0,
+      max: 100,
+      default: 30,
+      setStatement: (suffix, valueExpr) => `fallPercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'MODE',
+      unit: SLEW_MODE_NAME,
+      select: { count: 2, scale: 1, label: 'Mode', names: SLEW_MODE_NAMES },
+      min: 0,
+      max: 1,
+      default: 0,
+      step: 1,
+      setStatement: (suffix, valueExpr) => `mode_${suffix} = ${valueExpr};`
     }
   ]
 }

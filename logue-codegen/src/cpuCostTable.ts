@@ -367,6 +367,11 @@ export const CPU_COST_TABLE: Record<
     worst: 9,
     snapshotHash: 'a29dc3d4ed9dc21e'
   },
+  'logue/util/slew': {
+    variants: { base: 25, control: 19 },
+    worst: 25,
+    snapshotHash: 'e3861ecccecfc253'
+  },
   'logue/util/unipolar-to-bipolar': {
     variants: { base: 0 },
     worst: 0,

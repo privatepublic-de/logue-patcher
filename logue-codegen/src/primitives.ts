@@ -126,6 +126,7 @@ export {
   bipolarToUnipolarPrimitive,
   sampleHoldPrimitive,
   glidePrimitive,
+  slewPrimitive,
   sampleDelayPrimitive,
   delayPrimitive,
   quantizePrimitive,

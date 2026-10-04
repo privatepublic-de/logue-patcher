@@ -1286,6 +1286,21 @@ export const FX_CPU_COST_TABLE: Record<
     },
     snapshotHash: 'a29dc3d4ed9dc21e'
   },
+  'logue/util/slew': {
+    variants: {
+      base: {
+        first: { cycles: 23, sdram: 0 },
+        shared: { cycles: 19, sdram: 0 },
+        extra: { cycles: 42, sdram: 0 }
+      },
+      control: {
+        first: { cycles: 54, sdram: 0 },
+        shared: { cycles: 19, sdram: 0 },
+        extra: { cycles: 73, sdram: 0 }
+      }
+    },
+    snapshotHash: 'e3861ecccecfc253'
+  },
   'logue/util/unipolar-to-bipolar': {
     variants: {
       base: {
