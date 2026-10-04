@@ -382,7 +382,7 @@ function BusField({
         <p className="inspector__hint">
           {here.stereo ? 'Stereo bus' : 'Bus'} &ldquo;{bus || '(no name)'}&rdquo; here:{' '}
           {count(here.sends.length, 'send')}, {count(here.receives.length, 'receive')}
-          {here.mixed ? " -- mixes mono and stereo nodes, which won't build" : ''}
+          {here.mixed ? " -- a mono receive on it won't build" : ''}
         </p>
       )}
     </>

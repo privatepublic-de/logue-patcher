@@ -136,18 +136,29 @@ describe('buses', () => {
     expect(estimateOscStateCost(d, 'minilogue-xd', defs).status).toBe('ok')
   })
 
-  it('rejects mono and stereo nodes on one bus', () => {
+  it('a mono send on a stereo bus feeds both sides; a mono receive there is an error', () => {
     const d = doc(
       [
         obj('logue/osc/saw', 'a'),
         send('s', 'mix'),
         obj(LOGUE_BUS_RECEIVE_STEREO_TYPE, 'rx', { bus: 'mix' }),
+        obj('logue/mix/mix2', 'lr'),
         obj(LOGUE_AUDIO_OUT_TYPE, 'out')
       ],
-      [wire('a', 'out', 's', 'in'), wire('rx', 'l', 'out', 'in')]
+      [
+        wire('a', 'out', 's', 'in'),
+        wire('rx', 'l', 'lr', 'in1'),
+        wire('rx', 'r', 'lr', 'in2'),
+        wire('lr', 'out', 'out', 'in')
+      ]
     )
+    const cpp = xd(d)
+    expect(cpp).toContain('float y_s_l = ((y_a) * gain_s);')
+    expect(cpp).toContain('float y_s_r = ((y_a) * gain_s);')
+    expect(cpp).toContain('float y_rx_r = y_s_r;')
+    d.nodes.push(receive('mono_rx', 'mix'))
     expect(() => xd(d)).toThrow(BusResolutionError)
-    expect(() => xd(d)).toThrow(/Bus "mix" has both mono and stereo nodes/)
+    expect(() => xd(d)).toThrow(/Bus "mix" is stereo, but "mono_rx" is a mono receive/)
   })
 
   it('names the bus when a loop closes through one', () => {
@@ -260,7 +271,7 @@ describe('buses', () => {
     expect(cpp).toContain('float y_rx = (y_s_c);')
   })
 
-  it('a stereo mixer sends both sides, a mono mixer adds to both; a mono send node is an error', () => {
+  it('a stereo mixer sends both sides; a mono mixer and a mono send node add to both', () => {
     const stereo = doc(
       [
         obj('logue/osc/saw', 'a'),
@@ -284,9 +295,12 @@ describe('buses', () => {
     const both = xd(stereo)
     expect(both).toContain('float y_xf__bus_l = (y_p__bus_l) + ((y_xf) * gain_xf__bus);')
     expect(both).toContain('float y_xf__bus_r = (y_p__bus_r) + ((y_xf) * gain_xf__bus);')
-    // A mono send NODE there is still an error.
-    stereo.nodes.push(send('mono_send', 'out'))
-    expect(() => xd(stereo)).toThrow(/Bus "out" has both mono and stereo nodes/)
+    // So does a mono send node.
+    stereo.nodes.push(obj('logue/osc/square', 'sq'), send('mono_send', 'out'))
+    stereo.nets.push(wire('sq', 'out', 'mono_send', 'in'))
+    const withSend = xd(stereo)
+    expect(withSend).toContain('float y_mono_send_r = ((y_sq) * gain_mono_send);')
+    expect(withSend).toContain('float y_p__bus_r = (y_mono_send_r) + ((y_p_r) * gain_p__bus);')
   })
 
   it('a bus of mono mixers alone stays mono', () => {

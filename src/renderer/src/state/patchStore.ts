@@ -27,11 +27,11 @@ import { isEffectModule } from '@logue-codegen/unitKinds'
 import { normalizeRenamedFields } from '@logue-codegen/renamedFields'
 import { isSubpatchInstanceType } from '@logue-codegen/subpatches'
 import {
+  busKindOfType,
   busOutletsOf,
   busRoleOf,
   defaultBusName,
-  isBusNodeType,
-  isStereoBusNodeType
+  isBusNodeType
 } from '@logue-codegen/buses'
 import { deviceLayout, layoutModuleOf, slotsForOrder } from './exposedLogueParams'
 import { resolveNodePrimitive } from './subpatchLibraryStore'
@@ -880,7 +880,7 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
               ...rest,
               type: newType,
               params,
-              bus: bus ?? defaultBusName(doc, isStereoBusNodeType(newType))
+              bus: bus ?? defaultBusName(doc, busKindOfType(newType))
             }
           }
           return busOutletsOf(newType) && bus !== undefined && busRoleOf(n) === 'send'
@@ -1032,7 +1032,7 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
             : []
         const newNode: ObjNode = { kind: 'obj', type, name, x, y, params }
         if (isBusNodeType(type)) {
-          newNode.bus = presetBus ?? defaultBusName(doc, isStereoBusNodeType(type))
+          newNode.bus = presetBus ?? defaultBusName(doc, busKindOfType(type))
         }
         return withNodes(doc, [...doc.nodes, newNode])
       }

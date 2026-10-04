@@ -1471,14 +1471,16 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   badge. `resolveBuses` first expands it into a unity send `<mixer>__bus` fed from those outlets
   (`withDirectSendsExpanded`), so the result is a hand-placed send's code and the outlets stay
   wireable; everything else (`busesIn`, warnings, colours, layout, presets) counts it as a send
-  via `busRoleOf`/`busKindOf`. A MONO mixer fits either kind of bus (`busKindOf` 'either', user's
-  call): on a bus with any stereo node its one outlet feeds both sides of a stereo send, at unity
-  each (+3 dB against a centred `pan`); a bus of mono mixers alone stays mono. Send/receive nodes
-  keep their kind, so a mono send node on a stereo bus is still `mixed`. Replace with... keeps a sender's bus on a mixer, not a
+  via `busRoleOf`/`busKindOf`. Anything that SENDS mono -- a mono mixer or a mono `send` node --
+  fits either kind of bus (`busKindOf` 'either', user's calls 2026-10-04/05): on a bus with any
+  stereo node it feeds both sides at unity (+3 dB against a centred `pan`; a send node is retyped
+  to a stereo send with its input wired to `l` and `r`, `withMonoSendsWidened`); a bus of mono
+  senders alone stays mono. Only a mono RECEIVE on a stereo bus is an error (`mixed`; the badge
+  sits on that receive). Replace with... keeps a sender's bus on a mixer, not a
   receive's (a reader would turn into a writer). A `bus` on any other type is ignored.
 - **Global scope**: one namespace per unit, so a send inside a subpatch reaches the root's bus
-  (two instances of a definition holding a send+receive pair share it). Mono and stereo nodes on
-  one bus are a `BusResolutionError`. A loop through a bus is an ordinary cycle; the error gains
+  (two instances of a definition holding a send+receive pair share it). A mono receive on a
+  stereo bus is a `BusResolutionError`. A loop through a bus is an ordinary cycle; the error gains
   `BUS_LOOP_HINT` (a `sample-delay` in the loop fixes it, as for a wire).
 - **Canvas**: a bus node is titled by its bus (`→ verb` / `verb →`) and double-clicking the title
   edits the BUS (`setNodeBus`, one undo step; the node's own name is in the Inspector, beside a
@@ -1489,7 +1491,7 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   bus, to anything else drops it; paste/duplicate keep it. A mono receive is compact. A receive's
   wire colour merges its sends' inputs (this document only). Badges (`busProblems`, through
   `busProblemsFor` on the flattened document so a send inside a subpatch counts): a receive with
-  no send, a send nobody receives (root patches only), mono/stereo on one bus (everywhere).
+  no send, a send nobody receives (root patches only), a mono receive on a stereo bus (everywhere).
   Arrange by signal flow adds a virtual edge per send -> receive pair.
 - Verified (2026-10-04): unit tests, the built app (placing, bus editing, badges, colours,
   arrange, a send's GAIN as a Param Matrix menu param), and real builds of a three-send

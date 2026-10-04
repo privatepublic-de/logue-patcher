@@ -128,7 +128,7 @@ export function createWirePolarityResolver(
         // A send node carries what's wired into it; a mixer sending directly, its own outlet
         // (a mono one feeds both sides of a stereo bus from its one outlet).
         isBusNodeType(send.type)
-          ? inletBucket(send.name ?? '', side ?? 'in')
+          ? inletBucket(send.name ?? '', isStereoBusNodeType(send.type) ? (side ?? 'in') : 'in')
           : resolve(send.name ?? '', mixerOutlet(busOutletsOf(send.type)!, side))
       )
       .filter((bucket): bucket is ResolvedWireBucket => bucket !== undefined)

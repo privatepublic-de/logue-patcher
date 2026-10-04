@@ -96,13 +96,22 @@ export function busRoleOf(node: PatchDocument['nodes'][number]): 'send' | 'recei
 }
 
 /**
- * What a node on a bus needs the bus to be. A mono mixer sending directly fits either: on a bus
- * with a stereo node it adds its output to both sides (user's call, 2026-10-04); send and receive
- * nodes keep their own kind, so a mono send onto a stereo bus is still an error.
+ * What a node on a bus needs the bus to be. Anything that SENDS mono -- a mono send node, a mono
+ * mixer sending directly -- fits either: on a bus with a stereo node it adds its signal to both
+ * sides (user's call, 2026-10-04/05). A mono receive can't read a stereo bus (it would lose a
+ * side), so that pair is the one export error left.
  */
-export function busKindOf(node: ObjNode): 'mono' | 'stereo' | 'either' {
-  if (isBusNodeType(node.type)) return isStereoBusNodeType(node.type) ? 'stereo' : 'mono'
-  return busOutletsOf(node.type)?.length === 2 ? 'stereo' : 'either'
+export function busKindOf(node: ObjNode): BusKind {
+  return busKindOfType(node.type)
+}
+
+export type BusKind = 'mono' | 'stereo' | 'either'
+
+/** `busKindOf` by type, for a node about to be placed. */
+export function busKindOfType(type: string): BusKind {
+  if (type === LOGUE_BUS_SEND_TYPE) return 'either'
+  if (isBusNodeType(type)) return isStereoBusNodeType(type) ? 'stereo' : 'mono'
+  return busOutletsOf(type)?.length === 2 ? 'stereo' : 'either'
 }
 
 /** A bus node's bus name; an unnamed one is the bus `''`. */
@@ -205,10 +214,11 @@ export function resolveBuses(input: PatchDocument): PatchDocument {
   for (const [bus, nodes] of byBus) {
     const stereo = nodes.filter((n) => isStereoBusNodeType(n.type))
     if (stereo.length > 0 && stereo.length < nodes.length) {
+      // Mono sends were widened already, so what's left mono is a receive.
       const mono = nodes.filter((n) => !isStereoBusNodeType(n.type))
       throw new BusResolutionError(
-        `Bus "${bus}" has both mono and stereo nodes (mono: ${mono.map((n) => `"${n.name}"`).join(', ')}; ` +
-          `stereo: ${stereo.map((n) => `"${n.name}"`).join(', ')}). Use one kind per bus.`
+        `Bus "${bus}" is stereo, but ${mono.map((n) => `"${n.name}"`).join(', ')} ` +
+          `${mono.length === 1 ? 'is a mono receive' : 'are mono receives'}: use a stereo receive (or a mono bus).`
       )
     }
     const sends = nodes
@@ -249,14 +259,15 @@ export function resolveBuses(input: PatchDocument): PatchDocument {
  * after it (`<mixer>__bus`), so the chain below sorts it next to its mixer. The mixer keeps its
  * outlets for wires. Bit-identical to placing that send by hand.
  */
-function withDirectSendsExpanded(doc: PatchDocument): PatchDocument {
-  const direct = doc.nodes.filter(sendsDirectToBus)
-  if (direct.length === 0) return doc
+function withDirectSendsExpanded(input: PatchDocument): PatchDocument {
   const stereoBuses = new Set(
-    busesIn(doc.nodes)
+    busesIn(input.nodes)
       .filter((b) => b.stereo)
       .map((b) => b.name)
   )
+  const doc = withMonoSendsWidened(input, stereoBuses)
+  const direct = doc.nodes.filter(sendsDirectToBus)
+  if (direct.length === 0) return doc
   const taken = new Set(doc.nodes.map((n) => n.name))
   const added: ObjNode[] = []
   const nets: Net[] = [...doc.nets]
@@ -300,6 +311,42 @@ function withDirectSendsExpanded(doc: PatchDocument): PatchDocument {
   }
 }
 
+/**
+ * A mono send node on a stereo bus becomes a stereo send with its input wired to both sides --
+ * the same code as a stereo send fed the same signal twice.
+ */
+function withMonoSendsWidened(doc: PatchDocument, stereoBuses: Set<string>): PatchDocument {
+  const widened = new Set(
+    doc.nodes
+      .filter(
+        (n) => n.kind === 'obj' && n.type === LOGUE_BUS_SEND_TYPE && stereoBuses.has(busNameOf(n))
+      )
+      .map((n) => n.name)
+  )
+  if (widened.size === 0) return doc
+  return {
+    ...doc,
+    nodes: doc.nodes.map((n) =>
+      widened.has(n.name) ? { ...n, type: LOGUE_BUS_SEND_STEREO_TYPE } : n
+    ),
+    nets: doc.nets.map((net) =>
+      net.dests.some((d) => widened.has(d.obj) && d.inlet === 'in')
+        ? {
+            ...net,
+            dests: net.dests.flatMap((d) =>
+              widened.has(d.obj) && d.inlet === 'in'
+                ? [
+                    { ...d, inlet: 'l' },
+                    { ...d, inlet: 'r' }
+                  ]
+                : [d]
+            )
+          }
+        : net
+    )
+  }
+}
+
 /** Appended to a feedback-loop error in a document with buses: a bus closes a loop like a wire. */
 export const BUS_LOOP_HINT =
   ' A bus counts as a wire here: a send fed (through any path) from a receive of its own bus closes a loop too.'
@@ -307,8 +354,8 @@ export const BUS_LOOP_HINT =
 /** What one bus in a document holds -- for the canvas (insert presets, warnings, colours). */
 export interface BusSummary {
   name: string
-  /** Set when a stereo node is on it (a mono mixer then sends to both sides); `mixed` when a
-   *  mono send/receive node is too (an export error). */
+  /** Set when a stereo node is on it (mono sends then feed both sides); `mixed` when a mono
+   *  receive is too (an export error). */
   stereo: boolean
   mixed: boolean
   sends: ObjNode[]
@@ -339,11 +386,13 @@ export function busesIn(nodes: readonly PatchDocument['nodes'][number][]): BusSu
   return [...byName.values()]
 }
 
-/** A new bus node's name: the last bus of its kind in the document (the one being worked on),
- *  else the first free `bus<N>`. */
-export function defaultBusName(doc: PatchDocument, stereo: boolean): string {
+/** A new bus node's name: the last bus it fits in the document (the one being worked on), else
+ *  the first free `bus<N>`. */
+export function defaultBusName(doc: PatchDocument, kind: BusKind): string {
   const buses = busesIn(doc.nodes)
-  const sameKind = buses.filter((b) => !b.mixed && b.stereo === stereo)
+  const sameKind = buses.filter(
+    (b) => !b.mixed && (kind === 'either' || b.stereo === (kind === 'stereo'))
+  )
   if (sameKind.length > 0) return sameKind[sameKind.length - 1].name
   const taken = new Set(buses.map((b) => b.name))
   let n = 1
@@ -370,7 +419,13 @@ export function busProblems(
     const shown = name || '(no name)'
     const bus = buses.get(name)
     if (bus?.mixed) {
-      problems.set(node.name, `Bus "${shown}" has both mono and stereo nodes, which won't build.`)
+      // Only a mono receive is wrong there; the rest of the bus is fine.
+      if (busKindOf(node) === 'mono') {
+        problems.set(
+          node.name,
+          `Bus "${shown}" is stereo: this mono receive can't read it (use a stereo receive).`
+        )
+      }
     } else if (definition || !bus) {
       continue
     } else if (role === 'receive' && bus.sends.length === 0) {

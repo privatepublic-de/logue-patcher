@@ -187,16 +187,19 @@ describe('bus nodes on the canvas', () => {
     expect(busProblems(def, def.nodes).size).toBe(0)
   })
 
-  it('flags mono and stereo nodes on one bus, also inside a definition', () => {
+  it('flags a mono receive on a stereo bus, also inside a definition; a mono send is fine', () => {
     const d = doc(
       [
         obj(LOGUE_BUS_SEND_TYPE, 'a', { bus: 'x' }),
-        obj(LOGUE_BUS_SEND_STEREO_TYPE, 'b', { bus: 'x' })
+        obj(LOGUE_BUS_SEND_STEREO_TYPE, 'b', { bus: 'x' }),
+        obj(LOGUE_BUS_RECEIVE_TYPE, 'c', { bus: 'x' })
       ],
       [],
       true
     )
-    expect([...busProblems(d, d.nodes).keys()]).toEqual(['a', 'b'])
+    expect([...busProblems(d, d.nodes).entries()]).toEqual([
+      ['c', 'Bus "x" is stereo: this mono receive can\'t read it (use a stereo receive).']
+    ])
   })
 
   it('arrange by signal flow puts the sends upstream of their receive', () => {
@@ -219,10 +222,12 @@ describe('bus nodes on the canvas', () => {
     expect(x('rx')).toBeLessThan(x('out'))
   })
 
-  it('defaultBusName skips a name the other kind already uses', () => {
-    const d = doc([obj(LOGUE_BUS_SEND_TYPE, 's', { bus: 'bus1' })])
-    expect(defaultBusName(d, true)).toBe('bus2')
-    expect(defaultBusName(d, false)).toBe('bus1')
+  it('defaultBusName takes the last bus a node fits, else a free name', () => {
+    const d = doc([obj(LOGUE_BUS_RECEIVE_TYPE, 's', { bus: 'bus1' })])
+    expect(defaultBusName(d, 'stereo')).toBe('bus2')
+    expect(defaultBusName(d, 'mono')).toBe('bus1')
+    d.nodes.push(obj(LOGUE_BUS_SEND_STEREO_TYPE, 't', { bus: 'out' }))
+    expect(defaultBusName(d, 'either')).toBe('out')
   })
 })
 
@@ -281,5 +286,20 @@ describe('mixers sending straight to a bus', () => {
     const resolve = createWirePolarityResolver(d, new Map(d.nodes.map((n) => [n.name!, n.type])))
     expect(resolve('rx', 'l')).toBe('bipolar')
     expect(resolve('rx', 'r')).toBe('bipolar')
+  })
+
+  it('a mono send node on a stereo bus colours both sides of the receive', () => {
+    const d = doc(
+      [
+        obj(LOGUE_BUS_RECEIVE_STEREO_TYPE, 'rx', { bus: 'out' }),
+        obj(LOGUE_BUS_SEND_TYPE, 's', { bus: 'out' }),
+        obj('logue/env/ad', 'env')
+      ],
+      [wire('env', 'out', 's', 'in')]
+    )
+    const resolve = createWirePolarityResolver(d, new Map(d.nodes.map((n) => [n.name!, n.type])))
+    expect(resolve('rx', 'l')).toBe('unipolar')
+    expect(resolve('rx', 'r')).toBe('unipolar')
+    expect(busProblems(d, d.nodes).size).toBe(0)
   })
 })
