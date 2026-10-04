@@ -185,7 +185,10 @@ export function resolveBuses(doc: PatchDocument): PatchDocument {
     }
     const sends = nodes
       .filter((n) => busNodeRole(n.type) === 'send')
-      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+      // By code unit, not localeCompare: the emitted order mustn't depend on the machine's locale.
+      .sort((a, b) =>
+        (a.name ?? '') < (b.name ?? '') ? -1 : (a.name ?? '') > (b.name ?? '') ? 1 : 0
+      )
     const receives = nodes.filter((n) => busNodeRole(n.type) === 'receive')
     const chain = (from: ObjNode, to: ObjNode): void => {
       const outlets = BUS_NODE_KINDS[from.type].chainOutlets

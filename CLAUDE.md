@@ -1480,8 +1480,13 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   `busProblemsFor` on the flattened document so a send inside a subpatch counts): a receive with
   no send, a send nobody receives (root patches only), mono/stereo on one bus (everywhere).
   Arrange by signal flow adds a virtual edge per send -> receive pair.
-- Harness/hardware: none needed beyond the tables -- the generated code is the `thru` mixer
-  arithmetic; checked in the built app (2026-10-04). No example uses a bus yet.
+- Verified (2026-10-04): unit tests, the built app (placing, bus editing, badges, colours,
+  arrange, a send's GAIN as a Param Matrix menu param), and real builds of a three-send
+  oscillator on both platforms (`scripts/stageBuses.ts`: `lp-xd-buses`/`lp-nts1-buses`, one send
+  GAIN on Shape, one a menu param; only leaf calls below the xd's `process`). No harness render,
+  no hardware pass, no effect-unit build yet; no example uses a bus.
+- A node without outlets (a send, a subpatch's outlet port) answers to no outlet name
+  (`resolveDeclaredOutletName`), so Replace with... into a send leaves the old output wire stale.
 
 ## Build & Export pipeline
 

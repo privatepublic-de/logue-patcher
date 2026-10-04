@@ -192,7 +192,9 @@ export function resolveDeclaredOutletName(
   rawOutlet: string | undefined
 ): string | undefined {
   const declaredOutlets = primitive.outlets ?? [{ name: 'out' }]
-  if (declaredOutlets.length <= 1) return declaredOutlets[0]?.name ?? 'out'
+  // A node that only takes input (a bus send, a subpatch's outlet port) answers to no name.
+  if (declaredOutlets.length === 0) return undefined
+  if (declaredOutlets.length === 1) return declaredOutlets[0].name
   const name = rawOutlet ?? declaredOutlets[0].name
   if (name === 'out' && !declaredOutlets.some((o) => o.name === 'out')) {
     return declaredOutlets[0].name

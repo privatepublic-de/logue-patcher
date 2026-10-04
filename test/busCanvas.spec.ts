@@ -91,6 +91,25 @@ describe('placing and editing bus nodes', () => {
     expect(d.nodes.some((x) => x.kind === 'obj' && 'bus' in x)).toBe(false)
   })
 
+  it('Replace with... onto a send keeps its input and leaves its old output wire stale', () => {
+    store.setState({
+      rootDoc: doc(
+        [obj('logue/osc/saw', 'saw'), obj('logue/gain/vca', 'v'), obj(LOGUE_AUDIO_OUT_TYPE, 'out')],
+        [wire('saw', 'out', 'v', 'in'), wire('v', 'out', 'out', 'in')]
+      ),
+      past: [],
+      future: []
+    })
+    store.getState().replaceNode('v', LOGUE_BUS_SEND_TYPE)
+    const d = store.getState().rootDoc!
+    const send = d.nodes.find((n) => n.kind === 'obj' && n.type === LOGUE_BUS_SEND_TYPE)!
+    expect((send as ObjNode).bus).toBe('bus1')
+    expect(d.nets).toHaveLength(2)
+    expect(resolvePorts(send as ObjNode, send.name!, d.nets).outlets).toEqual([
+      { name: 'out', stale: true }
+    ])
+  })
+
   it('paste keeps the bus (a second send to the same bus) and the file keeps it', () => {
     store.getState().insertSpecialObject(LOGUE_BUS_SEND_TYPE, 'send', 0, 0, undefined, 'verb')
     const text = serializeSelectionForClipboard(store.getState().rootDoc!, ['send'])

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { generateOldGenOscUnit } from '../logue-codegen/src/minilogue-xd/generateOscUnit'
 import { generateFxUnit } from '../logue-codegen/src/nts1mkii/generateFxUnit'
+import { generateOscUnit } from '../logue-codegen/src/nts1mkii/generateOscUnit'
 import { estimateOscStateCost } from '../logue-codegen/src/estimateOscStateCost'
 import { LOGUE_AUDIO_IN_TYPE, LOGUE_AUDIO_OUT_TYPE } from '../logue-codegen/src/oscInstances'
 import {
@@ -213,6 +214,24 @@ describe('buses', () => {
     const unit = generateFxUnit(d, { name: 'bus fx' }).fxH
     expect(unit).toMatch(/float y_wet_l = \(y_dry_l\) \+ \(\(y_p_l\) \* gain_wet\);/)
     expect(unit).toMatch(/float y_rx_r = y_wet_r;/)
+  })
+
+  it("a send's GAIN can be a menu param (xd) or follow a knob (NTS-1 mkII)", () => {
+    const d = threeSends()
+    const sa = d.nodes.find((n) => n.name === 's_a') as ObjNode
+    sa.params = [
+      {
+        name: 'GAIN',
+        value: '50',
+        logueParamIndex: { 'minilogue-xd': 0 },
+        logueKnob: { nts1mkii: 'shape' }
+      }
+    ]
+    const xdUnit = generateOldGenOscUnit(d, { name: 'bus test' })
+    expect(xdUnit.manifestJson).toMatch(/"GAIN"/)
+    expect(xdUnit.oscCpp).toMatch(/gain_s_a = /)
+    const nts1 = generateOscUnit(d, { name: 'bus test' })
+    expect(nts1.unitCc + nts1.oscH).toMatch(/gain_s_a = .*shape01_/)
   })
 
   it('the canvas resolves the placed bus types to stand-ins the registry never lists', () => {

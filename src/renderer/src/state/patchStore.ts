@@ -220,7 +220,8 @@ export interface PatchStoreState {
    * stereo/mono siblings' `l1`/`r1` <-> `in1` (`remapStereoMonoInlets`); any other unmatched one
    * stays as a dashed stale wire (`ports.ts`) rather than being guessed onto another port by role
    * or position -- visible, and removable from the Inspector. An outlet name the new primitive lacks is remapped to its first outlet --
-   * unambiguous for single-outlet primitives, a visible, reversible guess otherwise.
+   * unambiguous for single-outlet primitives, a visible, reversible guess otherwise; one with no
+   * outlets at all (a bus send) leaves the wire stale.
    *
    * No-op for a non-`obj` node, an unknown id or `newType`, the same type, or `logue/io/audio-out`
    * (its shape lives outside the registry and the graph needs exactly one).
@@ -828,7 +829,9 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
 
     const outlets = newPrimitive.outlets ?? [{ name: 'out' }]
     const newOutletNames = new Set(outlets.map((o) => o.name))
-    const firstOutletName = outlets[0].name
+    // None on a node that only takes input (a bus send, a subpatch's outlet port): its old
+    // outgoing wires stay, drawn stale and removable, rather than being guessed anywhere.
+    const firstOutletName = outlets[0]?.name
 
     // A saw that becomes a square shouldn't stay called "saw"; a name the user typed stays.
     const oldName = target.name
@@ -878,7 +881,10 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
         const nets = remapStereoMonoInlets(doc.nets, id, newInletNames).map((net) => ({
           ...net,
           sources: net.sources.map((s) =>
-            s.obj === id && s.outlet !== undefined && !newOutletNames.has(s.outlet)
+            s.obj === id &&
+            s.outlet !== undefined &&
+            !newOutletNames.has(s.outlet) &&
+            firstOutletName !== undefined
               ? { ...s, outlet: firstOutletName }
               : s
           )
