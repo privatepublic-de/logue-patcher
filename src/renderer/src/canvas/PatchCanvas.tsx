@@ -603,8 +603,8 @@ function PatchCanvasSession({
         insertComment(pos.x, pos.y)
         return
       }
-      const { type, shortId, params } = insertArgsFor(id)
-      insertSpecialObject(type, shortId, pos.x, pos.y, params)
+      const { type, shortId, params, bus } = insertArgsFor(id)
+      insertSpecialObject(type, shortId, pos.x, pos.y, params, bus)
     },
     [insertComment, insertSpecialObject]
   )

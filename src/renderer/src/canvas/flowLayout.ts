@@ -1,6 +1,7 @@
 import type { ObjNode, PatchDocument, PatchNode } from '@shared/domain/patch'
 import { LOGUE_AUDIO_IN_TYPE, LOGUE_AUDIO_OUT_TYPE } from '@logue-codegen/oscInstances'
 import { LOGUE_SUBPATCH_INLET_TYPE, LOGUE_SUBPATCH_OUTLET_TYPE } from '@logue-codegen/subpatches'
+import { busesIn } from '@logue-codegen/buses'
 import { nodeId } from '../state/nodeId'
 import { autoArrangeNodes, comparePosition, estimateNodeSize, type Size } from './autoArrange'
 import { resolvePorts } from './ports'
@@ -118,6 +119,19 @@ export function layoutByFlow(doc: PatchDocument, measuredSizes?: Map<string, Siz
           to: to.id,
           inlet: Math.max(0, to.inlets.indexOf(dest.inlet ?? to.inlets[0]))
         })
+      }
+    }
+  }
+
+  // A bus is a connection without a wire: each send feeds every receive of its bus, so sends
+  // land upstream of their receives instead of in the unwired pile.
+  for (const bus of busesIn(doc.nodes)) {
+    if (bus.mixed) continue
+    for (const send of bus.sends) {
+      for (const receive of bus.receives) {
+        const from = nodes.get(send.name ?? '')
+        const to = nodes.get(receive.name ?? '')
+        if (from && to) edges.push({ from: from.id, outlet: 0, to: to.id, inlet: 0 })
       }
     }
   }

@@ -581,9 +581,10 @@ export interface PrimitiveParamSpec {
    * `[min,max]` is valid, unchanged from before this field existed.
    */
   step?: number
-  /** Only on a subpatch stand-in's promoted param (`subpatches.ts`): the real primitive param it
-   *  ultimately edits, through any number of nesting levels -- what presentation lookups
-   *  (units, checkbox widgets) resolve instead of the stand-in's own spec. */
+  /** Only on a stand-in's param -- a subpatch's promoted param (`subpatches.ts`) or a placed bus
+   *  send's GAIN (`buses.ts`): the real primitive param it ultimately edits, through any number
+   *  of nesting levels -- what presentation lookups (units, checkbox widgets) resolve instead of
+   *  the stand-in's own spec. */
   promotedFrom?: { primitiveId: string; paramName: string }
   // Presentation only (canvas and device menus) -- see paramPresentation.ts for each type. None of
   // these reach the generated DSP; `booleanWidget`/`select`/`nts1mkiiType` do shape the

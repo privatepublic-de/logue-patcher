@@ -19,6 +19,7 @@ import {
   restrictedPlatforms
 } from '../browser/loguePrimitiveCatalog'
 import { isSubpatchInstanceType } from '@logue-codegen/subpatches'
+import { busNodeRole } from '@logue-codegen/buses'
 import { presentationKeyOf, type PrimitiveParamSpec } from '@logue-codegen/primitives'
 import { resolveNodePrimitive, useSubpatchLibraryStore } from '../state/subpatchLibraryStore'
 import { openSubpatchDefinition } from '../state/openSubpatchDefinition'
@@ -158,7 +159,16 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
     unresolvedReferences,
     inletWarnings
   } = data
-  const title = node.name ?? '(unnamed)'
+  // A bus node is titled by its bus, and its title edits the bus; the node's own name (its
+  // identity, what nets address) stays in the Inspector.
+  const busRole = node.kind === 'obj' ? busNodeRole(node.type) : undefined
+  const busName = node.kind === 'obj' ? (node.bus ?? '') : ''
+  const shownBus = busName || '(no bus)'
+  const title = busRole
+    ? busRole === 'send'
+      ? `→ ${shownBus}`
+      : `${shownBus} →`
+    : (node.name ?? '(unnamed)')
   const rawType = nodeTypeLabel(node)
   // Only a *logue primitive's id has a category worth tinting/shortening -- a legacy Axoloti
   // type (e.g. "env/adsr") already has no "logue/" root and no entry in CATEGORY_COLORS.
@@ -171,8 +181,9 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
     : undefined
 
   const renameNode = useOptionalPatchStore((s) => s.renameNode)
+  const setNodeBus = useOptionalPatchStore((s) => s.setNodeBus)
   const { editing, startEditing, commitEdit, cancelEdit, inputRef } = useInlineEdit(id, (next) =>
-    renameNode(id, next)
+    busRole ? setNodeBus(id, next) : renameNode(id, next)
   )
 
   // Subscribed so a saved definition re-renders its instances' params even without a remount.
@@ -230,7 +241,7 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
       ref={inputRef as RefObject<HTMLInputElement>}
       className="patch-node__title-input nodrag nopan"
       autoFocus
-      defaultValue={node.name ?? ''}
+      defaultValue={busRole ? busName : (node.name ?? '')}
       onBlur={(e) => commitEdit(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') e.currentTarget.blur()
@@ -241,6 +252,11 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
   ) : (
     <span
       className="patch-node__title"
+      data-tooltip={
+        busRole
+          ? `Bus "${busName}" (node ${node.name ?? ''}) -- double-click to change the bus`
+          : undefined
+      }
       onDoubleClick={(e) => {
         e.stopPropagation()
         startEditing()

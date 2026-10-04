@@ -26,6 +26,7 @@ import {
 import { isEffectModule } from '@logue-codegen/unitKinds'
 import { normalizeRenamedFields } from '@logue-codegen/renamedFields'
 import { isSubpatchInstanceType } from '@logue-codegen/subpatches'
+import { defaultBusName, isBusNodeType, isStereoBusNodeType } from '@logue-codegen/buses'
 import { deviceLayout, layoutModuleOf, slotsForOrder } from './exposedLogueParams'
 import { resolveNodePrimitive } from './subpatchLibraryStore'
 import {
@@ -281,8 +282,13 @@ export interface PatchStoreState {
     x: number,
     y: number,
     /** Replaces the default starting params (a catalog preset, `insertArgsFor`). */
-    params?: ParamValue[]
+    params?: ParamValue[],
+    /** A bus node's bus (a catalog preset); unset, `defaultBusName` picks one. */
+    bus?: string
   ) => void
+  /** Sets a bus node's bus name (`ObjNode.bus`): the canvas title's double-click and the
+   *  Inspector. Remounts, since a bus decides wire colours and warnings elsewhere. */
+  setNodeBus: (id: string, bus: string) => void
   /**
    * Places a nameless `comment` node with empty text and immediately arms `pendingEditNodeId`
    * with its synthetic `__unnamed_${index}` id (matching `nodeId.ts`'s existing fallback
@@ -855,7 +861,17 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
               ? initialFreeLabelParam(doc, newType, n.name ?? '', spec)
               : { name: spec.name, value: String(spec.default) }
           })
-          return { ...n, type: newType, params }
+          // Among the bus node types the bus stays (a send turned receive reads the same bus);
+          // anything else drops it.
+          const { bus, ...rest } = n
+          return isBusNodeType(newType)
+            ? {
+                ...rest,
+                type: newType,
+                params,
+                bus: bus ?? defaultBusName(doc, isStereoBusNodeType(newType))
+              }
+            : { ...rest, type: newType, params }
         })
 
         const newInletNames = new Set((newPrimitive.inlets ?? []).map((i) => i.name))
@@ -975,7 +991,7 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
     )
   },
 
-  insertSpecialObject: (type, shortId, x, y, presetParams) => {
+  insertSpecialObject: (type, shortId, x, y, presetParams, presetBus) => {
     let insertedName = ''
     commitDoc(
       get,
@@ -998,9 +1014,24 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
             ? [initialFreeLabelParam(doc, type, name, freeLabelSpec)]
             : []
         const newNode: ObjNode = { kind: 'obj', type, name, x, y, params }
+        if (isBusNodeType(type)) {
+          newNode.bus = presetBus ?? defaultBusName(doc, isStereoBusNodeType(type))
+        }
         return withNodes(doc, [...doc.nodes, newNode])
       }
     )
+  },
+
+  setNodeBus: (id, bus) => {
+    const trimmed = bus.trim()
+    commitDoc(get, set, {}, (doc) => {
+      const nodes = doc.nodes.map((n, i) =>
+        nodeId(n, i) === id && n.kind === 'obj' && isBusNodeType(n.type) && n.bus !== trimmed
+          ? { ...n, bus: trimmed }
+          : n
+      )
+      return nodes.every((n, i) => n === doc.nodes[i]) ? doc : withNodes(doc, nodes)
+    })
   },
 
   insertComment: (x, y) => {

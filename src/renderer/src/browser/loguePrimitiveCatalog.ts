@@ -12,6 +12,15 @@ import {
   LOGUE_SUBPATCH_OUTLET_DESCRIPTION,
   SUBPATCH_TYPE_PREFIX
 } from '@logue-codegen/subpatches'
+import {
+  BUS_NODE_TYPES,
+  busesIn,
+  isBusNodeType,
+  LOGUE_BUS_RECEIVE_STEREO_TYPE,
+  LOGUE_BUS_RECEIVE_TYPE,
+  LOGUE_BUS_SEND_STEREO_TYPE,
+  LOGUE_BUS_SEND_TYPE
+} from '@logue-codegen/buses'
 import type { LogueModule, LoguePlatform, PatchDocument } from '@shared/domain/patch'
 import type { LogueKnob, ParamValue } from '@shared/domain/paramValueTypes'
 import type { SubpatchLibraryEntry } from '@shared/ipc/contract'
@@ -200,12 +209,59 @@ export function listInsertablePrimitives(module?: LogueModule): PrimitiveCatalog
     const p = findLoguePrimitive(id)
     return !p?.supersededBy && !p?.internal && worksIn(p?.modules, module)
   })
-  return ids.map((id) => ({
+  return [...ids, ...BUS_NODE_TYPES].map((id) => ({
     id,
     label: labelForPrimitiveId(id),
     category: categoryForPrimitiveId(id),
-    description: findLoguePrimitive(id)?.description ?? ''
+    description: resolveNodePrimitive(id)?.description ?? ''
   }))
+}
+
+/** The little a bus preset needs to know: cheap to compare, so a hook can select it per edit. */
+export interface BusPresetSource {
+  name: string
+  stereo: boolean
+  sends: number
+}
+
+/** `busPresetEntries`' input for a document, as one string so a store selector compares it by
+ *  value (a dial drag doesn't re-render the palette). A mixed bus (an export error) is left out. */
+export function busPresetKey(doc: PatchDocument | null | undefined): string {
+  if (!doc) return '[]'
+  const sources: BusPresetSource[] = busesIn(doc.nodes)
+    .filter((b) => !b.mixed)
+    .map((b) => ({ name: b.name, stereo: b.stereo, sends: b.sends.length }))
+  return JSON.stringify(sources)
+}
+
+/**
+ * One send and one receive preset per bus the document already uses (`logue/mix/send@verb`),
+ * so the second send to a bus is one pick in the insert search. Insert-only, like the control
+ * presets.
+ */
+export function busPresetEntries(buses: BusPresetSource[]): PrimitiveCatalogEntry[] {
+  const plural = (n: number): string => `${n} send${n === 1 ? '' : 's'}`
+  return buses.flatMap((b) => {
+    const shown = b.name || '(unnamed)'
+    const [sendType, receiveType] = b.stereo
+      ? [LOGUE_BUS_SEND_STEREO_TYPE, LOGUE_BUS_RECEIVE_STEREO_TYPE]
+      : [LOGUE_BUS_SEND_TYPE, LOGUE_BUS_RECEIVE_TYPE]
+    const kind = b.stereo ? 'stereo bus' : 'bus'
+    return [
+      {
+        id: `${sendType}@${b.name}`,
+        label: `send → ${shown}`,
+        category: 'mix',
+        description: `A send onto the ${kind} "${shown}" (${plural(b.sends)} so far).`
+      },
+      {
+        id: `${receiveType}@${b.name}`,
+        label: `receive ${shown}`,
+        category: 'mix',
+        description: `Reads the ${kind} "${shown}": the sum of its ${plural(b.sends)}.`
+      }
+    ]
+  })
 }
 
 /**
@@ -293,7 +349,13 @@ export function insertArgsFor(id: string): {
   type: string
   shortId: string
   params?: ParamValue[]
+  bus?: string
 } {
+  const at = id.indexOf('@')
+  if (at > 0 && isBusNodeType(id.slice(0, at))) {
+    const type = id.slice(0, at)
+    return { type, shortId: defaultNodeName(type), bus: id.slice(at + 1) }
+  }
   const preset = CONTROL_PRESETS.find((p) => id === `${DEVICE_CONTROL_TYPE}@${p.knob}`)
   if (!preset) return { type: id, shortId: defaultNodeName(id) }
   return {
@@ -401,7 +463,7 @@ export function groupByCategory(
 export function matchesFilter(entry: PrimitiveCatalogEntry, filterText: string): boolean {
   const q = filterText.trim().toLowerCase()
   if (!q) return true
-  const primitive = findLoguePrimitive(entry.id)
+  const primitive = resolveNodePrimitive(entry.id)
   const extraTerms = [
     ...(primitive?.searchTerms ?? []),
     ...(primitive?.shortLabel ? [primitive.shortLabel] : []),

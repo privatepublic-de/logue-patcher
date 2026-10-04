@@ -98,7 +98,17 @@ function pseudoPrimitive(
     description,
     inlets: shape.inlets,
     outlets: shape.outlets,
-    ...(shape.withGain ? { params: [BUS_SEND_GAIN_PARAM] } : {}),
+    // The dial shows the internal send's unit (dB) through the presentation key.
+    ...(shape.withGain
+      ? {
+          params: [
+            {
+              ...BUS_SEND_GAIN_PARAM,
+              promotedFrom: { primitiveId: BUS_NODE_KINDS[id].internalType, paramName: 'GAIN' }
+            }
+          ]
+        }
+      : {}),
     searchTerms: ['bus', 'aux', 'wireless'],
     outletPolarity: 'inherit',
     stateBytesPerInstance: 0,
@@ -206,3 +216,74 @@ export function resolveBuses(doc: PatchDocument): PatchDocument {
 /** Appended to a feedback-loop error in a document with buses: a bus closes a loop like a wire. */
 export const BUS_LOOP_HINT =
   ' A bus counts as a wire here: a send fed (through any path) from a receive of its own bus closes a loop too.'
+
+/** What one bus in a document holds -- for the canvas (insert presets, warnings, colours). */
+export interface BusSummary {
+  name: string
+  /** Set when every node on it is stereo; `mixed` when both kinds are (an export error). */
+  stereo: boolean
+  mixed: boolean
+  sends: ObjNode[]
+  receives: ObjNode[]
+}
+
+/** Every bus `nodes` use, in order of first appearance. */
+export function busesIn(nodes: readonly PatchDocument['nodes'][number][]): BusSummary[] {
+  const byName = new Map<string, BusSummary>()
+  for (const node of nodes) {
+    if (node.kind !== 'obj' || !isBusNodeType(node.type)) continue
+    const name = busNameOf(node)
+    const stereo = isStereoBusNodeType(node.type)
+    let bus = byName.get(name)
+    if (!bus) {
+      bus = { name, stereo, mixed: false, sends: [], receives: [] }
+      byName.set(name, bus)
+    } else if (bus.stereo !== stereo) {
+      bus.mixed = true
+    }
+    ;(busNodeRole(node.type) === 'send' ? bus.sends : bus.receives).push(node)
+  }
+  return [...byName.values()]
+}
+
+/** A new bus node's name: the last bus of its kind in the document (the one being worked on),
+ *  else the first free `bus<N>`. */
+export function defaultBusName(doc: PatchDocument, stereo: boolean): string {
+  const buses = busesIn(doc.nodes)
+  const sameKind = buses.filter((b) => !b.mixed && b.stereo === stereo)
+  if (sameKind.length > 0) return sameKind[sameKind.length - 1].name
+  const taken = new Set(buses.map((b) => b.name))
+  let n = 1
+  while (taken.has(`bus${n}`)) n++
+  return `bus${n}`
+}
+
+/**
+ * What's wrong with each bus node of `doc`, by node name. `unitNodes` is every node of the unit
+ * (the document flattened, so a send inside a subpatch counts); in a subpatch definition the
+ * other end usually lives in the patch using it, so only a mono/stereo clash is reported there.
+ */
+export function busProblems(
+  doc: PatchDocument,
+  unitNodes: readonly PatchDocument['nodes'][number][]
+): Map<string, string> {
+  const problems = new Map<string, string>()
+  const buses = new Map(busesIn(unitNodes).map((b) => [b.name, b]))
+  const definition = doc.settings.subpatch === true
+  for (const node of doc.nodes) {
+    if (node.kind !== 'obj' || !isBusNodeType(node.type) || node.name === undefined) continue
+    const name = busNameOf(node)
+    const shown = name || '(no name)'
+    const bus = buses.get(name)
+    if (bus?.mixed) {
+      problems.set(node.name, `Bus "${shown}" has both mono and stereo nodes, which won't build.`)
+    } else if (definition || !bus) {
+      continue
+    } else if (busNodeRole(node.type) === 'receive' && bus.sends.length === 0) {
+      problems.set(node.name, `Nothing sends to bus "${shown}": this receive outputs silence.`)
+    } else if (busNodeRole(node.type) === 'send' && bus.receives.length === 0) {
+      problems.set(node.name, `Nothing receives bus "${shown}": this send isn't heard.`)
+    }
+  }
+  return problems
+}

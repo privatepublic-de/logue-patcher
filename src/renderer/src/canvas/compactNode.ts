@@ -1,4 +1,5 @@
 import { findLoguePrimitive } from '@logue-codegen/primitives'
+import { LOGUE_BUS_RECEIVE_TYPE } from '@logue-codegen/buses'
 
 /**
  * A primitive drawn as one row -- inlet jack(s), name, type, outlet jack -- instead of a header
@@ -10,6 +11,8 @@ import { findLoguePrimitive } from '@logue-codegen/primitives'
  * the drawn node and the arrange estimates agree.
  */
 export function isCompactPrimitive(type: string): boolean {
+  // A mono receive is its bus name and one outlet.
+  if (type === LOGUE_BUS_RECEIVE_TYPE) return true
   if (!type.startsWith('logue/') || type.startsWith('logue/io/')) return false
   const primitive = findLoguePrimitive(type)
   return (

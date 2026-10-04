@@ -1,5 +1,6 @@
 import type { PatchDocument } from '@shared/domain/patch'
 import { LOGUE_SUBPATCH_INLET_TYPE } from '@logue-codegen/subpatches'
+import { busNameOf, busNodeRole, isStereoBusNodeType } from '@logue-codegen/buses'
 import {
   findSingleWiredSource,
   isBufferInlet,
@@ -61,6 +62,8 @@ export function createWirePolarityResolver(
     if (typeById.get(nodeName) === LOGUE_SUBPATCH_INLET_TYPE && feedsBufferInlet(nodeName)) {
       return 'buffer'
     }
+    if (busNodeRole(typeById.get(nodeName) ?? '') === 'receive')
+      return busBucket(nodeName, outletName)
     const primitive = resolveNodePrimitive(typeById.get(nodeName) ?? '')
     // No registry entry (the audio-out sink, which has no outlets anyway; a stale/hand-edited
     // node; a legacy Axoloti type) -- same "legacy patches look exactly as they did" fallback
@@ -95,6 +98,30 @@ export function createWirePolarityResolver(
         }
       }) ?? result
     )
+  }
+
+  /** A receive carries what its bus's sends in this document carry (a send inside a subpatch
+   *  isn't seen; with none, audio like any unwired pass-through). Stereo: the same side. */
+  function busBucket(nodeName: string, outletName: string): ResolvedWireBucket {
+    const receive = doc.nodes.find((n) => n.kind === 'obj' && n.name === nodeName)
+    if (receive?.kind !== 'obj') return 'audio'
+    const bus = busNameOf(receive)
+    const inlet = isStereoBusNodeType(receive.type) ? outletName : 'in'
+    const inherited = doc.nodes
+      .filter(
+        (n) =>
+          n.kind === 'obj' &&
+          busNodeRole(n.type) === 'send' &&
+          busNameOf(n) === bus &&
+          isStereoBusNodeType(n.type) === isStereoBusNodeType(receive.type)
+      )
+      .map((send) => inletBucket(send.name ?? '', inlet))
+      .filter((bucket): bucket is ResolvedWireBucket => bucket !== undefined)
+    return inherited.length === 0
+      ? 'audio'
+      : new Set(inherited).size === 1
+        ? inherited[0]
+        : 'neutral'
   }
 
   /** What arrives at one inlet, `undefined` while it's unwired. A buffer wire into a signal

@@ -58,9 +58,9 @@ function LoguePrimitivePalette(): React.JSX.Element {
       insertComment(x, y)
       return
     }
-    const { type, shortId, params } = insertArgsFor(id)
+    const { type, shortId, params, bus } = insertArgsFor(id)
     const { x, y } = findInsertPosition(type) ?? nextPosition()
-    insertSpecialObject(type, shortId, x, y, params)
+    insertSpecialObject(type, shortId, x, y, params, bus)
   }
 
   const entries = useInsertableEntries(true)

@@ -12,6 +12,7 @@ import { createWirePolarityResolver, type ResolvedWireBucket } from '../canvas/w
 import { isFixedIoNodeType } from '@logue-codegen/oscInstances'
 import { resolveDeclaredOutletName } from '@logue-codegen/primitives'
 import { resolveNodePrimitive } from './subpatchLibraryStore'
+import { busProblemsFor, withBusProblem } from './busProblems'
 
 export interface ObjectNodeData extends Record<string, unknown> {
   node: PatchNode
@@ -86,6 +87,7 @@ export function patchDocToFlow(
 ): { nodes: (ObjectFlowNode | CommentFlowNode)[]; edges: Edge[] } {
   const portsById = new Map<string, ResolvedPorts>()
   const typeById = new Map<string, string | undefined>()
+  const busNotes = busProblemsFor(doc)
   const objectNodesById = new Map<string, ObjectFlowNode>()
 
   const nodes: (ObjectFlowNode | CommentFlowNode)[] = doc.nodes.map((n, index) => {
@@ -134,7 +136,9 @@ export function patchDocToFlow(
         outletBuckets: {},
         inletWarnings: {},
         unresolvedReferences:
-          n.kind === 'obj' ? findUnresolvedReferences(doc, n, resolveNodePrimitive) : []
+          n.kind === 'obj'
+            ? withBusProblem(findUnresolvedReferences(doc, n, resolveNodePrimitive), n, busNotes)
+            : []
       }
     }
     objectNodesById.set(id, objectNode)

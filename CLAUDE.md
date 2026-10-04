@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 96 primitives, 5 of them superseded and hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 100 primitives, 5 of them superseded and 4 internal, both hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -69,6 +69,8 @@ not here.
   node, not a document-level asset table: copy/paste and subpatch flattening carry it for free,
   and codegen dedupes identical samples by content hash anyway. Added without a file-version
   bump (plain optional field, the `unitName`/`label` precedent).
+- `ObjNode.bus?: string` (2026-10-04): a bus node's bus name (see "Buses"), on the four bus
+  node types only; absent reads as `''`. No file-version bump (the `sample` precedent).
 - `PatchSettings`: `{logueTarget?: {module: LogueModule}, unitName?: string, subpatch?: true}`
   (`LogueModule = 'osc' | 'modfx' | 'delfx' | 'revfx'`; only a (platform, module) pair with a
   `logue-codegen/src/unitKinds.ts` entry builds -- since 2026-09-30 all eight; see
@@ -101,9 +103,9 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-96 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+100 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
 history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (15:
-sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (7: mix2/crossfader/pan/pan-mix2/width/stereo-mix2/stereo-crossfader), `filter` (9:
+sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (11: mix2/crossfader/pan/pan-mix2/width/stereo-mix2/stereo-crossfader, plus the internal bus-send/bus-receive/bus-send-stereo/bus-receive-stereo -- see "Buses"), `filter` (9:
 lowpass-cheap/highpass-cheap/comb/string/svf/ladder/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (15: constant/unipolar-to-bipolar/bipolar-to-unipolar/
@@ -1445,6 +1447,41 @@ Mechanics (`logue-codegen/src/subpatches.ts`, dependency-free, definitions alway
   (packaged app only; `npm run dev` isn't registered), feeding the existing `open-file` handler.
 - A subpatch-built unit (two instances, a promoted param on a knob and one as a menu param) works on
   both devices (user, 2026-09-30).
+
+## Buses
+
+Named send/receive without wires (user's call, 2026-10-04, after the `thru` cascade inlets were
+still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codegen/src/buses.ts`.
+- **Placed types aren't registry primitives** (the subpatch port-node precedent):
+  `logue/mix/send` (`in`, GAIN 0..100 = x0..x1 in dB, default unity), `receive` (`out`),
+  `send-stereo` (`l`/`r`, GAIN), `receive-stereo` (`l`/`r`). `createSubpatchAwareResolver` gives
+  the canvas a stand-in (codegen hooks throw); its GAIN's `promotedFrom` points at the internal
+  send, so presentation (dB) resolves there. The registry loops (snapshots, measurement scripts,
+  sweeps) therefore never meet a node that can't generate code alone.
+- **`resolveBuses`** runs after `flattenSubpatches` through ONE entry point, `flattenUnit`
+  (`resolveUnit.ts`), used by `resolvePlatformGraph` (every generator and estimator) and
+  `exposedLogueParams.ts`: it retypes each bus node to its `internal: true` registry primitive
+  (`logue/mix/bus-send`: `thru + in*gain`; `bus-receive`: a copy; stereo pair alike) and chains
+  each bus -- sends sorted by node name, every receive fed from the last send, none = `0.f`.
+  Nothing downstream knows buses exist: a bus nobody receives is unreachable (no code), fan-out is
+  free, CPU is the same as hand-wired `thru` mixers (a send ~5-7 xd fx emulator cycles, a receive 0).
+- **Global scope**: one namespace per unit, so a send inside a subpatch reaches the root's bus
+  (two instances of a definition holding a send+receive pair share it). Mono and stereo nodes on
+  one bus are a `BusResolutionError`. A loop through a bus is an ordinary cycle; the error gains
+  `BUS_LOOP_HINT` (a `sample-delay` in the loop fixes it, as for a wire).
+- **Canvas**: a bus node is titled by its bus (`→ verb` / `verb →`) and double-clicking the title
+  edits the BUS (`setNodeBus`, one undo step; the node's own name is in the Inspector, beside a
+  Bus field offering the document's buses of the same kind and their send/receive counts). A new
+  one takes the last bus of its kind (`defaultBusName`), else the first free `busN`; the insert
+  search offers `send → x` / `receive x` per existing bus (`busPresetEntries`, keyed by a value
+  string so a dial drag doesn't re-render the palette). Replace with... among bus types keeps the
+  bus, to anything else drops it; paste/duplicate keep it. A mono receive is compact. A receive's
+  wire colour merges its sends' inputs (this document only). Badges (`busProblems`, through
+  `busProblemsFor` on the flattened document so a send inside a subpatch counts): a receive with
+  no send, a send nobody receives (root patches only), mono/stereo on one bus (everywhere).
+  Arrange by signal flow adds a virtual edge per send -> receive pair.
+- Harness/hardware: none needed beyond the tables -- the generated code is the `thru` mixer
+  arithmetic; checked in the built app (2026-10-04). No example uses a bus yet.
 
 ## Build & Export pipeline
 

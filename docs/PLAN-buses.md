@@ -1,5 +1,8 @@
 # Buses: send/receive without wires
 
+Status (2026-10-04): implemented -- phase 1 codegen, phase 2 canvas. CLAUDE.md's "Buses" holds
+the current rules; this file keeps the reasoning.
+
 User's call (2026-10-04), after the `thru` cascade inlets still meant too much wiring: named
 buses. A send adds its input onto a bus; a receive reads the bus's sum. No wire between them.
 
@@ -66,7 +69,7 @@ one multiply-add per send, a receive is a copy GCC folds.
 - Warnings (`unresolvedReferences`-style badges): a receive whose bus has no send, a send whose
   bus has no receive -- root documents only (inside a definition the other end is usually in the
   root patch), counting sends/receives inside used subpatch definitions.
-- Optional, later: hovering a send/receive highlights its partners.
+- Optional, later: hovering a send/receive highlights its partners; a "rename bus everywhere".
 
 ## Measurement and tests
 

@@ -2,6 +2,7 @@ import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, Grid3x3, Upload } from 'lucide-react'
 import { useOptionalPatchStore } from '../state/patchStore'
 import { nodeId } from '../state/nodeId'
+import { busProblemsFor, withBusProblem } from '../state/busProblems'
 import { nodeTypeLabel } from './nodeTypeLabel'
 import {
   findAliasedFieldValue,
@@ -42,7 +43,8 @@ import {
   type BooleanParamWidget,
   type ParamTrackGate
 } from '@logue-codegen/paramTrackGate'
-import type { PatchDocument } from '@shared/domain/patch'
+import type { ObjNode, PatchDocument } from '@shared/domain/patch'
+import { busesIn, isBusNodeType, isStereoBusNodeType } from '@logue-codegen/buses'
 import type { LogueParamSlot, LogueKnobBinding } from '@shared/domain/paramValueTypes'
 import { describeExposedSlots } from '../state/exposedLogueParams'
 import { isNodeTrackGated } from './trackGateState'
@@ -327,6 +329,58 @@ function Description({ text }: { text: string }): React.JSX.Element {
   )
 }
 
+/**
+ * A bus node's bus: free text, offering the document's other buses of the same kind, plus what
+ * else is on it here (a send's receive may live in the root patch while this is a definition).
+ */
+function BusField({
+  nodeIdValue,
+  node,
+  doc
+}: {
+  nodeIdValue: string
+  node: ObjNode
+  doc: PatchDocument
+}): React.JSX.Element {
+  const setNodeBus = useOptionalPatchStore((s) => s.setNodeBus)
+  const bus = node.bus ?? ''
+  const stereo = isStereoBusNodeType(node.type)
+  const buses = busesIn(doc.nodes)
+  const here = buses.find((b) => b.name === bus)
+  const listId = `bus-names-${nodeIdValue}`
+  const count = (n: number, what: string): string => `${n} ${what}${n === 1 ? '' : 's'}`
+  return (
+    <>
+      <label className="inspector__field inspector__field--inline">
+        <span>Bus</span>
+        <input
+          key={bus}
+          list={listId}
+          defaultValue={bus}
+          onBlur={(e) => setNodeBus?.(nodeIdValue, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+          }}
+        />
+        <datalist id={listId}>
+          {buses
+            .filter((b) => b.stereo === stereo && !b.mixed && b.name !== bus)
+            .map((b) => (
+              <option key={b.name} value={b.name} />
+            ))}
+        </datalist>
+      </label>
+      {here && (
+        <p className="inspector__hint">
+          {stereo ? 'Stereo bus' : 'Bus'} &ldquo;{bus || '(no name)'}&rdquo; here:{' '}
+          {count(here.sends.length, 'send')}, {count(here.receives.length, 'receive')}
+          {here.mixed ? " -- mixes mono and stereo nodes, which won't build" : ''}
+        </p>
+      )}
+    </>
+  )
+}
+
 function Inspector(): React.JSX.Element {
   const rootDoc = useOptionalPatchStore((s) => s.rootDoc)
   const selectedNodeId = useOptionalPatchStore((s) => s.selectedNodeId)
@@ -385,7 +439,11 @@ function Inspector(): React.JSX.Element {
   // (`ObjectNode.tsx`'s canvas badge is the at-a-glance counterpart, this is the explanation).
   const unresolvedReferences: UnresolvedReference[] =
     rootDoc && selectedNode?.kind === 'obj'
-      ? findUnresolvedReferences(rootDoc, selectedNode, resolveNodePrimitive)
+      ? withBusProblem(
+          findUnresolvedReferences(rootDoc, selectedNode, resolveNodePrimitive),
+          selectedNode,
+          busProblemsFor(rootDoc)
+        )
       : []
   const staleWireRefs = unresolvedReferences.filter(
     (ref) => ref.kind === 'stale-inlet' || ref.kind === 'stale-outlet'
@@ -561,6 +619,10 @@ function Inspector(): React.JSX.Element {
           />
         </label>
       )}
+      {!collapsed &&
+        selectedNode?.kind === 'obj' &&
+        isBusNodeType(selectedNode.type) &&
+        rootDoc && <BusField nodeIdValue={selectedNodeId!} node={selectedNode} doc={rootDoc} />}
       {!collapsed && selectedNode?.kind === 'obj' && paramSpecs.length > 0 && rootDoc && (
         <div className="inspector__params">
           {paramSpecs.map((spec) => {
