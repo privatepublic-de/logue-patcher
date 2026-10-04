@@ -8,7 +8,11 @@ import type {
 import { serializePatchFile } from '@shared/json/patchCodec'
 import { nodeId } from './nodeId'
 import { autoArrangeDocumentTree } from '../canvas/autoArrange'
-import type { PrimitiveParamSpec } from '@logue-codegen/primitives'
+import {
+  findLoguePrimitive,
+  formerPrimitiveIds,
+  type PrimitiveParamSpec
+} from '@logue-codegen/primitives'
 import { normalizeRenamedFields } from '@logue-codegen/renamedFields'
 import {
   defaultPromotedParamName,
@@ -51,6 +55,41 @@ export function disambiguateName(base: string, taken: Set<string>): string {
   let i = 1
   while (taken.has(`${base}_${i}`)) i++
   return `${base}_${i}`
+}
+
+/** What a new node of `type` is called: its primitive's `defaultName`, else the id's last segment. */
+export function defaultNodeName(type: string): string {
+  return findLoguePrimitive(type)?.defaultName ?? type.split('/').pop() ?? type
+}
+
+const sanitizeNodeName = (name: string): string => name.replace(/[^a-zA-Z0-9_]/g, '_')
+
+/**
+ * Whether `name` is one `type` would have been given on insert (`saw`, `saw_2`), so a Replace
+ * with... may rename it without losing anything the user typed. Also counts the id's last segment
+ * when a `defaultName` exists (instances placed before it, `bipolar_to_unipolar`) and the names
+ * of the ids this one replaced (a `ringmod` that opened as `multiply`).
+ */
+export function hasDefaultNodeName(name: string, type: string): boolean {
+  const bases = [type, ...formerPrimitiveIds(type)].map((id) =>
+    sanitizeNodeName(id.split('/').pop() ?? id)
+  )
+  bases.push(sanitizeNodeName(defaultNodeName(type)))
+  return bases.some((base) => name === base || new RegExp(`^${base}_\\d+$`).test(name))
+}
+
+/** `doc` with node `oldName` called `newName`, its wires following. */
+export function withNodeRenamed(
+  doc: PatchDocument,
+  oldName: string,
+  newName: string
+): PatchDocument {
+  const nodes = doc.nodes.map((n) => (n.name === oldName ? { ...n, name: newName } : n))
+  const nets = doc.nets.map((net) => ({
+    sources: net.sources.map((s) => (s.obj === oldName ? { ...s, obj: newName } : s)),
+    dests: net.dests.map((d) => (d.obj === oldName ? { ...d, obj: newName } : d))
+  }))
+  return { ...doc, nodes, nets }
 }
 
 /**

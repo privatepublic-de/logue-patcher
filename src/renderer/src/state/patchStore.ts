@@ -30,7 +30,9 @@ import { deviceLayout, layoutModuleOf, slotsForOrder } from './exposedLogueParam
 import { resolveNodePrimitive } from './subpatchLibraryStore'
 import {
   arrangeForLoad,
+  defaultNodeName,
   disambiguateName,
+  hasDefaultNodeName,
   initialFreeLabelParam,
   applyPlatformLayout,
   currentPlatformLayout,
@@ -38,6 +40,7 @@ import {
   logueParamSlotsEqual,
   uniqueNodeName,
   withNodes,
+  withNodeRenamed,
   withoutNodeWires,
   remapStereoMonoInlets,
   type DeviceParamRef,
@@ -821,37 +824,56 @@ export const createPatchStoreState: StateCreator<PatchStoreState> = (set, get) =
     const newOutletNames = new Set(outlets.map((o) => o.name))
     const firstOutletName = outlets[0].name
 
-    commitDoc(get, set, {}, (doc) => {
-      const nodes = doc.nodes.map((n, i) => {
-        if (nodeId(n, i) !== id || n.kind !== 'obj') return n
-        const params: ParamValue[] = (newPrimitive.params ?? []).map((spec) => {
-          const existing = n.params.find((p) => p.name === spec.name)
-          if (existing) {
-            const numeric = Number(existing.value)
-            const clamped = Number.isFinite(numeric)
-              ? Math.min(spec.max, Math.max(spec.min, numeric))
-              : spec.default
-            return { ...existing, value: String(clamped) }
-          }
-          return spec.freeLabel
-            ? initialFreeLabelParam(doc, newType, n.name ?? '', spec)
-            : { name: spec.name, value: String(spec.default) }
+    // A saw that becomes a square shouldn't stay called "saw"; a name the user typed stays.
+    const oldName = target.name
+    const newName =
+      oldName !== undefined && hasDefaultNodeName(oldName, target.type)
+        ? uniqueNodeName(activeDoc, defaultNodeName(newType), oldName)
+        : oldName
+
+    commitDoc(
+      get,
+      set,
+      {
+        extra: (s) => ({
+          selectedNodeId: s.selectedNodeId === id && newName ? newName : s.selectedNodeId
         })
-        return { ...n, type: newType, params }
-      })
+      },
+      (doc) => {
+        const nodes = doc.nodes.map((n, i) => {
+          if (nodeId(n, i) !== id || n.kind !== 'obj') return n
+          const params: ParamValue[] = (newPrimitive.params ?? []).map((spec) => {
+            const existing = n.params.find((p) => p.name === spec.name)
+            if (existing) {
+              const numeric = Number(existing.value)
+              const clamped = Number.isFinite(numeric)
+                ? Math.min(spec.max, Math.max(spec.min, numeric))
+                : spec.default
+              return { ...existing, value: String(clamped) }
+            }
+            return spec.freeLabel
+              ? initialFreeLabelParam(doc, newType, n.name ?? '', spec)
+              : { name: spec.name, value: String(spec.default) }
+          })
+          return { ...n, type: newType, params }
+        })
 
-      const newInletNames = new Set((newPrimitive.inlets ?? []).map((i) => i.name))
-      const nets = remapStereoMonoInlets(doc.nets, id, newInletNames).map((net) => ({
-        ...net,
-        sources: net.sources.map((s) =>
-          s.obj === id && s.outlet !== undefined && !newOutletNames.has(s.outlet)
-            ? { ...s, outlet: firstOutletName }
-            : s
-        )
-      }))
+        const newInletNames = new Set((newPrimitive.inlets ?? []).map((i) => i.name))
+        const nets = remapStereoMonoInlets(doc.nets, id, newInletNames).map((net) => ({
+          ...net,
+          sources: net.sources.map((s) =>
+            s.obj === id && s.outlet !== undefined && !newOutletNames.has(s.outlet)
+              ? { ...s, outlet: firstOutletName }
+              : s
+          )
+        }))
 
-      return dropOrphanedFollows({ ...doc, nodes, nets })
-    })
+        const replaced = dropOrphanedFollows({ ...doc, nodes, nets })
+        return oldName !== undefined && newName !== undefined && newName !== oldName
+          ? withNodeRenamed(replaced, oldName, newName)
+          : replaced
+      }
+    )
   },
 
   autoArrangeCurrentDoc: (measuredSizes) => {

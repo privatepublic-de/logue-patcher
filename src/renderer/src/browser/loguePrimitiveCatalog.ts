@@ -17,6 +17,7 @@ import type { LogueKnob, ParamValue } from '@shared/domain/paramValueTypes'
 import type { SubpatchLibraryEntry } from '@shared/ipc/contract'
 import { ALL_LOGUE_PLATFORMS, PLATFORM_LABEL } from '../state/exposedLogueParams'
 import { resolveNodePrimitive } from '../state/subpatchLibraryStore'
+import { defaultNodeName } from '../state/patchDocHelpers'
 
 /** Re-exported so every existing `from './loguePrimitiveCatalog'` import keeps working --
  *  `PLATFORM_LABEL` itself is defined in `exposedLogueParams.ts` (see that file's own doc
@@ -294,8 +295,7 @@ export function insertArgsFor(id: string): {
   params?: ParamValue[]
 } {
   const preset = CONTROL_PRESETS.find((p) => id === `${DEVICE_CONTROL_TYPE}@${p.knob}`)
-  if (!preset)
-    return { type: id, shortId: findLoguePrimitive(id)?.defaultName ?? shortIdForPrimitiveId(id) }
+  if (!preset) return { type: id, shortId: defaultNodeName(id) }
   return {
     type: DEVICE_CONTROL_TYPE,
     shortId: preset.shortId,

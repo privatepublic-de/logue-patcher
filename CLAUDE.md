@@ -1230,6 +1230,10 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   and a knob can't take a name anyway): a free-label dial is titled by its name only while it's
   on a menu slot, else `VALUE` (or a promoted param's outer name), and shows a "needs a name" chip
   opening the Matrix at it when it's on a slot without one (Export would fail).
+- **Replace with…** renames a node that still has its type's default name (`saw`, `saw_2`, an
+  older default like `bipolar_to_unipolar`, or a former id's name like `ringmod`) to the new
+  type's (`hasDefaultNodeName`/`defaultNodeName`, `patchDocHelpers.ts`; user's call,
+  2026-10-04: a saw turned square kept saying "saw"), in the same undo step; a typed name stays.
 - **Duplicate** (node context menu, ⌘D; 2026-10-02): `duplicateNodes` copies the node(s) with the
   wires among them through the paste path (not the system clipboard), placed right of the
   originals and stepped down until clear. Any paste (so a duplicate too) drops menu slots and

@@ -780,6 +780,65 @@ describe('patchStore.replaceNode', () => {
     expect(after.nets).toEqual(doc.nets)
   })
 
+  it('renames a node that still has its default name, wires and selection following', () => {
+    const doc = freshLogueDoc(
+      [
+        { kind: 'obj', type: 'logue/osc/saw', name: 'saw', x: 0, y: 0, params: [] },
+        { kind: 'obj', type: LOGUE_AUDIO_OUT_TYPE, name: 'out', x: 0, y: 0, params: [] }
+      ],
+      [{ sources: [{ obj: 'saw', outlet: 'out' }], dests: [{ obj: 'out', inlet: 'in' }] }]
+    )
+    store.setState({ rootDoc: doc, selectedNodeId: 'saw' })
+
+    store.getState().replaceNode('saw', 'logue/osc/square')
+
+    const after = store.getState()
+    expect(after.rootDoc!.nodes.map((n) => n.name)).toEqual(['square', 'out'])
+    expect(after.rootDoc!.nets[0].sources).toEqual([{ obj: 'square', outlet: 'out' }])
+    expect(after.selectedNodeId).toBe('square')
+  })
+
+  it('renames a numbered default name, an older default and a former id, avoiding taken names', () => {
+    const doc = freshLogueDoc([
+      { kind: 'obj', type: 'logue/osc/saw', name: 'saw_2', x: 0, y: 0, params: [] },
+      { kind: 'obj', type: 'logue/osc/square', name: 'square', x: 0, y: 0, params: [] },
+      {
+        kind: 'obj',
+        type: 'logue/util/bipolar-to-unipolar',
+        name: 'bipolar_to_unipolar_1',
+        x: 0,
+        y: 0,
+        params: []
+      },
+      { kind: 'obj', type: 'logue/math/multiply', name: 'ringmod', x: 0, y: 0, params: [] }
+    ])
+    store.setState({ rootDoc: doc })
+
+    store.getState().replaceNode('saw_2', 'logue/osc/square')
+    store.getState().replaceNode('bipolar_to_unipolar_1', 'logue/util/unipolar-to-bipolar')
+    store.getState().replaceNode('ringmod', 'logue/math/add')
+
+    expect(store.getState().rootDoc!.nodes.map((n) => n.name)).toEqual([
+      'square_1',
+      'square',
+      'u2b',
+      'add'
+    ])
+  })
+
+  it('keeps a name the user typed', () => {
+    const doc = freshLogueDoc([
+      { kind: 'obj', type: 'logue/osc/saw', name: 'lead', x: 0, y: 0, params: [] },
+      { kind: 'obj', type: 'logue/osc/saw', name: 'sawtooth', x: 0, y: 0, params: [] }
+    ])
+    store.setState({ rootDoc: doc })
+
+    store.getState().replaceNode('lead', 'logue/osc/square')
+    store.getState().replaceNode('sawtooth', 'logue/osc/square')
+
+    expect(store.getState().rootDoc!.nodes.map((n) => n.name)).toEqual(['lead', 'sawtooth'])
+  })
+
   it("carries over a same-named param's value/logueParamIndex to the new primitive", () => {
     const doc = freshLogueDoc([
       {
