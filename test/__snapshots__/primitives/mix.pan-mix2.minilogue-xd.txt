@@ -90,8 +90,8 @@ public:
     const float blkPmR2_n = gain2_n * xfade_sqrtf(clampf((100.f + (pan2Percent_n)) * 0.005f, 0.f, 1.f));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n_l = (0.f) * (blkPmL1_n) + (0.f) * (blkPmL2_n);
-      float y_n_r = (0.f) * (blkPmR1_n) + (0.f) * (blkPmR2_n);
+      float y_n_l = 0.f;
+      float y_n_r = 0.f;
       (void)y_n_l; (void)y_n_r;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
@@ -226,6 +226,8 @@ public:
     for (int k = 0; k < 4; ++k) { pmG1_n[k] = 0.f; pmG2_n[k] = 0.f; }
     value_c_in1 = 37 * 0.01f;
     value_c_in2 = 37 * 0.01f;
+    value_c_l = 37 * 0.01f;
+    value_c_r = 37 * 0.01f;
     value_c_pan1 = 37 * 0.01f;
     value_c_pan2 = 37 * 0.01f;
     gain1_n = 70 * 0.01f;
@@ -294,6 +296,8 @@ public:
   {
       float y_c_in1 = value_c_in1;
       float y_c_in2 = value_c_in2;
+      float y_c_l = value_c_l;
+      float y_c_r = value_c_r;
       float y_c_pan1 = value_c_pan1;
       float y_c_pan2 = value_c_pan2;
     const float blkPmL1_n = gain1_n * xfade_sqrtf(clampf((100.f - (clampf(pan1Percent_n + (y_c_pan1) * 100.f, -100.f, 100.f))) * 0.005f, 0.f, 1.f));
@@ -302,8 +306,8 @@ public:
     const float blkPmR2_n = gain2_n * xfade_sqrtf(clampf((100.f + (clampf(pan2Percent_n + (y_c_pan2) * 100.f, -100.f, 100.f))) * 0.005f, 0.f, 1.f));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n_l = (y_c_in1) * (blkPmL1_n) + (y_c_in2) * (blkPmL2_n);
-      float y_n_r = (y_c_in1) * (blkPmR1_n) + (y_c_in2) * (blkPmR2_n);
+      float y_n_l = (y_c_l) + ((y_c_in1) * (blkPmL1_n)) + ((y_c_in2) * (blkPmL2_n));
+      float y_n_r = (y_c_r) + ((y_c_in1) * (blkPmR1_n)) + ((y_c_in2) * (blkPmR2_n));
       (void)y_n_l; (void)y_n_r;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
@@ -338,6 +342,8 @@ private:
   float shape2_01_;
   float value_c_in1;
   float value_c_in2;
+  float value_c_l;
+  float value_c_r;
   float value_c_pan1;
   float value_c_pan2;
   float gain1_n;
@@ -556,8 +562,8 @@ public:
     const float blkPmR2_n = gain2_n * xfade_sqrtf(clampf((100.f + (pan2Percent_n)) * 0.005f, 0.f, 1.f));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n_l = (0.f) * (blkPmL1_n) + (0.f) * (blkPmL2_n);
-      float y_n_r = (0.f) * (blkPmR1_n) + (0.f) * (blkPmR2_n);
+      float y_n_l = 0.f;
+      float y_n_r = 0.f;
       (void)y_n_l; (void)y_n_r;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),

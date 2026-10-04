@@ -79,8 +79,8 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
-      float y_n_l = ((0.f) * gain1_n) + ((0.f) * gain2_n);
-      float y_n_r = ((0.f) * gain1_n) + ((0.f) * gain2_n);
+      float y_n_l = 0.f;
+      float y_n_r = 0.f;
       (void)y_n_l; (void)y_n_r;
     for (uint32_t i = 0; i < frames; ++i)
     {
@@ -178,6 +178,8 @@ public:
     value_c_r1 = 37 * 0.01f;
     value_c_l2 = 37 * 0.01f;
     value_c_r2 = 37 * 0.01f;
+    value_c_l = 37 * 0.01f;
+    value_c_r = 37 * 0.01f;
     gain1_n = 50 * 0.01f;
     gain2_n = 50 * 0.01f;
   }
@@ -244,8 +246,10 @@ public:
       float y_c_r1 = value_c_r1;
       float y_c_l2 = value_c_l2;
       float y_c_r2 = value_c_r2;
-      float y_n_l = ((y_c_l1) * gain1_n) + ((y_c_l2) * gain2_n);
-      float y_n_r = ((y_c_r1) * gain1_n) + ((y_c_r2) * gain2_n);
+      float y_c_l = value_c_l;
+      float y_c_r = value_c_r;
+      float y_n_l = (y_c_l) + ((y_c_l1) * gain1_n) + ((y_c_l2) * gain2_n);
+      float y_n_r = (y_c_r) + ((y_c_r1) * gain1_n) + ((y_c_r2) * gain2_n);
       (void)y_n_l; (void)y_n_r;
     for (uint32_t i = 0; i < frames; ++i)
     {
@@ -284,6 +288,8 @@ private:
   float value_c_r1;
   float value_c_l2;
   float value_c_r2;
+  float value_c_l;
+  float value_c_r;
   float gain1_n;
   float gain2_n;
 
@@ -437,8 +443,8 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
-      float y_n_l = ((0.f) * gain1_n) + ((0.f) * gain2_n);
-      float y_n_r = ((0.f) * gain1_n) + ((0.f) * gain2_n);
+      float y_n_l = 0.f;
+      float y_n_r = 0.f;
       (void)y_n_l; (void)y_n_r;
     for (uint32_t i = 0; i < frames; ++i)
     {

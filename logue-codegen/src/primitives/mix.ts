@@ -15,6 +15,19 @@ import {
 } from './shared'
 
 /**
+ * `bus + in*gain + ...` with the unwired inputs left out: without -ffast-math GCC can't drop a
+ * `0.f * gain` (NaN/-0 rules), so an unwired input would still cost a multiply. Wired terms keep
+ * their old shape, so a fully wired mixer emits what it did before `thru`.
+ */
+function mixTerms(bus: string | undefined, inputs: [string | undefined, string][]): string {
+  const terms = [
+    ...(bus !== undefined ? [`(${bus})`] : []),
+    ...inputs.flatMap(([x, gain]) => (x !== undefined ? [`((${x}) * ${gain})`] : []))
+  ]
+  return terms.length > 0 ? terms.join(' + ') : '0.f'
+}
+
+/**
  * The first non-oscillator primitive, and deliberately the minimal object needed to prove real
  * multi-inlet wiring. Averages rather than sums, found necessary (not a style choice) by
  * actually running the generated code through the host-native harness: two identical, in-phase
@@ -35,20 +48,30 @@ import {
  * prior averaging behavior, so this is additive to the registry, not a behavior change for
  * anyone who never touches the new params. Plain params, not wireable inlets -- the user asked
  * for "two controls" here, not modulation.
+ *
+ * `thru` (2026-10-04) is added at unity, before the gains: mixers cascade with one wire each and
+ * no source is halved again per stage (a `mix2` fed into another one's `in1` was). The same idea
+ * as `pan`'s `l`/`r` bus, also on `stereo-mix2`/`pan-mix2`.
  */
 export const mixer2Primitive: LoguePrimitive = {
   id: 'logue/mix/mix2',
   pure: true,
   outletPolarity: 'inherit',
   stateBytesPerInstance: 8, // gain1_ + gain2_, 2 floats
-  description: 'Sums two audio signals, each with its own independent input gain.',
+  description:
+    'Sums two audio signals, each with its own independent input gain, onto thru (added as is) -- chain mixers through thru to mix more.',
+  searchTerms: ['sum', 'cascade'],
   inlets: [
     { name: 'in1', role: 'audio' },
-    { name: 'in2', role: 'audio' }
+    { name: 'in2', role: 'audio' },
+    { name: 'thru', role: 'audio' }
   ],
   memberDecls: (suffix) => `  float gain1_${suffix};\n  float gain2_${suffix};\n`,
   renderExpr: (suffix, inlets) =>
-    `(((${inlets.in1 ?? '0.f'}) * gain1_${suffix}) + ((${inlets.in2 ?? '0.f'}) * gain2_${suffix}))`,
+    `(${mixTerms(inlets.thru, [
+      [inlets.in1, `gain1_${suffix}`],
+      [inlets.in2, `gain2_${suffix}`]
+    ])})`,
   advanceStatement: () => '',
   params: [
     {
@@ -324,20 +347,23 @@ export const stereoCrossfaderPrimitive: LoguePrimitive = {
  * `logue/mix/stereo-mix2`: `mix2` for two stereo pairs -- GAIN1 on `l1`/`r1`, GAIN2 on
  * `l2`/`r2`, the same gain on both sides of a pair, defaults averaging like `mix2`. For summing
  * buses (a comb bank per side, a parallel effect under the dry signal); `stereo-reverb` summed
- * its combs with six `mix2`s.
+ * its combs with six `mix2`s. `l`/`r` in are a bus added at unity (cascading, see `mix2`'s `thru`).
  */
 export const stereoMixer2Primitive: LoguePrimitive = {
   id: 'logue/mix/stereo-mix2',
   pure: true,
   outletPolarity: 'inherit',
   stateBytesPerInstance: 8, // gain1_ + gain2_, 2 floats
-  description: 'Sums two stereo pairs, each pair with its own gain (both sides alike).',
-  searchTerms: ['sum', 'bus'],
+  description:
+    'Sums two stereo pairs, each pair with its own gain (both sides alike), onto the stereo bus on l/r (added as is) -- chain mixers through l/r to mix more.',
+  searchTerms: ['sum', 'bus', 'cascade'],
   inlets: [
     { name: 'l1', role: 'audio' },
     { name: 'r1', role: 'audio' },
     { name: 'l2', role: 'audio' },
-    { name: 'r2', role: 'audio' }
+    { name: 'r2', role: 'audio' },
+    { name: 'l', role: 'audio' },
+    { name: 'r', role: 'audio' }
   ],
   outlets: [{ name: 'l' }, { name: 'r' }],
   memberDecls: (suffix) => `  float gain1_${suffix};\n  float gain2_${suffix};\n`,
@@ -348,7 +374,10 @@ export const stereoMixer2Primitive: LoguePrimitive = {
   },
   renderOutletStatements: (suffix, inlets) => {
     const side = (s: 'l' | 'r'): string =>
-      `      float y_${suffix}_${s} = ((${inlets[`${s}1`] ?? '0.f'}) * gain1_${suffix}) + ((${inlets[`${s}2`] ?? '0.f'}) * gain2_${suffix});\n`
+      `      float y_${suffix}_${s} = ${mixTerms(inlets[s], [
+        [inlets[`${s}1`], `gain1_${suffix}`],
+        [inlets[`${s}2`], `gain2_${suffix}`]
+      ])};\n`
     return side('l') + side('r') + `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`
   },
   advanceStatement: () => '',
@@ -507,6 +536,7 @@ function panMixBlockValues(
  * plus a VCA each. Unwired, each input's two gains (GAIN folded in) are block constants; a wired
  * `pan1`/`pan2` follows at control rate, ramped (`pan_ctl`), with GAIN multiplied per sample.
  * GAIN defaults to 70 (-3 dB): two in-phase full-scale sources at the center then peak at ~0.99.
+ * `l`/`r` in are a bus added at unity, so panning mixers chain like `pan`s.
  */
 export const panMix2Primitive: LoguePrimitive = {
   id: 'logue/mix/pan-mix2',
@@ -515,11 +545,13 @@ export const panMix2Primitive: LoguePrimitive = {
   // ctl/G members only used while a pan is wired)
   stateBytesPerInstance: 56,
   description:
-    'A panning mixer: two mono inputs, each with its own gain and stereo position (equal power), summed onto a stereo pair.',
-  searchTerms: ['panning', 'mixer', 'stereo', 'sum', 'balance'],
+    'A panning mixer: two mono inputs, each with its own gain and stereo position (equal power), summed onto the stereo bus on l/r -- chain mixers through l/r to mix more.',
+  searchTerms: ['panning', 'mixer', 'stereo', 'sum', 'balance', 'cascade'],
   inlets: [
     { name: 'in1', role: 'audio' },
     { name: 'in2', role: 'audio' },
+    { name: 'l', role: 'audio' },
+    { name: 'r', role: 'audio' },
     { name: 'pan1', role: 'control' },
     { name: 'pan2', role: 'control' }
   ],
@@ -554,10 +586,11 @@ export const panMix2Primitive: LoguePrimitive = {
         r: `gain${n}_${suffix} * pmG${n}_${suffix}[1]`
       }
     })
-    const x1 = inlets.in1 ?? '0.f'
-    const x2 = inlets.in2 ?? '0.f'
     const side = (s: 'l' | 'r'): string =>
-      `      float y_${suffix}_${s} = (${x1}) * (${gains[0][s]}) + (${x2}) * (${gains[1][s]});\n`
+      `      float y_${suffix}_${s} = ${mixTerms(inlets[s], [
+        [inlets.in1, `(${gains[0][s]})`],
+        [inlets.in2, `(${gains[1][s]})`]
+      ])};\n`
     return pre + side('l') + side('r') + `      (void)y_${suffix}_l; (void)y_${suffix}_r;\n`
   },
   advanceStatement: () => '',

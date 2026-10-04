@@ -330,7 +330,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       expect(mixerIndex).toBeGreaterThan(bIndex)
     })
 
-    it('an unwired mixer inlet reads as silence (0.f), not an error', () => {
+    it('an unwired mixer inlet is left out of the sum (silence, no multiply), not an error', () => {
       const doc: PatchDocument = {
         nodes: [
           sineNode('a'),
@@ -358,9 +358,29 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'mix unwired inlet' })
-      expect(result.oscCpp).toContain(
-        'float y_mixer = (((y_a) * gain1_mixer) + ((0.f) * gain2_mixer));'
-      )
+      expect(result.oscCpp).toContain('float y_mixer = (((y_a) * gain1_mixer));')
+    })
+
+    it('thru adds the previous mixer at unity, so mixers cascade without halving again', () => {
+      const doc: PatchDocument = {
+        nodes: [
+          sineNode('a'),
+          sineNode('b'),
+          { kind: 'obj', type: 'logue/mix/mix2', name: 'm1', x: 0, y: 0, params: [] },
+          { kind: 'obj', type: 'logue/mix/mix2', name: 'm2', x: 0, y: 0, params: [] },
+          { kind: 'obj', type: LOGUE_AUDIO_OUT_TYPE, name: 'out', x: 0, y: 0, params: [] }
+        ],
+        nets: [
+          { sources: [{ obj: 'a', outlet: 'out' }], dests: [{ obj: 'm1', inlet: 'in1' }] },
+          { sources: [{ obj: 'm1', outlet: 'out' }], dests: [{ obj: 'm2', inlet: 'thru' }] },
+          { sources: [{ obj: 'b', outlet: 'out' }], dests: [{ obj: 'm2', inlet: 'in2' }] },
+          { sources: [{ obj: 'm2', outlet: 'out' }], dests: [{ obj: 'out', inlet: 'in' }] }
+        ],
+        settings: {},
+        notes: ''
+      }
+      const result = generateOldGenOscUnit(doc, { name: 'mix cascade' })
+      expect(result.oscCpp).toContain('float y_m2 = ((y_m1) + ((y_b) * gain2_m2));')
     })
 
     it('rejects two sources wired into the SAME mixer inlet -- fan-in needs a real mixer, not a duplicate wire', () => {

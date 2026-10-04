@@ -105,7 +105,7 @@ public:
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     (void)in;
-      float y_n = (((0.f) * gain1_n) + ((0.f) * gain2_n));
+      float y_n = (0.f);
     for (uint32_t i = 0; i < frames; ++i)
     {
       out[i] = clip1m1f(y_n);
@@ -200,6 +200,7 @@ public:
     shape2_01_ = 0.f;
     value_c_in1 = 37 * 0.01f;
     value_c_in2 = 37 * 0.01f;
+    value_c_thru = 37 * 0.01f;
     gain1_n = 50 * 0.01f;
     gain2_n = 50 * 0.01f;
   }
@@ -247,7 +248,8 @@ public:
     (void)in;
       float y_c_in1 = value_c_in1;
       float y_c_in2 = value_c_in2;
-      float y_n = (((y_c_in1) * gain1_n) + ((y_c_in2) * gain2_n));
+      float y_c_thru = value_c_thru;
+      float y_n = ((y_c_thru) + ((y_c_in1) * gain1_n) + ((y_c_in2) * gain2_n));
     for (uint32_t i = 0; i < frames; ++i)
     {
       out[i] = clip1m1f(y_n);
@@ -275,6 +277,7 @@ private:
   float shape2_01_;
   float value_c_in1;
   float value_c_in2;
+  float value_c_thru;
   float gain1_n;
   float gain2_n;
 
@@ -389,7 +392,7 @@ public:
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     (void)in;
-      float y_n = (((0.f) * gain1_n) + ((0.f) * gain2_n));
+      float y_n = (0.f);
     for (uint32_t i = 0; i < frames; ++i)
     {
       out[i] = clip1m1f(y_n);

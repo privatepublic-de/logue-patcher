@@ -694,12 +694,12 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/mix/mix2': {
     variants: {
       base: {
-        first: { cycles: 8, sdram: 0 },
+        first: { cycles: 11, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
-        extra: { cycles: 8, sdram: 0 }
+        extra: { cycles: 12, sdram: 0 }
       }
     },
-    snapshotHash: '996f8fc72e564aa8'
+    snapshotHash: 'bcf10c53a2411c0f'
   },
   'logue/mix/pan': {
     variants: {
@@ -719,17 +719,17 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/mix/pan-mix2': {
     variants: {
       base: {
-        first: { cycles: 12, sdram: 0 },
-        shared: { cycles: -2, sdram: 0 },
-        extra: { cycles: 10, sdram: 0 }
+        first: { cycles: 18, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 16, sdram: 0 }
       },
       control: {
-        first: { cycles: 67, sdram: 0 },
-        shared: { cycles: -1, sdram: 0 },
-        extra: { cycles: 65, sdram: 0 }
+        first: { cycles: 74, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 72, sdram: 0 }
       }
     },
-    snapshotHash: '6464e3e0e076302a'
+    snapshotHash: '012908465f425a50'
   },
   'logue/mix/stereo-crossfader': {
     variants: {
@@ -749,12 +749,12 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/mix/stereo-mix2': {
     variants: {
       base: {
-        first: { cycles: 8, sdram: 0 },
-        shared: { cycles: -2, sdram: 0 },
-        extra: { cycles: 9, sdram: 0 }
+        first: { cycles: 11, sdram: 0 },
+        shared: { cycles: -3, sdram: 0 },
+        extra: { cycles: 13, sdram: 0 }
       }
     },
-    snapshotHash: 'a9fb88bd2914a2f3'
+    snapshotHash: '73842bd820468e9f'
   },
   'logue/mix/width': {
     variants: {

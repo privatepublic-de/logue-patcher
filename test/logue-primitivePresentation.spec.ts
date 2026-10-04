@@ -28,7 +28,8 @@ const SIGNAL_INLETS = new Set([
   'l1',
   'r1',
   'l2',
-  'r2'
+  'r2',
+  'thru'
 ])
 
 const primitives = recognizedLoguePrimitiveIds().map((id) => findLoguePrimitive(id)!)

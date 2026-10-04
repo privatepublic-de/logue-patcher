@@ -565,7 +565,13 @@ Current rules only. The round-by-round reports, measurements and reversals behin
 `docs/HISTORY.md` -- read the matching entry there before changing a constant.
 
 - **`mix/mix2`** averages (summing two correlated full-scale sources clipped in the harness); an
-  unwired inlet reads as silence. **`math/multiply`**: either unwired inlet mutes the output
+  unwired inlet reads as silence. **Cascading** (2026-10-04): `mix2`'s `thru` and
+  `stereo-mix2`/`pan-mix2`'s `l`/`r` inlets add a bus at unity ahead of the gained inputs (`pan`'s
+  convention), so mixers chain with one wire each and no source is halved again per stage.
+  `mixTerms` leaves unwired terms out of the sum (GCC can't drop `0.f * gain` without fast-math):
+  unwired pan-mix2 code 176 -> 36 B (xd osc); a wired bus costs one add (+3 xd emulator cycles).
+  Chosen over N-input mixers and named buses (user's call) as the least code; Pd-style summing
+  inlets on audio-out/a `mix/sum` node are the next step if wiring still feels heavy. **`math/multiply`**: either unwired inlet mutes the output
   (absorbing zero, disclosed). **`filter/highpass-cheap`** is `in - onepole_step(...)`; its
   `CUTOFF` defaults to 0 (the passthrough end of the same coefficient).
 - **`mix/crossfader`** uses `xfade_sqrtf` (`vsqrt.f32` on ARM, `sqrtf` on the host): newlib's

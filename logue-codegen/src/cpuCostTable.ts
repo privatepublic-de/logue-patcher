@@ -193,23 +193,23 @@ export const CPU_COST_TABLE: Record<
     worst: 16,
     snapshotHash: 'ff48b03b50520cf3'
   },
-  'logue/mix/mix2': { variants: { base: 0 }, worst: 0, snapshotHash: '996f8fc72e564aa8' },
+  'logue/mix/mix2': { variants: { base: 0 }, worst: 0, snapshotHash: 'bcf10c53a2411c0f' },
   'logue/mix/pan': {
     variants: { base: 4, control: 4 },
     worst: 4,
     snapshotHash: 'd139dc1b3b1c3b34'
   },
   'logue/mix/pan-mix2': {
-    variants: { base: 4, control: 4 },
-    worst: 4,
-    snapshotHash: '6464e3e0e076302a'
+    variants: { base: 7, control: 7 },
+    worst: 7,
+    snapshotHash: '012908465f425a50'
   },
   'logue/mix/stereo-crossfader': {
     variants: { base: 15, control: 15 },
     worst: 15,
     snapshotHash: '779c8ef1206c74bd'
   },
-  'logue/mix/stereo-mix2': { variants: { base: 0 }, worst: 0, snapshotHash: 'a9fb88bd2914a2f3' },
+  'logue/mix/stereo-mix2': { variants: { base: 0 }, worst: 0, snapshotHash: '73842bd820468e9f' },
   'logue/mix/width': {
     variants: { base: 6, control: 17 },
     worst: 17,

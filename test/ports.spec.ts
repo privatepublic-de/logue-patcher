@@ -189,6 +189,7 @@ describe('resolvePorts stale ports', () => {
     expect(ports.inlets).toEqual([
       { name: 'in1', role: 'audio' },
       { name: 'in2', role: 'audio' },
+      { name: 'thru', role: 'audio' },
       { name: 'l2', stale: true }
     ])
   })
