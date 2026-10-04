@@ -2,7 +2,7 @@
 
 Plan drafted 2026-10-04; decisions confirmed the same day (all five defaults). Status: phase 1
 (import analysis, `wt8` data model, codec) and phase 2 (the primitive: harness, builds, emulator,
-tables) done 2026-10-04; phase 3 (Inspector) done the same day; phase 4 (hardware) open. Origin: `osc/granular` with SYNC on bends pitch while
+tables) done 2026-10-04; phase 3 (Inspector) done the same day; phase 4 (hardware) passed the same day on both devices. Origin: `osc/granular` with SYNC on bends pitch while
 POSITION moves (each grain is a slice one NOTE period long of material whose own period is
 different, so scanning drifts the material's phase from grain to grain: a Doppler shift of
 about `f * v`, v = scan speed in seconds of material per second). The user asked for "more
@@ -297,6 +297,14 @@ since the harness compares the unit against it. MORPH is a select (Smooth/Step).
 The user's vocal loop re-imported from the original WAV, on a real xd (chords, POSITION on
 Shape with the Mod LFO: the original complaint) and a real NTS-1 mkII (64 frames; POSITION
 from an LFO).
+
+### Phase 4 results (2026-10-04)
+
+`scripts/stageWavetable.ts --hardware` (the soul vocal) built `WT Shape` (POSITION on Shape,
+MORPH as menu Param 1), `WT Scan` (a triangle LFO sweeping POSITION over every frame, its RATE on
+Shape), `GR Scan` (granular SYNC with the same sweep, for comparison) and, NTS-1 mkII only,
+`WT 64` (64 frames, 46 405 B of 49 152). All four work as expected on a real minilogue xd and a
+real NTS-1 mkII (user, 2026-10-04).
 
 ## Open items / later
 

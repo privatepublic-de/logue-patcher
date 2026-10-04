@@ -740,7 +740,9 @@ Current rules only. The round-by-round reports, measurements and reversals behin
     the Shape knob 165 measured / 165..227 estimated, an LFO into POSITION 228 / 204..263, an LFO
     into POSITION and `pitch` 385 / 204..263 -- a moving `pitch` is the `control` variants' known
     gap (see "CPU"). The heavy variant was POSITION and pitch at first (365), which put a
-    knob-bound POSITION's knob maximum at 384. No hardware pass yet.
+    knob-bound POSITION's knob maximum at 384. Confirmed on a real xd and a real NTS-1 mkII (user,
+    2026-10-04: `stageWavetable.ts --hardware`'s WT Shape / WT Scan / GR Scan / WT 64, the soul
+    vocal, POSITION by hand, by the Mod LFO and by a patch LFO).
   - Inspector: `WavetableSection.tsx` (not `SampleSection`): the cycle at POSITION, a frame strip
     that scrubs POSITION (one undo step), Frames/Points/Level import choices, a PeriodicWave
     preview at middle C that follows a scrub (`sample/wavetableView.ts`). The pitch tracker
@@ -1596,9 +1598,6 @@ Mechanics (`logue-codegen/src/subpatches.ts`, dependency-free, definitions alway
   full patch 857/969 cycles -- past the ~750 clean anchor, so the xd gets `reverse-wash-xd` (one
   line, one allpass a side): 606/670. SOFTEN's detector constants are from a simulation and the
   harness, not ears.
-- `osc/wavetable` (2026-10-04) is harness-, link-, emulator- and app-checked: no hardware or
-  listening pass on a device yet (phase 4 of `docs/PLAN-wavetable.md`). Staged: `lp-xd-wt`(`-lfo`),
-  `lp-nts1-wt`(`-lfo`/`-64x256`/`-32x512`).
 - `osc/noise`'s COLOR and `osc/lfsr` (2026-10-03) are harness-, link- and emulator-checked
   only: no listening pass. Staged: `lp-xd-noise`/`lp-xd-lfsr`/`lp-xd-lfsr-lfo` and the
   `lp-nts1-*` equivalents (`scripts/stageNoiseTypes.ts`; COLOR/MODE/TRACK as menu params).
