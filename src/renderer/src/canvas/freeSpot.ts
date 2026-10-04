@@ -1,5 +1,6 @@
 import { resolveNodePrimitive } from '../state/subpatchLibraryStore'
 import { GRID_SIZE } from '../state/patchStore'
+import { isCompactPrimitive } from './compactNode'
 
 export interface Rect {
   x: number
@@ -70,6 +71,7 @@ export function findFreeSpot(
  */
 export function estimateNodeSize(type: string): { width: number; height: number } {
   if (type === 'patch/comment') return { width: 140, height: 40 }
+  if (isCompactPrimitive(type)) return { width: 110, height: 30 }
   const spec = resolveNodePrimitive(type)
   const ports = Math.max(spec?.inlets?.length ?? 0, spec?.outlets?.length ?? 1)
   const params = spec?.params?.length ?? 0

@@ -277,6 +277,17 @@ export interface LoguePrimitive {
    */
   searchTerms?: string[]
   /**
+   * What a node's header shows instead of the id (`uni→bi` for `util/unipolar-to-bipolar`), for
+   * a small helper whose id is long next to what it does. Display only; the id stays the
+   * tooltip.
+   */
+  shortLabel?: string
+  /**
+   * The name a newly placed instance gets instead of the id's last segment (`u2b`). Plain
+   * `[a-zA-Z0-9_]`, since a node name becomes part of generated member names.
+   */
+  defaultName?: string
+  /**
    * Ordered named signal inlets this primitive accepts -- omit/empty for a pure source (every
    * oscillator). A primitive with inlets reads them from `renderExpr`'s second parameter, never
    * from `doc.nets` itself (graph wiring is `oscInstances.ts`'s job, not a primitive's).

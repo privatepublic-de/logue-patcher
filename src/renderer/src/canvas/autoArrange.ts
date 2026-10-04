@@ -1,6 +1,7 @@
 import type { PatchDocument, PatchNode } from '@shared/domain/patch'
 import { nodeId } from '../state/nodeId'
 import { resolvePorts, type ResolvedPorts } from './ports'
+import { headerTypeLabel, isCompactPrimitive } from './compactNode'
 
 /** Ascending y, then ascending x as a tiebreaker -- this module's own sweep-ordering key, not read by anything else post-Axoloti-removal. */
 export function comparePosition(a: { x: number; y: number }, b: { x: number; y: number }): number {
@@ -42,6 +43,8 @@ const PARAMS_PADDING_X = 16
 const BORDERS = 3
 const CHAR_WIDTH_BOLD_12 = 7
 const CHAR_WIDTH_SMALL_10 = 6
+const COMPACT_PADDING_X = 24
+const TITLE_GAP = 6
 
 const COMMENT_MAX_WIDTH = 220
 const COMMENT_PADDING_X = 20
@@ -80,6 +83,18 @@ function estimateObjectSize(node: PatchNode, ports: ResolvedPorts): Size {
   // the header's width and height.
   const title = node.name ?? ''
   const params = node.kind === 'obj' ? node.params : []
+
+  if (node.kind === 'obj' && isCompactPrimitive(node.type) && params.length === 0) {
+    return {
+      width:
+        title.length * CHAR_WIDTH_BOLD_12 +
+        TITLE_GAP +
+        headerTypeLabel(node.type).length * CHAR_WIDTH_SMALL_10 +
+        COMPACT_PADDING_X +
+        BORDERS,
+      height: HEADER_PADDING_Y - 4 + TITLE_LINE_HEIGHT + BORDERS
+    }
+  }
 
   const titleWidth = title.length * CHAR_WIDTH_BOLD_12 + HEADER_PADDING_X
   const inletColWidth =

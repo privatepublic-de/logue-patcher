@@ -92,6 +92,8 @@ export const constantPrimitive: LoguePrimitive = {
  */
 export const unipolarToBipolarPrimitive: LoguePrimitive = {
   id: 'logue/util/unipolar-to-bipolar',
+  shortLabel: 'uni→bi',
+  defaultName: 'u2b',
   pure: true,
   outletPolarity: 'bipolar',
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
@@ -105,6 +107,8 @@ export const unipolarToBipolarPrimitive: LoguePrimitive = {
 
 export const bipolarToUnipolarPrimitive: LoguePrimitive = {
   id: 'logue/util/bipolar-to-unipolar',
+  shortLabel: 'bi→uni',
+  defaultName: 'b2u',
   pure: true,
   outletPolarity: 'unipolar',
   stateBytesPerInstance: 0, // stateless, memberDecls is empty
@@ -273,6 +277,7 @@ const SAMPLE_DELAY_STORE_HELPER: HelperBlock = {
  */
 export const sampleDelayPrimitive: LoguePrimitive = {
   id: 'logue/util/sample-delay',
+  shortLabel: 'z⁻¹',
   outletPolarity: 'inherit',
   stateBytesPerInstance: 4, // z_, 1 float
   description:

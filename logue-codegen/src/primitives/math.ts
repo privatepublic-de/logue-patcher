@@ -79,6 +79,7 @@ export const multiplyPrimitive: LoguePrimitive = {
  */
 export const negatePrimitive: LoguePrimitive = {
   id: 'logue/math/negate',
+  shortLabel: '−x',
   pure: true,
   outletPolarity: 'inherit',
   refinePolarity: (ctx) => (nonNegative(ctx.inlet('in')) ? 'bipolar' : undefined),
@@ -100,6 +101,7 @@ export const negatePrimitive: LoguePrimitive = {
  */
 export const oneMinusPrimitive: LoguePrimitive = {
   id: 'logue/math/one-minus',
+  shortLabel: '1−x',
   pure: true,
   outletPolarity: 'inherit',
   // 1 - x of a -1..1 signal is 0..2.
@@ -423,6 +425,7 @@ export const clampPrimitive: LoguePrimitive = {
  */
 export const absPrimitive: LoguePrimitive = {
   id: 'logue/math/abs',
+  shortLabel: '|x|',
   pure: true,
   outletPolarity: 'inherit',
   refinePolarity: (ctx) => {

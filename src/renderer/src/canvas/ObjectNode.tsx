@@ -11,11 +11,11 @@ import {
 import { useOptionalPatchStore } from '../state/patchStore'
 import { useInlineEdit } from './useInlineEdit'
 import { nodeTypeLabel } from './nodeTypeLabel'
+import { headerTypeLabel, isCompactPrimitive } from './compactNode'
 import {
   categoryForPrimitiveId,
   colorForCategory,
   PLATFORM_LABEL,
-  stripLoguePrefix,
   restrictedPlatforms
 } from '../browser/loguePrimitiveCatalog'
 import { isSubpatchInstanceType } from '@logue-codegen/subpatches'
@@ -144,7 +144,8 @@ function InletModulationMarker({
  * used to be two rows, the Axoloti way (a type strip above the name), which cost every node a
  * line; showing only one of them when the name is the default was rejected -- nodes would differ
  * in layout for an invisible reason, and the name would have nowhere to be edited. The type takes
- * only the space left over (it never widens a node) and gives way to the badges first.
+ * only the space left over (it never widens a node) and gives way to the badges first. A
+ * compact primitive (compactNode.ts) is that row alone, with its two jacks on the row's edges.
  */
 function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JSX.Element {
   const {
@@ -164,7 +165,7 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
   const isSubpatch = rawType !== undefined && isSubpatchInstanceType(rawType)
   const isLogueType = (rawType?.startsWith('logue/') ?? false) || isSubpatch
   const category = isLogueType ? categoryForPrimitiveId(rawType!) : undefined
-  const subtitle = isLogueType ? stripLoguePrefix(rawType!) : rawType
+  const subtitle = isLogueType ? headerTypeLabel(rawType!) : rawType
   const titlebarStyle = category
     ? { backgroundColor: withAlpha(colorForCategory(category), 0.3) }
     : undefined
@@ -224,6 +225,88 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
   const onlyInformationalReference =
     brokenReferences.length === 0 && unresolvedReferences.length > 0
 
+  const titleElement = editing ? (
+    <input
+      ref={inputRef as RefObject<HTMLInputElement>}
+      className="patch-node__title-input nodrag nopan"
+      autoFocus
+      defaultValue={node.name ?? ''}
+      onBlur={(e) => commitEdit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur()
+        else if (e.key === 'Escape') cancelEdit()
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+    />
+  ) : (
+    <span
+      className="patch-node__title"
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        startEditing()
+      }}
+    >
+      {title}
+    </span>
+  )
+
+  // A badge (an issue, "Renamed", "Only on") needs the full header, so such a node stays full
+  // size; so does one whose saved ports no longer match its primitive (a stale wire's jack).
+  const compact =
+    node.kind === 'obj' &&
+    isCompactPrimitive(node.type) &&
+    inlets.length <= 1 &&
+    outlets.length === 1 &&
+    node.params.length === 0 &&
+    unresolvedReferences.length === 0 &&
+    ownPlatforms.length === 0
+
+  if (compact) {
+    const inlet = inlets[0]
+    const outlet = outlets[0]
+    return (
+      <div className={`patch-node patch-node--compact${selected ? ' patch-node--selected' : ''}`}>
+        <div className="patch-node__title-row" style={titlebarStyle}>
+          {inlet && (
+            <span
+              className="patch-node__compact-jack patch-node__compact-jack--in"
+              data-port-name={inlet.name}
+              data-port-direction="in"
+            >
+              <Handle
+                type="target"
+                position={Position.Left}
+                id={inlet.name}
+                className={
+                  `patch-node__handle ${inletShapeClassForRole(inlet.role)}` +
+                  (inlet.stale ? ' patch-node__handle--stale' : '')
+                }
+                style={{ backgroundColor: inletColors[inlet.name] ?? colorForRole(inlet.role) }}
+              />
+            </span>
+          )}
+          {titleElement}
+          <span className="patch-node__type" data-tooltip={rawType}>
+            {subtitle}
+          </span>
+          <span
+            className="patch-node__compact-jack patch-node__compact-jack--out"
+            data-port-name={outlet.name}
+            data-port-direction="out"
+          >
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={outlet.name}
+              className={`patch-node__handle ${outletShapeClassForBucket(outletBuckets[outlet.name])}${outlet.stale ? ' patch-node__handle--stale' : ''}`}
+              style={{ backgroundColor: outletColors[outlet.name] }}
+            />
+          </span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={`patch-node${selected ? ' patch-node--selected' : ''}${isSubpatch ? ' patch-node--subpatch' : ''}${isDeviceControl && !controlOnTarget ? ' patch-node--unbound-control' : ''}`}
@@ -241,30 +324,7 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
     >
       <div className="patch-node__header">
         <div className="patch-node__title-row" style={titlebarStyle}>
-          {editing ? (
-            <input
-              ref={inputRef as RefObject<HTMLInputElement>}
-              className="patch-node__title-input nodrag nopan"
-              autoFocus
-              defaultValue={node.name ?? ''}
-              onBlur={(e) => commitEdit(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') e.currentTarget.blur()
-                else if (e.key === 'Escape') cancelEdit()
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <span
-              className="patch-node__title"
-              onDoubleClick={(e) => {
-                e.stopPropagation()
-                startEditing()
-              }}
-            >
-              {title}
-            </span>
-          )}
+          {titleElement}
           {subtitle && (
             <span className="patch-node__type" data-tooltip={rawType}>
               {subtitle}

@@ -175,6 +175,25 @@ describe('"invert" names two different operations', () => {
   })
 })
 
+describe('short labels and default names', () => {
+  const entry = (id: string): PrimitiveCatalogEntry =>
+    listInsertablePrimitives().find((e) => e.id === id)!
+
+  it('a new polarity converter is named by its defaultName', () => {
+    expect(insertArgsFor('logue/util/bipolar-to-unipolar')).toEqual({
+      type: 'logue/util/bipolar-to-unipolar',
+      shortId: 'b2u'
+    })
+    expect(insertArgsFor('logue/util/unipolar-to-bipolar').shortId).toBe('u2b')
+  })
+
+  it('search finds a primitive by its defaultName and shortLabel', () => {
+    expect(matchesFilter(entry('logue/util/bipolar-to-unipolar'), 'b2u')).toBe(true)
+    expect(matchesFilter(entry('logue/util/unipolar-to-bipolar'), 'uni→bi')).toBe(true)
+    expect(matchesFilter(entry('logue/util/unipolar-to-bipolar'), 'b2u')).toBe(false)
+  })
+})
+
 describe('device-control presets', () => {
   it('insert a sense/control already on the knob, on both devices', () => {
     expect(controlPresetEntries('osc').map((e) => e.label)).toEqual([

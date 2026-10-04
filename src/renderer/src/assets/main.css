@@ -674,6 +674,21 @@ summary.library-panel__section-title:hover {
   color: var(--ev-c-text-3);
 }
 
+/* A one-row node (compactNode.ts): the header row is the whole node, its jacks on the row's
+   edges. Nothing else sets its width, so the type keeps its natural width here. */
+.patch-node--compact {
+  min-width: 0;
+}
+
+.patch-node--compact .patch-node__title-row {
+  padding: 4px 12px;
+  border-radius: 5px;
+}
+
+.patch-node--compact .patch-node__type {
+  flex: 0 0 auto;
+}
+
 /* An advisory-only "this primitive has no equivalent on the currently viewed platform" badge,
    pushed to the row's own far edge (`.patch-node__title-row`
    is a flex row for exactly this) same as `.patch-node__port-badge`'s `margin-left: auto` trick.

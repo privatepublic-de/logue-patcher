@@ -294,7 +294,8 @@ export function insertArgsFor(id: string): {
   params?: ParamValue[]
 } {
   const preset = CONTROL_PRESETS.find((p) => id === `${DEVICE_CONTROL_TYPE}@${p.knob}`)
-  if (!preset) return { type: id, shortId: shortIdForPrimitiveId(id) }
+  if (!preset)
+    return { type: id, shortId: findLoguePrimitive(id)?.defaultName ?? shortIdForPrimitiveId(id) }
   return {
     type: DEVICE_CONTROL_TYPE,
     shortId: preset.shortId,
@@ -394,11 +395,18 @@ export function groupByCategory(
  * "osc") surfaces every primitive in that category, not just ids/labels literally containing
  * "osc". A renamed primitive also matches its former NAME (last id segment), so "ringmod"
  * still finds `logue/math/multiply` -- not the former category, or "mix" would list it too.
- * A primitive's `searchTerms` match too ("invert" lists both `negate` and `one-minus`).
+ * A primitive's `searchTerms`, `shortLabel` and `defaultName` match too ("invert" lists both
+ * `negate` and `one-minus`, "b2u" finds `bipolar-to-unipolar`).
  */
 export function matchesFilter(entry: PrimitiveCatalogEntry, filterText: string): boolean {
   const q = filterText.trim().toLowerCase()
   if (!q) return true
+  const primitive = findLoguePrimitive(entry.id)
+  const extraTerms = [
+    ...(primitive?.searchTerms ?? []),
+    ...(primitive?.shortLabel ? [primitive.shortLabel] : []),
+    ...(primitive?.defaultName ? [primitive.defaultName] : [])
+  ]
   return (
     entry.category.toLowerCase().includes(q) ||
     entry.label.toLowerCase().includes(q) ||
@@ -406,7 +414,7 @@ export function matchesFilter(entry: PrimitiveCatalogEntry, filterText: string):
     formerPrimitiveIds(entry.id).some((oldId) =>
       oldId.split('/').pop()!.toLowerCase().includes(q)
     ) ||
-    (findLoguePrimitive(entry.id)?.searchTerms ?? []).some((term) => term.includes(q))
+    extraTerms.some((term) => term.toLowerCase().includes(q))
   )
 }
 
