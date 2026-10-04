@@ -970,7 +970,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   RISE/FALL 0 is bit-exact). Kept beside `glide` (user's call): glide is the one-knob portamento,
   and growing it would have changed old patches. Harness (`scripts/runSlewHarness.ts`, xd,
   ASan/UBSan): every jump time within a sample or two of the curve in both modes, wired paths
-  clean. xd emulator 25 base. No hardware pass yet.
+  clean. xd emulator 25 base. Confirmed on a real xd and a real NTS-1 mkII (user, 2026-10-04).
 - **`math/scale`** and **`util/glide`** overlap existing nodes on purpose: `scale` saves a
   VCA+negate pair for control signals; `glide` is a linear slew limiter, a different character
   from `lowpass-cheap`'s exponential lag. `scale`'s factor is `FACTOR/100 * RANGE` (RANGE a select
