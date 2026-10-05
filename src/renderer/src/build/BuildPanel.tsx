@@ -419,14 +419,14 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
               <span>Effect Type</span>
               {/* Among effects only (user's call, 2026-09-30): an oscillator's audio in/out and
                   wiring differ. `setEffectModule` re-lays the params for the new type. */}
-              <div className="build-panel__platform-toggle" role="group" aria-label="Effect type">
+              <div className="build-panel__segmented" role="group" aria-label="Effect type">
                 {EFFECT_MODULES.map((module) => (
                   <button
                     key={module}
                     type="button"
                     className={
-                      'view-mode-pill__option' +
-                      (logueTarget.module === module ? ' view-mode-pill__option--active' : '')
+                      'build-panel__segment' +
+                      (logueTarget.module === module ? ' build-panel__segment--active' : '')
                     }
                     aria-pressed={logueTarget.module === module}
                     onClick={() => {
@@ -456,10 +456,13 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
           )}
           {/* Which platform Export/Build/the warning below act on -- shared with the Param
               Matrix's toggle, NOT persisted (see `buildPlatform` above). */}
-          <PlatformToggle
-            ariaLabel="Build target platform"
-            tooltip={(p) => `Export/Build/warn for ${PLATFORM_LABEL[p]}`}
-          />
+          <div className="build-panel__field build-panel__target">
+            <span>Target</span>
+            <PlatformToggle
+              ariaLabel="Build target platform"
+              tooltip={(p) => `Export/Build/warn for ${PLATFORM_LABEL[p]}`}
+            />
+          </div>
           {effect && !findUnitKind(buildPlatform, logueTarget.module) && (
             <WarningLine
               summary={`No ${MODULE_LABEL[logueTarget.module].toLowerCase()} on ${PLATFORM_LABEL[buildPlatform]} yet`}

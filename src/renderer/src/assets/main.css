@@ -2465,6 +2465,48 @@ input[type='checkbox'].param-widget__checkbox-input:checked {
   border-radius: 999px;
 }
 
+/* The effect type is part of the patch (saved, undoable), the target only where this session
+   builds: square segments with a neutral fill keep the type with the Name input above, so the
+   accent pill means "the device" alone. */
+.build-panel__segmented {
+  display: flex;
+  width: fit-content;
+  padding: 2px;
+  gap: 2px;
+  background-color: var(--color-background-mute);
+  border: 1px solid var(--ev-c-gray-3);
+  border-radius: 5px;
+}
+
+.build-panel__segment {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--ev-c-text-2);
+  padding: 3px 12px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* Beats base.css's `button:hover:not(:disabled)` gray box, which would look like the active one. */
+.build-panel__segment:hover:not(:disabled) {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--ev-c-gray-2) 40%, transparent);
+}
+
+.build-panel__segment--active,
+.build-panel__segment--active:hover:not(:disabled) {
+  background-color: var(--ev-c-gray-2);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Sets "where it builds" apart from "what the patch is" above it. */
+.build-panel__target {
+  border-top: 1px solid var(--ev-c-gray-3);
+  padding-top: 8px;
+}
+
 /* The panel's primary actions, side by side across the full width: Build, and Build & Upload
    for the edit/build/listen loop. */
 .build-panel__build-row {
