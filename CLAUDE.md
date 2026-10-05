@@ -465,7 +465,7 @@ unwired for their readers (grain-mill's envelope times took the per-block path; 
 ~90 high), a grain whose `trig` moves counts `heavy-capturing` (trigger rate vs SIZE is
 unknowable; grain-mill sync/free record all the time), and the knob-reachable maximum follows
 the oscillator rules (a knob-bound checkbox both ways, `heavy-*` once a knob or moving input can
-move a setting). **The gauge** (Build panel, xd effects only; NTS-1 mkII effects keep a "—" row):
+move a setting). **The gauge** (Build panel, xd effects; NTS-1 mkII below):
 cycles per sample at `XD_FX_SDRAM_PENALTY` 8, the scale the anchors were read at, so the unknown
 real penalty doesn't shift estimate against anchor. Green to `XD_FX_CLEAN_CYCLES` 750 (grain-mill's
 xd delay clean at ~680-750 with the factory mod and reverb on), red at `XD_FX_DROPOUT_CYCLES` 814
@@ -485,6 +485,21 @@ instances, helpers and SDK headers next to the table -- how the misses above wer
 instead of the table. `logue-fxCpuCostTable.spec.ts` warns on a missing or stale entry (snapshot
 hash, or the fx goldens' shell hash for the whole table) like the oscillator one;
 `CPU_COST_STRICT=1` fails it.
+
+**NTS-1 mkII effect gauge** (2026-10-05): `estimateFxCpuCost(doc, defs, 'nts1mkii')`, the xd
+effect table converted to M7 cycles as `0.85 * cycles + 44 * sdram` (`NTS1MKII_FX_CYCLE_SCALE`/
+`NTS1MKII_FX_SDRAM_CYCLES`), fitted (relative error, no intercept) to 14 generated effects measured
+on the device by `scripts/hwtest/calibrateFx.ts` (see "Hardware test harness"; readings in
+`hwtest/nts1FxCpuReadings.json`, loaded as `NTS1MKII_FX_PROBE_READINGS`): every one within
+-22..+19 %. Plain math costs the M7 a little less than the xd emulator counts; an SDRAM access
+~44 cycles. `scripts/checkNts1FxCpuEstimate.ts` reprints the comparison and a fresh fit without the
+device; `logue-estimateFxCpuCost.spec.ts` warns outside -25..+25 % (`CPU_COST_STRICT=1` fails).
+`osc/additive`/`filter/string` (no xd effect holds them) count their xd oscillator cost. Anchors,
+measured by `hwtest/cpuCeiling.ts` (a unit burning an exact load in the REVERB slot, a factory
+oscillator playing): dropouts past 6300 cycles per sample with factory CHORUS + STEREO delay on
+(`NTS1MKII_FX_DROPOUT_CYCLES`, red), past 7000 with mod and delay off (`NTS1MKII_FX_SOLO_CYCLES`,
+"solo only" between); green to 4900 (`NTS1MKII_FX_CLEAN_CYCLES` = 0.78 * 6300: an estimate 22 %
+low still clears the busy ceiling), "tight" between. Device controls are read per platform.
 
 `logue-codegen/scripts/*.ts` are one-off, throwaway verification scripts (stage a generated
 project into a sibling logue-sdk checkout for a real Docker build + websim/hardware check) — not
@@ -1617,8 +1632,8 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   `fixedCodeBytes` (4220 B on NTS-1 mkII effects, re-checked by the sweep) and the primitives'
   measured code (see "RAM estimate"). `Fx::reset()` (`unit_reset`) zeroes the SDRAM and re-runs the state inits,
   keeping params. Korg's templates never call `sdram_free`, so neither does teardown. Host harness:
-  `scripts/runNts1FxHarness.ts` (`harness/nts1mkii-fx/`). The CPU estimate is `incomplete` for
-  effects; a generated effect carries ~4.2 KB of fixed code, a big share of modfx's 16 KB. Four generated units (pass, lowpass +
+  `scripts/runNts1FxHarness.ts` (`harness/nts1mkii-fx/`). The CPU gauge is the xd effect table
+  scaled (see "NTS-1 mkII effect gauge"); a generated effect carries ~4.2 KB of fixed code, a big share of modfx's 16 KB. Four generated units (pass, lowpass +
   MIX, ring, Haas) behave as designed on a real NTS-1 mkII (user, 2026-09-30), and so do the three
   examples; the example reverb (8 long-delay combs, 4 allpasses) measured 3406 of 11458
   cycles/sample (29%) with the CPU probe -- the only effect CPU measurement so far.
@@ -1740,6 +1755,41 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   Measure an envelope's shape by rendering it directly, not through a VCA whose carrier's own
   polarity flips can hide the ramp.
 
+## Hardware test harness (NTS-1 mkII, 2026-10-05)
+
+`logue-codegen/scripts/hwtest/`: scripted measurements on the user's real NTS-1 mkII, no hands on
+the device. MIDI through the native helper (`midiHelperClient.ts`, moved out of
+`uploadTestUnit.ts`), audio recorded with Homebrew `sox` from the user's X18/XR18 **inputs
+17/18** (the clean pair; 1/2 go through a limiter; ~-30 dBFS, ~60 dB SNR; `HWTEST_AUDIO_DEVICE`/
+`HWTEST_AUDIO_CHANNELS` override). Run only with the user's go-ahead: it overwrites slot 1 of
+each module it uses (the user's choice) and the edit buffer. Every run first snapshots both into
+its own `~/Documents/logue-patches/backups/hwtest/run-<time>/` (`deviceState.ts`), builds its
+test programs from that snapshot, restores it at the end and reads it back to verify; a slot or
+program still holding a test unit (developer id `LPHT`, a run that died) is taken from the newest
+earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one, read-only.
+- `nts1Rig.ts`: notes/CCs, the current-program dump (`10` -> `40`, 504 bytes unpacked, words
+  little-endian; written back with `40`, ACK `23`), slot upload/download. Units are SELECTED by
+  writing their developer id, unit id and version (a little-endian u32, `major<<16|minor<<8|patch`)
+  into the program's selection (`deviceState.ts`' `select`); test units get developer id `LPHT`
+  and a unit id per test (`buildUnit.ts`; `generateNts1MkiiProject`'s optional `ids`) since every
+  app build has 0/0. Menu params are set the same way: an effect's program PARAM n is its param
+  row n+2 on delay/reverb (after TIME/DEPTH/MIX), knobs A/B/MIX are 0..1023 words. NRPN is off on
+  the user's device (short messages on) and isn't needed; the user offered to turn it on.
+  The device's output is set to mono globally.
+- `telemetry.ts`: an effect's render cycles reach the recording as audio. The unit still runs its
+  graph, then replaces its output with a 440 Hz detector sine, a tone at 2000 Hz + cycles/4
+  (its own render, from the M7's DWT counter) and one for the whole budget; `BURN` (optional menu
+  param) spins until an exact load is reached. Decoded by `analysis.ts` (`peakFrequency`,
+  `trackPeak` for a cost that moves, `scanGlitches` for dropouts: a per-block least-squares fit of
+  the known tones, residual against the clean floor), tested on synthetic signals
+  (`test/hwtest-analysis.spec.ts`).
+- `cpuCeiling.ts` (`--others`): the effect anchors above. `calibrateFx.ts`: the 14-unit
+  calibration. A unit with buffers gets dearer as they fill (grain-mill ~1840 -> ~2520 over 3 s),
+  so readings settle 4 s and track 3 s; switching the module off before re-uploading into the
+  selected slot avoided units that sometimes never played.
+- Gotcha: `sox` writes raw output with the INPUT's channel count unless the output has its own
+  `-c` (it read as a 9x time stretch).
+
 ## Electron / IPC
 
 - Sandboxed preload (`sandbox: true`) can't `require()` external node_modules — the preload
@@ -1793,8 +1843,9 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
 ## Known open items / verification debt
 
 - The xd effect CPU gauge has three anchors from two units (see "Effect CPU table"); between 814
-  and 1660 only "with the others off" is known, not where one other slot is still fine. No NTS-1
-  mkII effect gauge (no M7 emulator; probe readings exist).
+  and 1660 only "with the others off" is known, not where one other slot is still fine. The NTS-1
+  mkII effect anchors were measured with factory CHORUS + STEREO delay as the "busy" case; heavier
+  factory effects (or a heavy user oscillator) leave less, unmeasured.
 - `logue/osc/granular`'s CPU per voice isn't measured on-device (it plays on both devices).
 - `util/reverse-tap` and the reverse-wash examples (2026-10-01) are harness-, link- and
   emulator-checked only; no listening pass yet. Staged: `lp-fx-revwash` (+ `-cpu` with the probe

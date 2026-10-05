@@ -2800,3 +2800,42 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   wavefolder + lowpass-cheap in Radio: ~33 against ~25 (a `fabsf`-based clamp was no faster).
   Radio with drive in place of those two measures 434 / 475. Its point is the sound (a real
   saturation level and a tone control), not the CPU.
+
+### NTS-1 mkII effect CPU gauge (2026-10-05)
+
+- No M7 emulator, so the xd effect table stands in, scaled by the probe readings on hand. A
+  three-term fit (intercept, scale, SDRAM) on the five generated units gave a negative intercept,
+  so it was dropped. Two hand-written spike units (chorus 502, delay 453, 2026-09-29) were left
+  out: their xd-scale cycles would have been guesses. A plain least-squares fit (k 1.42, p 38) let
+  reverb and grain-mill dominate (buf4 +24 %); the relative-error fit (k 1.71, p 23) is what the
+  gauge uses: -18..+11 %.
+- The M7 needs ~1.7x the xd emulator's cycles in an effect, the opposite of the oscillator
+  stand-in's assumption, and a trivial 6-access SDRAM delay read ~450. Most of an NTS-1 mkII
+  effect's cost is SDRAM traffic.
+- The clean anchor sits on grain-mill's ESTIMATE (~3850 -> 3900), not its 3610 reading:
+  pinned on the reading, a unit known to run clean read "untested".
+- Superseded the same night by the hardware harness's measurements (next entry): the probe
+  readings were taken at hand settings on older code, and their 1.7 / 23 fit overestimated plain
+  math by ~2x (auto-wah 337 estimated vs 158 measured).
+
+### NTS-1 mkII hardware test harness and the effect gauge's anchors (2026-10-05)
+
+- Unit selection through the program dump first stayed silent: the selection's version is a
+  little-endian u32, not the spec table's major/minor/patch fields; found by having the user
+  select a test unit by hand and diffing the dump.
+- The first recordings read every pitch ~38 semitones low: `sox` wrote 18 channels (the input's
+  count) although the effect chain ended in a 2-channel remix, so 9x too many samples were read
+  as stereo.
+- Ceiling (BURN in the REVERB slot, factory SqR oscillator holding A3): alone clean at 7000,
+  broken from 7050 (the 250-step sweep went from clean at 7000 to broken everywhere at 7250);
+  with factory CHORUS + STEREO delay clean at 6300, broken from 6350, so those two cost ~700.
+  Past the ceiling the whole output breaks (the residual floor -71 -> -22 dB) and the unit's
+  calls stop arriving every 11,458 cycles; the device recovered every time at BURN 0. A
+  median-relative glitch threshold missed it (all windows broken), hence the clean floor.
+- Calibration: the first pass read grain-mill 1812 and once -80 for a unit -- cost still rising
+  (buffers filling) and a smeared tone; with a 4 s settle and tracking, grain-mill reads 2332
+  (max 2432). A unit re-uploaded into the slot that was selected and playing sometimes produced
+  no telemetry at all; deselecting first fixed it. A fit with the measured 38-cycle shell as an
+  intercept did no better than the plain two-term one.
+- The old probe readings against today's: buffer + 1 tap 588 -> 561, 4 taps 1061 -> 1234, one
+  grain 504 -> 394, reverb 3406 -> 2840, grain-mill 3610 (hand settings) -> 2332 (authored).

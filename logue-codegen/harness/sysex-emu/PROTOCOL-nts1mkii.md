@@ -48,3 +48,20 @@ draft's main questions below; where they disagree, this section wins.**
     4. On "Receive": `1A` for every slot.
     5. Only then, the upload itself.
 
+
+## Current program dump and unit selection (2026-10-05, the hardware test harness)
+
+Korg's MIDI implementation v1.00 (2024-03-18), checked on the user's device (firmware 1.3):
+- `10` -> `40 pack7(504 bytes)` (the spec says 505). Writing the same `40` back is ACKed (`23`)
+  and reads back byte-identical. Multi-byte values are **little-endian** (the spec's H/L columns
+  read the other way): OSC A at 60 read `f5 02` = 757.
+- Each module's 12-byte selection (osc 28, modfx 112, delfx 168, revfx 224): developer id (u32),
+  unit id (u32), version (**one u32**, `major<<16|minor<<8|patch`, so `00 00 01 00` for 1.0.0 --
+  not the table's separate major/minor/patch bytes). Factory units: `ffffffff`, their index in
+  the type list (OFF 0, SAW 1, ...), `ffffffff`. Writing a user unit's ids selects it (the scripts
+  also write its name into the 20 bytes after; untested whether that's needed -- left alone it
+  kept the old name). An unset param reads `0x8000`.
+- An effect's program PARAM 1..8 are its param rows 3..10 on delay/reverb (after TIME/DEPTH/MIX,
+  which are the program's A/B/MIX words, 0..1023).
+- Short messages (CCs) are on in the user's global settings, NRPN off (TABLE 1 offset 13); the
+  output is set to mono (offset 7).

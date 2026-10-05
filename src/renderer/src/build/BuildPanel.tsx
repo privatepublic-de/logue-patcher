@@ -35,9 +35,12 @@ import {
 } from '@logue-codegen/estimateOscCpuCost'
 import {
   estimateFxCpuCost,
+  FX_CPU_GAUGE,
+  FX_SOLO_CYCLES,
   fxCpuZone,
+  NTS1MKII_FX_DROPOUT_CYCLES,
+  NTS1MKII_FX_SOLO_CYCLES,
   XD_FX_CLEAN_CYCLES,
-  XD_FX_CPU_GAUGE,
   XD_FX_DROPOUT_CYCLES,
   XD_FX_SOLO_CYCLES
 } from '@logue-codegen/estimateFxCpuCost'
@@ -191,11 +194,10 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
     [analysisDoc, logueTarget, isSubpatchDoc, effect, buildPlatform, subpatchDefs]
   )
 
-  // Only the xd has an effect table (its emulator); the NTS-1 mkII keeps a placeholder row.
   const fxCpuCost = useMemo(
     () =>
-      analysisDoc && effect && !isSubpatchDoc && buildPlatform === 'minilogue-xd'
-        ? estimateFxCpuCost(analysisDoc, subpatchDefs)
+      analysisDoc && effect && !isSubpatchDoc
+        ? estimateFxCpuCost(analysisDoc, subpatchDefs, buildPlatform)
         : null,
     [analysisDoc, effect, isSubpatchDoc, buildPlatform, subpatchDefs]
   )
@@ -553,28 +555,23 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 />
               )
             })()}
-          {effect &&
-            buildPlatform === 'nts1mkii' &&
-            findUnitKind(buildPlatform, logueTarget.module) && (
-              <UsageGauge
-                label="CPU"
-                text="—"
-                tooltip="CPU: not estimated for NTS-1 mkII effects yet (only the minilogue xd has an effect emulator)."
-              />
-            )}
           {fxCpuCost?.status === 'ok' &&
             (() => {
               const { cyclesPerSample, maxCyclesPerSample, perInstance, unmeasured } =
                 fxCpuCost.estimate
-              const { zone } = fxCpuZone(cyclesPerSample)
-              const max = fxCpuZone(maxCyclesPerSample)
+              const xd = buildPlatform === 'minilogue-xd'
+              const { zone } = fxCpuZone(cyclesPerSample, buildPlatform)
+              const max = fxCpuZone(maxCyclesPerSample, buildPlatform)
+              const gauge = FX_CPU_GAUGE[buildPlatform]
               // Past the dropout anchor a unit may still run with the other two slots off.
-              const solo = (cycles: number): boolean => cycles <= XD_FX_SOLO_CYCLES
+              const solo = (cycles: number): boolean => cycles <= FX_SOLO_CYCLES[buildPlatform]
               const verdictOf = (z: typeof zone, cycles: number): string =>
                 z === 'fine'
                   ? 'likely fine'
                   : z === 'between'
-                    ? 'untested'
+                    ? xd
+                      ? 'untested'
+                      : 'tight: may drop out when the other effect slots are busy'
                     : solo(cycles)
                       ? 'likely to drop out with the other effects on; needs the other two effect slots off'
                       : 'likely to drop out, even alone'
@@ -582,10 +579,27 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 z === 'fine'
                   ? 'fine'
                   : z === 'between'
-                    ? 'untested'
+                    ? xd
+                      ? 'untested'
+                      : 'tight'
                     : solo(cycles)
                       ? 'solo only'
                       : 'dropouts'
+              const scale = xd
+                ? ' (emulator, not measured on the synth; whole example effects come out ' +
+                  'within -10..+31 % of their estimate).\n\n' +
+                  `An xd delay unit at ~680-${XD_FX_CLEAN_CYCLES} stayed clean with the factory ` +
+                  `mod and reverb running; at ~${XD_FX_DROPOUT_CYCLES} it dropped out with both, ` +
+                  '~1000 crackled with both, ~1200 with either alone. A reverb at ' +
+                  `~${XD_FX_SOLO_CYCLES} runs only with both other slots off. All three effect ` +
+                  'slots share one processor, so busier effects in the others leave this one less.'
+                : ". The minilogue xd emulator's costs stand in, scaled to NTS-1 mkII cycles by " +
+                  '14 effects measured on the synth (each within -22..+19 % of its reading).\n\n' +
+                  'Measured on a real NTS-1 mkII: an effect drops out past ' +
+                  `~${NTS1MKII_FX_DROPOUT_CYCLES} cycles per sample with the factory chorus and ` +
+                  `stereo delay running, past ~${NTS1MKII_FX_SOLO_CYCLES} with the other effect ` +
+                  'slots off (of ~11,450 in all). Heavier effects in the other slots or a heavy ' +
+                  'oscillator leave less.'
               const knobsMatter =
                 maxCyclesPerSample > cyclesPerSample &&
                 shortVerdictOf(max.zone, maxCyclesPerSample) !==
@@ -594,8 +608,8 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 <UsageGauge
                   label="CPU"
                   value={cyclesPerSample}
-                  fineUpTo={XD_FX_CPU_GAUGE.fineUpTo}
-                  limit={XD_FX_CPU_GAUGE.limit}
+                  fineUpTo={gauge.fineUpTo}
+                  limit={gauge.limit}
                   reach={maxCyclesPerSample}
                   markFine
                   tooltip={
@@ -608,13 +622,7 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                     (maxCyclesPerSample > cyclesPerSample
                       ? `, up to ${maxCyclesPerSample} with the knobs at their costliest`
                       : '') +
-                    ' (emulator, not measured on the synth; whole example effects come out ' +
-                    'within -10..+22 % of their estimate).\n\n' +
-                    `An xd delay unit at ~680-${XD_FX_CLEAN_CYCLES} stayed clean with the factory ` +
-                    `mod and reverb running; at ~${XD_FX_DROPOUT_CYCLES} it dropped out with both, ` +
-                    '~1000 crackled with both, ~1200 with either alone. A reverb at ' +
-                    `~${XD_FX_SOLO_CYCLES} runs only with both other slots off. All three effect ` +
-                    'slots share one processor, so busier effects in the others leave this one less.' +
+                    scale +
                     '\n\nBiggest costs:\n' +
                     [...perInstance]
                       .filter((i) => i.cycles > 0)

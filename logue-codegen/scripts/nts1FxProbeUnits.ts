@@ -1,7 +1,10 @@
 /**
  * NTS-1 mkII effect test units that were measured on a real device with the CPU probe
- * (`stageFxUnits.ts` stages them), plus the small document builders they use.
+ * (`stageFxUnits.ts` stages them, `checkNts1FxCpuEstimate.ts` compares the estimate against the
+ * readings), plus the small document builders they use.
  */
+import { readFileSync } from 'fs'
+import { dirname, join } from 'path'
 import { LOGUE_AUDIO_IN_TYPE, LOGUE_AUDIO_OUT_TYPE } from '../src/oscInstances'
 import type { LogueModule, Net, ObjNode, PatchDocument } from '../../src/shared/domain/patch'
 import type { ParamValue } from '../../src/shared/domain/paramValueTypes'
@@ -122,3 +125,31 @@ export const GRAIN_TEST = doc(
     wire('xr', 'out', 'out', 'r')
   ]
 )
+
+/**
+ * Effect cycles per sample measured on a real NTS-1 mkII through audio telemetry, the calibration
+ * of `estimateFxCpuCost`'s NTS-1 mkII scale: written by `hwtest/calibrateFx.ts` into
+ * `hwtest/nts1FxCpuReadings.json`. A name is one of this file's test units or an example in
+ * examples/effects (`example`). The CPU probe's earlier hand readings are in docs/HISTORY.md.
+ */
+export const NTS1MKII_FX_PROBE_READINGS: {
+  name: string
+  date: string
+  cycles: number
+  doc?: PatchDocument
+  example?: string
+}[] = (
+  JSON.parse(
+    readFileSync(
+      join(dirname(new URL(import.meta.url).pathname), 'hwtest', 'nts1FxCpuReadings.json'),
+      'utf-8'
+    )
+  ) as { name: string; date: string; cycles: number }[]
+).map(({ name, date, cycles }) => {
+  const doc = {
+    'lp-fx-buf1': bufferTest(1),
+    'lp-fx-buf4': bufferTest(4),
+    'lp-fx-grain': GRAIN_TEST
+  }[name]
+  return doc ? { name, date, cycles, doc } : { name, date, cycles, example: `${name}.loguepatch` }
+})

@@ -17,18 +17,19 @@ export interface Nts1MkiiProject {
 export function generateNts1MkiiProject(
   doc: PatchDocument,
   unitName: string,
-  subpatches: SubpatchDefinitions = new Map()
+  subpatches: SubpatchDefinitions = new Map(),
+  ids: { devId?: number; unitId?: number } = {}
 ): Nts1MkiiProject {
   const module = doc.settings.logueTarget?.module ?? 'osc'
   if (isEffectModule(module)) {
-    const fx = generateFxUnit(doc, { name: unitName }, subpatches)
+    const fx = generateFxUnit(doc, { name: unitName, ...ids }, subpatches)
     return {
       module,
       files: { 'header.c': fx.headerC, 'fx.h': fx.fxH, 'unit.cc': fx.unitCc },
       project: 'fx'
     }
   }
-  const osc = generateOscUnit(doc, { name: unitName }, subpatches)
+  const osc = generateOscUnit(doc, { name: unitName, ...ids }, subpatches)
   return {
     module,
     files: { 'header.c': osc.headerC, 'osc.h': osc.oscH, 'unit.cc': osc.unitCc },

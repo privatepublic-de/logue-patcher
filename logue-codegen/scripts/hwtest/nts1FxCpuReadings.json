@@ -1,0 +1,114 @@
+[
+  {
+    "name": "lp-fx-buf1",
+    "date": "2026-10-05",
+    "cycles": 561,
+    "maxCycles": 563,
+    "xdCycles": 201,
+    "sdram": 6
+  },
+  {
+    "name": "lp-fx-buf4",
+    "date": "2026-10-05",
+    "cycles": 1234,
+    "maxCycles": 1237,
+    "xdCycles": 445,
+    "sdram": 18
+  },
+  {
+    "name": "lp-fx-grain",
+    "date": "2026-10-05",
+    "cycles": 394,
+    "maxCycles": 452,
+    "xdCycles": 234,
+    "sdram": 5
+  },
+  {
+    "name": "auto-wah",
+    "date": "2026-10-05",
+    "cycles": 158,
+    "maxCycles": 159,
+    "xdCycles": 198,
+    "sdram": 0
+  },
+  {
+    "name": "freq-shifter",
+    "date": "2026-10-05",
+    "cycles": 573,
+    "maxCycles": 575,
+    "xdCycles": 633,
+    "sdram": 0
+  },
+  {
+    "name": "grain-mill-xd-free",
+    "date": "2026-10-05",
+    "cycles": 864,
+    "maxCycles": 892,
+    "xdCycles": 609,
+    "sdram": 8
+  },
+  {
+    "name": "grain-mill-xd-rnd",
+    "date": "2026-10-05",
+    "cycles": 809,
+    "maxCycles": 887,
+    "xdCycles": 650,
+    "sdram": 8
+  },
+  {
+    "name": "grain-mill-xd-rndsync",
+    "date": "2026-10-05",
+    "cycles": 831,
+    "maxCycles": 886,
+    "xdCycles": 689,
+    "sdram": 8
+  },
+  {
+    "name": "grain-mill-xd-sync",
+    "date": "2026-10-05",
+    "cycles": 854,
+    "maxCycles": 871,
+    "xdCycles": 648,
+    "sdram": 8
+  },
+  {
+    "name": "grain-mill",
+    "date": "2026-10-05",
+    "cycles": 2332,
+    "maxCycles": 2432,
+    "xdCycles": 1915,
+    "sdram": 26
+  },
+  {
+    "name": "reverse-wash-xd",
+    "date": "2026-10-05",
+    "cycles": 939,
+    "maxCycles": 944,
+    "xdCycles": 556,
+    "sdram": 8
+  },
+  {
+    "name": "reverse-wash",
+    "date": "2026-10-05",
+    "cycles": 1453,
+    "maxCycles": 1456,
+    "xdCycles": 782,
+    "sdram": 14
+  },
+  {
+    "name": "stereo-reverb",
+    "date": "2026-10-05",
+    "cycles": 2840,
+    "maxCycles": 2841,
+    "xdCycles": 1386,
+    "sdram": 32
+  },
+  {
+    "name": "tempo-swell",
+    "date": "2026-10-05",
+    "cycles": 99,
+    "maxCycles": 101,
+    "xdCycles": 91,
+    "sdram": 0
+  }
+]
