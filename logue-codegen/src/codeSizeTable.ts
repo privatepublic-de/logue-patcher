@@ -133,18 +133,18 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '779c8ef1206c74bd'
     },
     'logue/filter/lowpass-cheap': {
-      first: 64,
+      first: 68,
       extra: 72,
       helpers: [],
-      unwired: { first: 68, extra: 60, helpers: [] },
-      snapshotHash: 'bfb55ed722e29c07'
+      unwired: { first: 68, extra: 56, helpers: [] },
+      snapshotHash: '9498d8e54c739257'
     },
     'logue/filter/highpass-cheap': {
-      first: 64,
-      extra: 80,
+      first: 68,
+      extra: 76,
       helpers: [],
-      unwired: { first: 68, extra: 64, helpers: [] },
-      snapshotHash: '4dc6fa6c0e39cc62'
+      unwired: { first: 68, extra: 60, helpers: [] },
+      snapshotHash: '5918f33ffc84533f'
     },
     'logue/gain/vca': {
       first: 4,
@@ -186,11 +186,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'a39fd0de0ef1ae2a'
     },
     'logue/env/multistage': {
-      first: 824,
-      extra: 604,
-      helpers: ['Osc::mseg_rate_from_percent(float)'],
-      unwired: { first: 756, extra: 460, helpers: ['Osc::mseg_rate_from_percent(float)'] },
-      snapshotHash: '8672d9936f6615d1'
+      first: 704,
+      extra: 528,
+      helpers: [],
+      unwired: { first: 628, extra: 388, helpers: [] },
+      snapshotHash: '13bbe27c71cd6bc6'
     },
     'logue/lfo/sine-lfo': {
       first: 300,
@@ -268,6 +268,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 36, extra: 20, helpers: [] },
       snapshotHash: '94bd46054709e8a4'
     },
+    'logue/shape/drive': {
+      first: 452,
+      extra: 348,
+      helpers: ['Osc::exp_approx(float)'],
+      unwired: { first: 296, extra: 192, helpers: ['Osc::exp_approx(float)'] },
+      snapshotHash: 'fd99dae03aa4746d'
+    },
     'logue/filter/comb': {
       first: 874,
       extra: 496,
@@ -342,11 +349,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'da5adbf9ea4c7a45'
     },
     'logue/filter/svf': {
-      first: 608,
-      extra: 476,
+      first: 664,
+      extra: 496,
       helpers: [],
-      unwired: { first: 552, extra: 372, helpers: [] },
-      snapshotHash: 'c762be0833d80be7'
+      unwired: { first: 608, extra: 392, helpers: [] },
+      snapshotHash: '70af74469f857696'
     },
     'logue/filter/ladder': {
       first: 1174,
@@ -786,15 +793,15 @@ export const CODE_SIZE_TABLE: Record<
       first: 92,
       extra: 64,
       helpers: [],
-      unwired: { first: 92, extra: 36, helpers: [] },
-      snapshotHash: 'bfb55ed722e29c07'
+      unwired: { first: 88, extra: 48, helpers: [] },
+      snapshotHash: '9498d8e54c739257'
     },
     'logue/filter/highpass-cheap': {
       first: 88,
       extra: 100,
       helpers: [],
-      unwired: { first: 88, extra: 48, helpers: [] },
-      snapshotHash: '4dc6fa6c0e39cc62'
+      unwired: { first: 88, extra: 52, helpers: [] },
+      snapshotHash: '5918f33ffc84533f'
     },
     'logue/gain/vca': {
       first: 4,
@@ -829,11 +836,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'a39fd0de0ef1ae2a'
     },
     'logue/env/multistage': {
-      first: 820,
-      extra: 600,
-      helpers: ['Fx::mseg_rate_from_percent(float)'],
-      unwired: { first: 760, extra: 444, helpers: ['Fx::mseg_rate_from_percent(float)'] },
-      snapshotHash: '8672d9936f6615d1'
+      first: 732,
+      extra: 580,
+      helpers: [],
+      unwired: { first: 644, extra: 388, helpers: [] },
+      snapshotHash: '13bbe27c71cd6bc6'
     },
     'logue/lfo/sine-lfo': {
       first: 316,
@@ -911,6 +918,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 44, extra: 16, helpers: [] },
       snapshotHash: '94bd46054709e8a4'
     },
+    'logue/shape/drive': {
+      first: 392,
+      extra: 308,
+      helpers: ['Fx::exp_approx(float)'],
+      unwired: { first: 312, extra: 164, helpers: ['Fx::exp_approx(float)'] },
+      snapshotHash: 'fd99dae03aa4746d'
+    },
     'logue/filter/comb': {
       first: 778,
       extra: 524,
@@ -986,11 +1000,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: 'da5adbf9ea4c7a45'
     },
     'logue/filter/svf': {
-      first: 496,
-      extra: 440,
+      first: 568,
+      extra: 468,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 436, extra: 316, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: 'c762be0833d80be7'
+      unwired: { first: 508, extra: 344, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '70af74469f857696'
     },
     'logue/filter/ladder': {
       first: 1294,
@@ -1465,18 +1479,18 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '691c2bffa3b82a56'
     },
     'logue/filter/lowpass-cheap': {
-      first: 72,
+      first: 76,
       extra: 68,
       helpers: [],
-      unwired: { first: 72, extra: 48, helpers: [] },
-      snapshotHash: '4e29af352381896e'
+      unwired: { first: 76, extra: 52, helpers: [] },
+      snapshotHash: 'edf1f99e801aad2d'
     },
     'logue/filter/highpass-cheap': {
-      first: 72,
-      extra: 76,
+      first: 76,
+      extra: 72,
       helpers: [],
-      unwired: { first: 72, extra: 56, helpers: [] },
-      snapshotHash: '3505c088a06bee86'
+      unwired: { first: 76, extra: 56, helpers: [] },
+      snapshotHash: '05e3024fbce56936'
     },
     'logue/gain/vca': {
       first: 8,
@@ -1518,11 +1532,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '9c5705d6ac6db998'
     },
     'logue/env/multistage': {
-      first: 926,
-      extra: 714,
-      helpers: ['Osc::mseg_rate_from_percent(float)'],
-      unwired: { first: 850, extra: 578, helpers: ['Osc::mseg_rate_from_percent(float)'] },
-      snapshotHash: 'c717614593848225'
+      first: 716,
+      extra: 647,
+      helpers: [],
+      unwired: { first: 640, extra: 507, helpers: [] },
+      snapshotHash: '5ed6a1849c3b6d5f'
     },
     'logue/lfo/sine-lfo': {
       first: 350,
@@ -1600,6 +1614,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 44, extra: 16, helpers: [] },
       snapshotHash: '216989a0fb3b382f'
     },
+    'logue/shape/drive': {
+      first: 514,
+      extra: 348,
+      helpers: ['Osc::exp_approx(float)'],
+      unwired: { first: 358, extra: 192, helpers: ['Osc::exp_approx(float)'] },
+      snapshotHash: '969016942b668a37'
+    },
     'logue/filter/comb': {
       first: 996,
       extra: 736,
@@ -1674,11 +1695,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '3ecec297631c48fa'
     },
     'logue/filter/svf': {
-      first: 661,
-      extra: 703,
+      first: 717,
+      extra: 730,
       helpers: [],
-      unwired: { first: 605, extra: 599, helpers: [] },
-      snapshotHash: '6536ded8663fbbfe'
+      unwired: { first: 661, extra: 626, helpers: [] },
+      snapshotHash: 'e22387028f8011d9'
     },
     'logue/filter/ladder': {
       first: 1284,
@@ -2116,15 +2137,15 @@ export const CODE_SIZE_TABLE: Record<
       first: 92,
       extra: 72,
       helpers: [],
-      unwired: { first: 92, extra: 40, helpers: [] },
-      snapshotHash: '4e29af352381896e'
+      unwired: { first: 92, extra: 48, helpers: [] },
+      snapshotHash: 'edf1f99e801aad2d'
     },
     'logue/filter/highpass-cheap': {
       first: 88,
       extra: 88,
       helpers: [],
-      unwired: { first: 88, extra: 52, helpers: [] },
-      snapshotHash: '3505c088a06bee86'
+      unwired: { first: 92, extra: 52, helpers: [] },
+      snapshotHash: '05e3024fbce56936'
     },
     'logue/gain/vca': {
       first: 8,
@@ -2159,11 +2180,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '9c5705d6ac6db998'
     },
     'logue/env/multistage': {
-      first: 941,
-      extra: 697,
-      helpers: ['Fx::mseg_rate_from_percent(float)'],
-      unwired: { first: 877, extra: 561, helpers: ['Fx::mseg_rate_from_percent(float)'] },
-      snapshotHash: 'c717614593848225'
+      first: 756,
+      extra: 690,
+      helpers: [],
+      unwired: { first: 668, extra: 506, helpers: [] },
+      snapshotHash: '5ed6a1849c3b6d5f'
     },
     'logue/lfo/sine-lfo': {
       first: 366,
@@ -2241,6 +2262,13 @@ export const CODE_SIZE_TABLE: Record<
       unwired: { first: 48, extra: 4, helpers: [] },
       snapshotHash: '216989a0fb3b382f'
     },
+    'logue/shape/drive': {
+      first: 457,
+      extra: 312,
+      helpers: ['Fx::exp_approx(float)'],
+      unwired: { first: 377, extra: 184, helpers: ['Fx::exp_approx(float)'] },
+      snapshotHash: '969016942b668a37'
+    },
     'logue/filter/comb': {
       first: 936,
       extra: 684,
@@ -2316,11 +2344,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '3ecec297631c48fa'
     },
     'logue/filter/svf': {
-      first: 565,
-      extra: 599,
+      first: 665,
+      extra: 630,
       helpers: ['Fx::note_w0(float)'],
-      unwired: { first: 501, extra: 495, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '6536ded8663fbbfe'
+      unwired: { first: 601, extra: 526, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: 'e22387028f8011d9'
     },
     'logue/filter/ladder': {
       first: 1472,
@@ -2700,9 +2728,9 @@ export const CODE_SIZE_TABLE: Record<
 /** The unit shell each context was measured in (`shellHash`, measureCodeSizes.ts). */
 export const CODE_SHELL_HASH: Record<CodeSizeContext, string> = {
   'minilogue-xd:osc': 'f3edec1a842e0630',
-  'minilogue-xd:fx': '323c55ee855d1752',
+  'minilogue-xd:fx': 'a0991e3ab2775c69',
   'nts1mkii:osc': '2f68421838833402',
-  'nts1mkii:fx': '91502563103d0945'
+  'nts1mkii:fx': '22ce76fa5692236c'
 }
 
 /** Bytes of each out-of-line function (demangled name) per context. */
@@ -2714,10 +2742,10 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)': 1482,
     'Osc::delay_step(short*, int*, float, float, float, float)': 328,
     'Osc::env_rate_from_percent(float)': 76,
+    'Osc::exp_approx(float)': 68,
     'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1192,
     'Osc::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 728,
     'Osc::knob_env_value(float, int)': 172,
-    'Osc::mseg_rate_from_percent(float)': 68,
     'Osc::note_w0(float)': 164,
     'Osc::polyblep(float, float)': 96,
     'Osc::quantize_step(float, int, float*, float*)': 328,
@@ -2731,11 +2759,11 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Fx::bass_support_step(float*, float, float, float, float, float, float, float, float, float)': 1482,
     'Fx::delay_step(short*, int*, float, float, float, float)': 328,
     'Fx::env_rate_from_percent(float)': 76,
+    'Fx::exp_approx(float)': 68,
     'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1470,
     'Fx::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 728,
     'Fx::harmonic_ratio(float)': 74,
     'Fx::knob_env_value(float, int)': 172,
-    'Fx::mseg_rate_from_percent(float)': 68,
     'Fx::note_w0(float)': 308,
     'Fx::polyblep(float, float)': 96,
     'Fx::quantize_step(float, int, float*, float*)': 328,
@@ -2751,10 +2779,10 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)': 1498,
     'Osc::delay_step(short*, int*, float, float, float, float)': 328,
     'Osc::env_rate_from_percent(float)': 76,
+    'Osc::exp_approx(float)': 68,
     'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1216,
     'Osc::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 744,
     'Osc::knob_env_value(float, int)': 180,
-    'Osc::mseg_rate_from_percent(float)': 68,
     'Osc::note_w0(float)': 176,
     'Osc::polyblep(float, float)': 96,
     'Osc::quantize_step(float, int, float*, float*)': 328,
@@ -2768,11 +2796,11 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Fx::bass_support_step(float*, float, float, float, float, float, float, float, float, float)': 1498,
     'Fx::delay_step(short*, int*, float, float, float, float)': 328,
     'Fx::env_rate_from_percent(float)': 76,
+    'Fx::exp_approx(float)': 68,
     'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1490,
     'Fx::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 744,
     'Fx::harmonic_ratio(float)': 76,
     'Fx::knob_env_value(float, int)': 180,
-    'Fx::mseg_rate_from_percent(float)': 68,
     'Fx::note_w0(float)': 308,
     'Fx::polyblep(float, float)': 96,
     'Fx::quantize_step(float, int, float*, float*)': 328,

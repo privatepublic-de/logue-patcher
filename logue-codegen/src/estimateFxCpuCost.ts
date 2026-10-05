@@ -12,7 +12,7 @@ import { isEffectModule } from './unitKinds'
  * A minilogue xd EFFECT unit's CPU estimate: `fxCpuCostTable.ts`' emulator measurements summed
  * per active instance, in cycles per sample of the one unit (an effect runs once, not per voice),
  * on the emulator's own scale -- an estimate, not a hardware measurement. Against every example
- * effect built whole (`scripts/checkFxCpuEstimate.ts`): -10..+22 % at the gauge's penalty.
+ * effect built whole (`scripts/checkFxCpuEstimate.ts`): -10..+31 % at the gauge's penalty.
  *
  * Each instance counts the variant matching it -- flipped checkboxes, and `control` once a
  * control inlet is fed from a per-sample source -- as the unit's first instance of its primitive

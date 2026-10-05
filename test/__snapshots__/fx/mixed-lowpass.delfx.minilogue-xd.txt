@@ -71,6 +71,7 @@ public:
     const float bpm = fx_get_bpmf();
     if (bpm > 0.f) tempo_ = bpm;
     fadePercent_x = (0.f + mix01_ * 100.f);
+    const float blkOnepoleA_lp = cutoff_warp(cutoff_lp);
     const float blkFadeA_x = (xfLaw_x >= 0.5f ? (100.f - fadePercent_x) * 0.01f : xfade_sqrtf((100.f - fadePercent_x) * 0.01f));
     const float blkFadeB_x = (xfLaw_x >= 0.5f ? (fadePercent_x) * 0.01f : xfade_sqrtf((fadePercent_x) * 0.01f));
     const float blkFadeMoving_x = xfade_settle(xfG_x, blkFadeA_x, blkFadeB_x);
@@ -79,7 +80,7 @@ public:
       const float y_in_l = in[2 * i];
       const float y_in_r = in[2 * i + 1];
       const float y_in_mono = 0.5f * (y_in_l + y_in_r);
-      float y_lp = onepole_step(&z1_lp, y_in_mono, cutoff_warp(cutoff_lp));
+      float y_lp = onepole_step(&z1_lp, y_in_mono, blkOnepoleA_lp);
       float y_x = ((blkFadeMoving_x != 0.f ? xfade_glide(&xfG_x[0], blkFadeA_x) : blkFadeA_x) * (y_in_mono) + (blkFadeMoving_x != 0.f ? xfade_glide(&xfG_x[1], blkFadeB_x) : blkFadeB_x) * (y_lp));
       out[2 * i] = clip1m1f(y_x);
       out[2 * i + 1] = clip1m1f(y_x);

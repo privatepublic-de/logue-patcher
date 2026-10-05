@@ -64,16 +64,15 @@ describe('logue/env/multistage', () => {
     expect(unitCc).toContain('{"OneShot", "Sustain", "Loop", "Cycle"}')
   })
 
-  it('computes the six stage rates once per block, before the sample loop', () => {
+  it('converts the six stage times where they are set, never in process', () => {
     const src = generateOldGenOscUnit(
       doc([node('logue/env/multistage', 'e')], [net('e', 'env', 'out', 'in')]),
       { name: 'env' }
     ).oscCpp
-    const loop = src.indexOf('for (uint32_t i = 0; i < frames; ++i)', src.indexOf('void process'))
     for (let i = 0; i < 6; i++) {
-      expect(src.indexOf(`const float blkMsegRate${i}_e = mseg_rate_from_percent`)).toBeLessThan(
-        loop
-      )
+      expect(src).toContain(`stageRate_e[${i}] = mseg_rate_from_percent(`)
     }
+    const process = src.slice(src.indexOf('void process'), src.indexOf('static float'))
+    expect(process).not.toContain('mseg_rate_from_percent')
   })
 })

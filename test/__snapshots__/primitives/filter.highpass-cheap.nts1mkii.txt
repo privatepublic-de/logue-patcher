@@ -105,9 +105,10 @@ public:
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     (void)in;
+    const float blkOnepoleA_n = cutoff_warp(cutoff_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = ((0.f) - onepole_step(&z1_n, 0.f, cutoff_warp(cutoff_n)));
+      float y_n = ((0.f) - onepole_step(&z1_n, 0.f, blkOnepoleA_n));
       out[i] = clip1m1f(y_n);
     }
   }
@@ -263,9 +264,10 @@ public:
     (void)in;
       float y_c_in = value_c_in;
       float y_c_cutoff = value_c_cutoff;
+    const float blkOnepoleA_n = cutoff_warp((cutoff_n + (y_c_cutoff)));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = ((y_c_in) - onepole_step(&z1_n, y_c_in, cutoff_warp((cutoff_n + (y_c_cutoff)))));
+      float y_n = ((y_c_in) - onepole_step(&z1_n, y_c_in, blkOnepoleA_n));
       out[i] = clip1m1f(y_n);
     }
   }
@@ -420,9 +422,10 @@ public:
   void process(const float *__restrict in, float *__restrict out, uint32_t frames) override final
   {
     (void)in;
+    const float blkOnepoleA_n = cutoff_warp(cutoff_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = ((0.f) - onepole_step(&z1_n, 0.f, cutoff_warp(cutoff_n)));
+      float y_n = ((0.f) - onepole_step(&z1_n, 0.f, blkOnepoleA_n));
       out[i] = clip1m1f(y_n);
     }
   }

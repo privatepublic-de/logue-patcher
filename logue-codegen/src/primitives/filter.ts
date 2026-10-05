@@ -41,6 +41,13 @@ function cheapCutoffExpr(suffix: string, inlets: Record<string, string | undefin
     : `cutoff_${suffix}`
 }
 
+/** The warped coefficient, once per block while `cutoff` is unwired (or per-block itself). */
+function cheapCoefficient(suffix: string, inlets: Record<string, string | undefined>): BlockValue {
+  return blockValue('blkOnepoleA', suffix, `cutoff_warp(${cheapCutoffExpr(suffix, inlets)})`, [
+    inlets.cutoff
+  ])
+}
+
 /**
  * A one-pole lowpass (`y = z1 + a*(x - z1)`; `a=1` passes through, `a=0` is fully closed).
  * Deliberately not Hz-accurate: a real `1 - exp(-2*pi*fc/fs)` coefficient needs libm's `expf`,
@@ -66,8 +73,9 @@ export const lowpassCheapFilterPrimitive: LoguePrimitive = {
   ],
   memberDecls: (suffix) => `  float z1_${suffix};\n  float cutoff_${suffix};\n`,
   initStatement: (suffix) => `    z1_${suffix} = 0.f;\n`,
+  blockConstants: (suffix, inlets) => blockDecls({ a: cheapCoefficient(suffix, inlets) }),
   renderExpr: (suffix, inlets) =>
-    `onepole_step(&z1_${suffix}, ${inlets.in ?? '0.f'}, cutoff_warp(${cheapCutoffExpr(suffix, inlets)}))`,
+    `onepole_step(&z1_${suffix}, ${inlets.in ?? '0.f'}, ${cheapCoefficient(suffix, inlets).ref})`,
   advanceStatement: () => '',
   helpers: [ONEPOLE_HELPER, CUTOFF_WARP_HELPER],
   params: [
@@ -115,8 +123,9 @@ export const highpassCheapFilterPrimitive: LoguePrimitive = {
   ],
   memberDecls: (suffix) => `  float z1_${suffix};\n  float cutoff_${suffix};\n`,
   initStatement: (suffix) => `    z1_${suffix} = 0.f;\n`,
+  blockConstants: (suffix, inlets) => blockDecls({ a: cheapCoefficient(suffix, inlets) }),
   renderExpr: (suffix, inlets) =>
-    `((${inlets.in ?? '0.f'}) - onepole_step(&z1_${suffix}, ${inlets.in ?? '0.f'}, cutoff_warp(${cheapCutoffExpr(suffix, inlets)})))`,
+    `((${inlets.in ?? '0.f'}) - onepole_step(&z1_${suffix}, ${inlets.in ?? '0.f'}, ${cheapCoefficient(suffix, inlets).ref}))`,
   advanceStatement: () => '',
   helpers: [ONEPOLE_HELPER, CUTOFF_WARP_HELPER],
   params: [
@@ -782,10 +791,18 @@ const SVF_STEP_HELPER: HelperBlock = {
   // per-sample integrator state (NOT literally "the bandpass/lowpass value", a real ZDF
   // implementation detail -- see the referenced paper), each fed back doubled ("2.f*v-...") by
   // design, the standard trick that makes this form delay-free without an iterative solve.
-  static void svf_step(float *s1, float *s2, float in, float g, float k,
+  // cache[] holds g, k and a1 = 1/(1 + g(g + k)): the divide is redone only when g or k changed
+  // (never while both are per block; a stepped source every few dozen samples).
+  static void svf_step(float *s1, float *s2, float in, float g, float k, float *cache,
     float *outLp, float *outBp, float *outHp)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
+    if (g != cache[0] || k != cache[1])
+    {
+      cache[0] = g;
+      cache[1] = k;
+      cache[2] = 1.f / (1.f + g * (g + k));
+    }
+    const float a1 = cache[2];
     float a2 = g * a1;
     float a3 = g * a2;
     float v3 = in - *s2;
@@ -869,21 +886,21 @@ function svfBlockValues(
   suffix: string,
   inlets: Record<string, string | undefined>
 ): Record<'g' | 'k', BlockValue> {
-  return {
-    g: blockValue('blkSvfG', suffix, svfGExpr(suffix, inlets), [
-      inlets.cutoff,
-      inlets.pitch,
-      inlets.harmonic
-    ]),
-    k: blockValue('blkSvfK', suffix, svfKExpr(suffix, inlets), [inlets.resonance])
-  }
+  const g = blockValue('blkSvfG', suffix, svfGExpr(suffix, inlets), [
+    inlets.cutoff,
+    inlets.pitch,
+    inlets.harmonic
+  ])
+  const k = blockValue('blkSvfK', suffix, svfKExpr(suffix, inlets), [inlets.resonance])
+  return { g, k }
 }
 
 export const svfFilterPrimitive: LoguePrimitive = {
   id: 'logue/filter/svf',
   outletPolarity: 'inherit',
-  // svfS1_ + svfS2_ + cutoff_ + resonancePercent_ + coarse_ + fine_ + track_, 7 floats
-  stateBytesPerInstance: 28,
+  // svfS1_ + svfS2_ + cutoff_ + resonancePercent_ + coarse_ + fine_ + track_ + svfA1Cache_[3],
+  // 10 floats
+  stateBytesPerInstance: 40,
   description:
     'A resonant 2-pole state-variable filter with simultaneous lowpass, bandpass and highpass outputs, and optional pitch-tracked resonance.',
   inlets: [
@@ -894,8 +911,11 @@ export const svfFilterPrimitive: LoguePrimitive = {
   ],
   outlets: [{ name: 'lp' }, { name: 'bp' }, { name: 'hp' }],
   memberDecls: (suffix) =>
-    `  float svfS1_${suffix};\n  float svfS2_${suffix};\n  float cutoff_${suffix};\n  float resonancePercent_${suffix};\n  float coarse_${suffix};\n  float fine_${suffix};\n  float track_${suffix};\n`,
-  initStatement: (suffix) => `    svfS1_${suffix} = 0.f;\n    svfS2_${suffix} = 0.f;\n`,
+    `  float svfS1_${suffix};\n  float svfS2_${suffix};\n  float cutoff_${suffix};\n  float resonancePercent_${suffix};\n  float coarse_${suffix};\n  float fine_${suffix};\n  float track_${suffix};\n  float svfA1Cache_${suffix}[3];\n`,
+  // g is never negative, so -1 forces svf_step's first divide.
+  initStatement: (suffix) =>
+    `    svfS1_${suffix} = 0.f;\n    svfS2_${suffix} = 0.f;\n` +
+    `    svfA1Cache_${suffix}[0] = -1.f;\n    svfA1Cache_${suffix}[1] = 0.f;\n    svfA1Cache_${suffix}[2] = 1.f;\n`,
   renderExpr: () => {
     throw new Error(
       'logue/filter/svf is multi-outlet -- use renderOutletStatements, not renderExpr'
@@ -903,8 +923,9 @@ export const svfFilterPrimitive: LoguePrimitive = {
   },
   blockConstants: (suffix, inlets) => blockDecls(svfBlockValues(suffix, inlets)),
   renderOutletStatements: (suffix, inlets) => {
-    const g = svfBlockValues(suffix, inlets).g.ref
-    const k = svfBlockValues(suffix, inlets).k.ref
+    const { g: gv, k: kv } = svfBlockValues(suffix, inlets)
+    const g = gv.ref
+    const k = kv.ref
     const inExpr = inlets.in ?? '0.f'
     // `svf_step` always computes all three taps together (they share almost all of its
     // arithmetic -- see the primitive's own doc comment), but a real placed instance often only
@@ -918,7 +939,7 @@ export const svfFilterPrimitive: LoguePrimitive = {
       `      float svfG_${suffix} = ${g};\n` +
       `      float svfK_${suffix} = ${k};\n` +
       `      float y_${suffix}_lp, y_${suffix}_bp, y_${suffix}_hp;\n` +
-      `      svf_step(&svfS1_${suffix}, &svfS2_${suffix}, ${inExpr}, svfG_${suffix}, svfK_${suffix}, ` +
+      `      svf_step(&svfS1_${suffix}, &svfS2_${suffix}, ${inExpr}, svfG_${suffix}, svfK_${suffix}, svfA1Cache_${suffix}, ` +
       `&y_${suffix}_lp, &y_${suffix}_bp, &y_${suffix}_hp);\n` +
       `      (void)y_${suffix}_lp; (void)y_${suffix}_bp; (void)y_${suffix}_hp;\n`
     )

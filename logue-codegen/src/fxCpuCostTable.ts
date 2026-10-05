@@ -17,7 +17,7 @@ export const FX_CPU_BASELINE: Record<'modfx' | 'delfx' | 'revfx', FxCpuCost> = {
 }
 
 /** The xd fx goldens the table was measured against (`fxShellHash`). */
-export const FX_CPU_SHELL_HASH = '323c55ee855d1752'
+export const FX_CPU_SHELL_HASH = 'a0991e3ab2775c69'
 
 /** Primitives no delfx can hold (its SRAM overflowed in every variant), with the snapshot hash
  *  they were built from: they have no entry, and a codegen change may make them fit. */
@@ -94,22 +94,22 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/env/multistage': {
     variants: {
       base: {
-        first: { cycles: 43, sdram: 0 },
-        shared: { cycles: 46, sdram: 0 },
-        extra: { cycles: 113, sdram: 0 }
+        first: { cycles: 38, sdram: 0 },
+        shared: { cycles: 51, sdram: 0 },
+        extra: { cycles: 96, sdram: 0 }
       },
       control: {
-        first: { cycles: 183, sdram: 0 },
-        shared: { cycles: 45, sdram: 0 },
-        extra: { cycles: 239, sdram: 0 }
+        first: { cycles: 146, sdram: 0 },
+        shared: { cycles: 68, sdram: 0 },
+        extra: { cycles: 184, sdram: 0 }
       },
       'heavy-cycle': {
-        first: { cycles: 170, sdram: 0 },
-        shared: { cycles: 50, sdram: 0 },
-        extra: { cycles: 229, sdram: 0 }
+        first: { cycles: 134, sdram: 0 },
+        shared: { cycles: 70, sdram: 0 },
+        extra: { cycles: 171, sdram: 0 }
       }
     },
-    snapshotHash: '8672d9936f6615d1'
+    snapshotHash: '13bbe27c71cd6bc6'
   },
   'logue/env/one-knob-adsr': {
     variants: {
@@ -189,9 +189,9 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/filter/highpass-cheap': {
     variants: {
       base: {
-        first: { cycles: 18, sdram: 0 },
-        shared: { cycles: -43, sdram: 0 },
-        extra: { cycles: 61, sdram: 0 }
+        first: { cycles: 12, sdram: 0 },
+        shared: { cycles: -5, sdram: 0 },
+        extra: { cycles: 19, sdram: 0 }
       },
       control: {
         first: { cycles: 21, sdram: 0 },
@@ -199,7 +199,7 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 70, sdram: 0 }
       }
     },
-    snapshotHash: '4dc6fa6c0e39cc62'
+    snapshotHash: '5918f33ffc84533f'
   },
   'logue/filter/hilbert': {
     variants: {
@@ -244,9 +244,9 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/filter/lowpass-cheap': {
     variants: {
       base: {
-        first: { cycles: 16, sdram: 0 },
-        shared: { cycles: -39, sdram: 0 },
-        extra: { cycles: 55, sdram: 0 }
+        first: { cycles: 9, sdram: 0 },
+        shared: { cycles: -15, sdram: 0 },
+        extra: { cycles: 24, sdram: 0 }
       },
       control: {
         first: { cycles: 17, sdram: 0 },
@@ -254,32 +254,32 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 62, sdram: 0 }
       }
     },
-    snapshotHash: 'bfb55ed722e29c07'
+    snapshotHash: '9498d8e54c739257'
   },
   'logue/filter/svf': {
     variants: {
       base: {
-        first: { cycles: 55, sdram: 0 },
-        shared: { cycles: 28, sdram: 0 },
-        extra: { cycles: 81, sdram: 0 }
+        first: { cycles: 45, sdram: 0 },
+        shared: { cycles: 36, sdram: 0 },
+        extra: { cycles: 79, sdram: 0 }
       },
       control: {
-        first: { cycles: 106, sdram: 0 },
-        shared: { cycles: -1, sdram: 0 },
-        extra: { cycles: 185, sdram: 0 }
+        first: { cycles: 118, sdram: 0 },
+        shared: { cycles: 5, sdram: 0 },
+        extra: { cycles: 201, sdram: 0 }
       },
       TRACK: {
-        first: { cycles: 57, sdram: 0 },
-        shared: { cycles: 29, sdram: 0 },
-        extra: { cycles: 83, sdram: 0 }
+        first: { cycles: 47, sdram: 0 },
+        shared: { cycles: 37, sdram: 0 },
+        extra: { cycles: 81, sdram: 0 }
       },
       'TRACK+control': {
-        first: { cycles: 259, sdram: 0 },
-        shared: { cycles: 47, sdram: 0 },
-        extra: { cycles: 301, sdram: 0 }
+        first: { cycles: 271, sdram: 0 },
+        shared: { cycles: 51, sdram: 0 },
+        extra: { cycles: 317, sdram: 0 }
       }
     },
-    snapshotHash: 'c762be0833d80be7'
+    snapshotHash: '70af74469f857696'
   },
   'logue/gain/vca': {
     variants: {
@@ -1140,6 +1140,21 @@ export const FX_CPU_COST_TABLE: Record<
       }
     },
     snapshotHash: '0410106efe6cce20'
+  },
+  'logue/shape/drive': {
+    variants: {
+      base: {
+        first: { cycles: 26, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 25, sdram: 0 }
+      },
+      control: {
+        first: { cycles: 121, sdram: 0 },
+        shared: { cycles: 2, sdram: 0 },
+        extra: { cycles: 118, sdram: 0 }
+      }
+    },
+    snapshotHash: 'fd99dae03aa4746d'
   },
   'logue/shape/soft-clip': {
     variants: {

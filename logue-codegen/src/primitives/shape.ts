@@ -1,6 +1,22 @@
-import { SOFTCLIP_DRIVE_DB, WAVEFOLDER_DRIVE_DB } from '../paramPresentation'
+import {
+  DRIVE_DB,
+  DRIVE_RANGE_DB,
+  DRIVE_TONE,
+  SOFTCLIP_DRIVE_DB,
+  WAVEFOLDER_DRIVE_DB
+} from '../paramPresentation'
 import type { HelperBlock, LoguePrimitive } from './types'
-import { CLAMPF_HELPER, additiveInletExpr } from './shared'
+import {
+  CLAMPF_HELPER,
+  EXP_APPROX_HELPER,
+  LEVEL_PARAM,
+  additiveInletExpr,
+  blockDecls,
+  blockValue,
+  isBlockInvariant,
+  levelGain,
+  type BlockValue
+} from './shared'
 
 /**
  * A full `+-1` swing from a wired `drive` inlet maps to `+-50` percentage points -- half of
@@ -156,5 +172,160 @@ export const saturatorPrimitive: LoguePrimitive = {
       default: 0,
       setStatement: (suffix, valueExpr) => `drivePercent_${suffix} = ${valueExpr};`
     }
+  ]
+}
+
+/** TONE's tilt turns around this corner: the one-pole's coefficient for 800 Hz at 48 kHz. */
+const DRIVE_TONE_HZ = 800
+const DRIVE_TONE_COEFF = 1 - Math.exp((-2 * Math.PI * DRIVE_TONE_HZ) / 48000)
+/** DRIVE's dB per percent, in natural-log units: half of it is `exp_approx`'s argument. */
+const DRIVE_HALF_LN_PER_PERCENT = ((DRIVE_RANGE_DB / 100) * Math.log(10)) / 20 / 2
+
+const DRIVE_STEP_HELPER: HelperBlock = {
+  key: 'drive_step',
+  code: `  // Pre-gain, the cubic soft clip (x - 4x^3/27, reaching 1 with zero slope at 1.5; no divide),
+  // then TONE's tilt: the clipped signal split by a one-pole at ${DRIVE_TONE_HZ} Hz, its highs weighted
+  // by hi and its lows by hi + d (both with the makeup and LEVEL folded in). At TONE 50, d is 0
+  // and the tilt is exactly the clipped signal times hi. A leaf.
+  static inline __attribute__((always_inline)) float drive_step(float *z, float x, float pre, float hi, float d)
+  {
+    x *= pre;
+    x = x < -1.5f ? -1.5f : (x > 1.5f ? 1.5f : x);
+    x = x - 0.148148148f * x * x * x;
+    const float lp = *z + ${DRIVE_TONE_COEFF.toPrecision(8)}f * (x - *z);
+    *z = lp;
+    return x * hi + lp * d;
+  }
+  // A moving TONE (percent, clamped here): below 50 the highs fade out, above it the lows.
+  static inline __attribute__((always_inline)) float drive_step_t(float *z, float x, float pre, float post, float t)
+  {
+    t = t < 0.f ? 0.f : (t > 100.f ? 100.f : t);
+    const float hi = t < 50.f ? t * 0.02f : 1.f;
+    const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
+    return drive_step(z, x, pre, hi * post, (lo - hi) * post);
+  }
+  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
+  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  {
+    return drive_step_t(z, x, h * h, level / h, t);
+  }
+`
+}
+
+/** A wired `tone` sweeps the whole tilt (depth 50 = half its range: +-1 reaches both ends). */
+const DRIVE_TONE_INLET_DEPTH = 50
+
+/**
+ * What a `drive` instance computes per block and the call its loop makes. DRIVE's
+ * `h = exp(dB / 2)` gives the pre-gain `h^2` and the makeup `1/h` (half the drive taken back, so a
+ * signal driven into the clip stays about as loud as it came in). With both inputs still,
+ * everything down to the tilt's two weights is a block constant (`drive_step`); a moving `tone`
+ * re-weights per sample (`drive_step_t`, a clamp and a few multiplies); a moving `drive` pays an
+ * `exp_approx` and a divide a sample (`drive_step_h`).
+ */
+function driveCode(
+  suffix: string,
+  inlets: Record<string, string | undefined>
+): { values: Record<string, BlockValue>; call: string } {
+  const x = inlets.in ?? '0.f'
+  const level = levelGain(suffix)
+  const drivePercent =
+    inlets.drive !== undefined
+      ? additiveInletExpr('drivePercent', suffix, inlets.drive, DRIVE_INLET_DEPTH)
+      : `drivePercent_${suffix}`
+  const h = blockValue(
+    'blkDriveH',
+    suffix,
+    `exp_approx((${drivePercent}) * ${DRIVE_HALF_LN_PER_PERCENT.toPrecision(8)}f)`,
+    [inlets.drive]
+  )
+  const toneMoving = !isBlockInvariant(inlets.tone)
+  const tone =
+    inlets.tone === undefined
+      ? `tonePercent_${suffix}`
+      : toneMoving
+        ? `tonePercent_${suffix} + (${inlets.tone}) * ${DRIVE_TONE_INLET_DEPTH}.f`
+        : additiveInletExpr('tonePercent', suffix, inlets.tone, DRIVE_TONE_INLET_DEPTH)
+  if (!h.decl) {
+    return {
+      values: { level },
+      call: `drive_step_h(&z_${suffix}, ${x}, ${h.ref}, ${level.ref}, ${tone})`
+    }
+  }
+  const pre = blockValue('blkDrivePre', suffix, `${h.ref} * ${h.ref}`, [])
+  const post = blockValue('blkDrivePost', suffix, `${level.ref} / ${h.ref}`, [])
+  if (toneMoving) {
+    return {
+      values: { level, h, pre, post },
+      call: `drive_step_t(&z_${suffix}, ${x}, ${pre.ref}, ${post.ref}, ${tone})`
+    }
+  }
+  const hiW = `((${tone}) < 50.f ? (${tone}) * 0.02f : 1.f)`
+  const loW = `((${tone}) > 50.f ? (100.f - (${tone})) * 0.02f : 1.f)`
+  const hi = blockValue('blkDriveHi', suffix, `${hiW} * ${post.ref}`, [])
+  const d = blockValue('blkDriveD', suffix, `(${loW} - ${hiW}) * ${post.ref}`, [])
+  return {
+    values: { level, h, pre, post, hi, d },
+    call: `drive_step(&z_${suffix}, ${x}, ${pre.ref}, ${hi.ref}, ${d.ref})`
+  }
+}
+
+/**
+ * `logue/shape/drive`: a light saturator with a tone control, for grit on an effect's input or a
+ * voice (2026-10-05, after the Radio patch used wavefolder + two one-poles for it and sat close
+ * to the xd's CPU limit next to other effects).
+ *
+ * - DRIVE is 0..+36 dB of pre-gain, linear in dB: an effect's input is quiet (~0.18 peak for a
+ *   saw on NTS-1 mkII), so it takes ~+15 dB to reach the clip at all. Half of it is taken back
+ *   after the clip, so driving harder adds grit more than level.
+ * - The curve is the cubic soft clip bass-support and the ladder use: no divide (`soft-clip`'s
+ *   `x/(1+|x|)` costs one a sample), clean for small signals, odd harmonics only.
+ * - TONE tilts the clipped signal around ${DRIVE_TONE_HZ} Hz with one one-pole: 0 is a 6 dB/oct lowpass
+ *   there, 50 exactly flat, 100 the matching highpass (thin, telephone/radio). The weights are
+ *   just gains, so a moving `tone` costs a clamp and a few multiplies, not a filter coefficient.
+ * - LEVEL is the noise sources' (dB, 100 = 0 dB).
+ * - Unwired, every gain is a block constant: per sample it is a multiply, the clip, the one-pole
+ *   and two multiply-adds (`driveCode` has the moving cases).
+ */
+export const drivePrimitive: LoguePrimitive = {
+  id: 'logue/shape/drive',
+  outletPolarity: 'inherit',
+  // z_ + drivePercent_ + tonePercent_ + levelPercent_, 4 floats
+  stateBytesPerInstance: 16,
+  description:
+    'A light saturator with a tone control: DRIVE pushes the signal into a soft clip (half the gain is taken back after it), TONE tilts the result from dark through flat to thin, LEVEL sets the output.',
+  searchTerms: ['saturation', 'saturator', 'overdrive', 'distortion', 'grit', 'tone'],
+  inlets: [
+    { name: 'in', role: 'audio' },
+    { name: 'drive', role: 'control' },
+    { name: 'tone', role: 'control' }
+  ],
+  memberDecls: (suffix) =>
+    `  float z_${suffix};\n  float drivePercent_${suffix};\n  float tonePercent_${suffix};\n  float levelPercent_${suffix};\n`,
+  initStatement: (suffix) => `    z_${suffix} = 0.f;\n`,
+  blockConstants: (suffix, inlets) => blockDecls(driveCode(suffix, inlets).values),
+  renderExpr: (suffix, inlets) => driveCode(suffix, inlets).call,
+  advanceStatement: () => '',
+  helpers: [DRIVE_STEP_HELPER, EXP_APPROX_HELPER, CLAMPF_HELPER],
+  params: [
+    {
+      name: 'DRIVE',
+      unit: DRIVE_DB,
+      modulatedBy: { inlet: 'drive', shape: 'additive' },
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `drivePercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'TONE',
+      unit: DRIVE_TONE,
+      modulatedBy: { inlet: 'tone', shape: 'additive' },
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `tonePercent_${suffix} = ${valueExpr};`
+    },
+    LEVEL_PARAM
   ]
 }

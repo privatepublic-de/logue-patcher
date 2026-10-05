@@ -321,7 +321,7 @@ const MSEG_STAGES = 6
 const MSEG_RATE_HELPER: HelperBlock = {
   key: 'mseg_rate_from_percent',
   code: `  // Stage time: 0 = one sample (a hard step), then 8000*t^3 ms (64 ms at 20, 1 s at 50, 8 s at
-  // 100). Called once per block, never per sample.
+  // 100). Called when a stage time is set, never per sample.
   static float mseg_rate_from_percent(float percent)
   {
     float t = percent * 0.01f;
@@ -342,9 +342,8 @@ const MSEG_STEP_HELPER: HelperBlock = {
   // power-on). At most one stage change per sample and rate <= 1, so zero-time stages in a loop
   // can't spin. A leaf: no calls into other helpers (the xd call-shape rule).
   static float mseg_step(int *stage, float *phase, float *start, float *out, float *prevGate,
-    int *retrig, float *eoc, float gate, const float *levels, float r0, float r1, float r2,
-    float r3, float r4, float r5, float timeMul, float depth, float curve, int mode, int hold,
-    int loop)
+    int *retrig, float *eoc, float gate, const float *levels, const float *rates, float timeMul,
+    float depth, float curve, int mode, int hold, int loop)
   {
     float g = (gate >= 0.5f) ? 1.f : 0.f;
     int rise = (g > *prevGate) || *retrig;
@@ -356,8 +355,7 @@ const MSEG_STEP_HELPER: HelperBlock = {
     if (rise || (mode == 3 && *stage >= 6)) { *stage = 0; *phase = 0.f; *start = *out; }
     int s = *stage;
     if (s >= 6) return *out;
-    float rate = s == 0 ? r0 : s == 1 ? r1 : s == 2 ? r2 : s == 3 ? r3 : s == 4 ? r4 : r5;
-    rate *= timeMul;
+    float rate = rates[s] * timeMul;
     if (rate > 1.f) rate = 1.f;
     float target = levels[s] * depth;
     *phase += rate;
@@ -397,16 +395,36 @@ function msegTimeMulExpr(percent: string): string {
 function msegBlockValues(
   suffix: string,
   inlets: Record<string, string | undefined>
-): { rates: BlockValue[]; timeMul: BlockValue } {
-  const rates = Array.from({ length: MSEG_STAGES }, (_, i) =>
-    blockValue(`blkMsegRate${i}`, suffix, `mseg_rate_from_percent(stageTime_${suffix}[${i}])`, [])
-  )
+): { timeMul: BlockValue } {
+  // A moving `time` is re-read every ENV_RATE_CONTROL_PERIOD samples, as ad/ahd's times are:
+  // per sample its clamp and divide were a third of the envelope's cost (Radio, 2026-10-05).
+  if (inlets.time !== undefined && !isBlockInvariant(inlets.time)) {
+    return {
+      timeMul: {
+        ref: `mseg_time_ctl(&timeCtl_${suffix}, &timeMul_${suffix}, timePercent_${suffix} + (${inlets.time}) * ${MSEG_TIME_INLET_DEPTH}.f)`
+      }
+    }
+  }
   const timePercent =
     inlets.time !== undefined
       ? additiveInletExpr('timePercent', suffix, inlets.time, MSEG_TIME_INLET_DEPTH)
       : `timePercent_${suffix}`
   const timeMul = blockValue('blkMsegTimeMul', suffix, msegTimeMulExpr(timePercent), [inlets.time])
-  return { rates, timeMul }
+  return { timeMul }
+}
+
+const MSEG_TIME_CTL_HELPER: HelperBlock = {
+  key: 'mseg_time_ctl',
+  code: `  // A moving TIME at control rate (env_rate_ctl's period): every ${ENV_RATE_CONTROL_PERIOD}th call clamps the percent and
+  // inverts the stage-time multiplier into a rate multiplier; in between the cached one is returned.
+  static inline __attribute__((always_inline)) float mseg_time_ctl(uint32_t *n, float *mul, float percent)
+  {
+    if ((*n)++ & ${ENV_RATE_CONTROL_PERIOD - 1}u) return *mul;
+    percent = percent < 0.f ? 0.f : (percent > 100.f ? 100.f : percent);
+    *mul = ${msegTimeMulExpr('percent')};
+    return *mul;
+  }
+`
 }
 
 /**
@@ -425,16 +443,16 @@ function msegBlockValues(
  *   chaining, clocking a `sample-hold` or stepping a `mux`.
  * - `TIME` scales every stage time (0.1x-10x) and `DEPTH` every level (-100..100%), so one
  *   device knob each can reshape the whole envelope; both have additive inlets.
- * - Cost: the six stage rates are computed per block; per sample it is one ramp step, a stage
+ * - Cost: the six stage rates are computed when their T params are set; per sample it is one ramp step, a stage
  *   check and the curve (a few multiplies). `HOLD`/`LOOP`/`MODE` are 0-based selects, so the xd
  *   shows them as 1..N; NTS-1 mkII shows mode names.
  */
 export const multistageEnvelopePrimitive: LoguePrimitive = {
   id: 'logue/env/multistage',
   outletPolarity: { env: 'bipolar', eoc: 'gate' },
-  // levels[6] + stageTime[6] + curve/mode/hold/loop/time/depth (18 floats) + stage/retrig (ints)
-  // + phase/start/out/prevGate/noteHeld/eoc (6 floats): 26 x 4 bytes
-  stateBytesPerInstance: 104,
+  // levels[6] + stageRate[6] + curve/mode/hold/loop/time/depth (18 floats) + stage/retrig (ints)
+  // + phase/start/out/prevGate/noteHeld/eoc (6 floats) + timeCtl/timeMul (mseg_time_ctl): 28 x 4
+  stateBytesPerInstance: 112,
   description:
     'A six-stage envelope for modulation: each stage ramps to its own level (L1-L6, bipolar) over its own time (T1-T6). MODE picks one-shot, sustain (holds at stage HOLD), loop (repeats stages LOOP-HOLD while held) or cycle (a free-running drawn LFO). TIME and DEPTH scale the whole shape. eoc pulses at each loop and at the end.',
   inlets: [
@@ -444,18 +462,19 @@ export const multistageEnvelopePrimitive: LoguePrimitive = {
   ],
   outlets: [{ name: 'env' }, { name: 'eoc' }],
   memberDecls: (suffix) =>
-    `  float level_${suffix}[${MSEG_STAGES}];\n  float stageTime_${suffix}[${MSEG_STAGES}];\n` +
+    `  float level_${suffix}[${MSEG_STAGES}];\n  float stageRate_${suffix}[${MSEG_STAGES}];\n` +
     `  float curvePercent_${suffix};\n  float mode_${suffix};\n  float hold_${suffix};\n  float loop_${suffix};\n` +
     `  float timePercent_${suffix};\n  float depthPercent_${suffix};\n` +
     `  int stage_${suffix};\n  int retrig_${suffix};\n  float phase_${suffix};\n  float start_${suffix};\n` +
-    `  float out_${suffix};\n  float prevGate_${suffix};\n  float noteHeld_${suffix};\n  float eoc_${suffix};\n`,
+    `  float out_${suffix};\n  float prevGate_${suffix};\n  float noteHeld_${suffix};\n  float eoc_${suffix};\n` +
+    `  uint32_t timeCtl_${suffix};\n  float timeMul_${suffix};\n`,
   initStatement: (suffix) =>
     `    stage_${suffix} = 6;\n    retrig_${suffix} = 0;\n    phase_${suffix} = 0.f;\n    start_${suffix} = 0.f;\n` +
-    `    out_${suffix} = 0.f;\n    prevGate_${suffix} = 0.f;\n    noteHeld_${suffix} = 0.f;\n    eoc_${suffix} = 0.f;\n`,
+    `    out_${suffix} = 0.f;\n    prevGate_${suffix} = 0.f;\n    noteHeld_${suffix} = 0.f;\n    eoc_${suffix} = 0.f;\n` +
+    `    timeCtl_${suffix} = 0u;\n    timeMul_${suffix} = 1.f;\n`,
   blockConstants: (suffix, inlets) => {
     const v = msegBlockValues(suffix, inlets)
     return blockDecls({
-      ...Object.fromEntries(v.rates.map((r, i) => [`r${i}`, r])),
       timeMul: v.timeMul
     })
   },
@@ -469,18 +488,17 @@ export const multistageEnvelopePrimitive: LoguePrimitive = {
         ? `(${additiveInletExpr('depthPercent', suffix, inlets.depth, MSEG_DEPTH_INLET_DEPTH, -100, 100)} * 0.01f)`
         : `(depthPercent_${suffix} * 0.01f)`
     const gate = inlets.gate ?? `noteHeld_${suffix}`
-    const rates = v.rates.map((r) => r.ref).join(', ')
     // A wired gate replaces the note entirely, so a note-on must not restart it.
     const ignoreNote = inlets.gate !== undefined ? `      retrig_${suffix} = 0;\n` : ''
     return (
       ignoreNote +
-      `      float y_${suffix}_env = mseg_step(&stage_${suffix}, &phase_${suffix}, &start_${suffix}, &out_${suffix}, &prevGate_${suffix}, &retrig_${suffix}, &eoc_${suffix}, ${gate}, level_${suffix}, ${rates}, ${v.timeMul.ref}, ${depth}, curvePercent_${suffix} * 0.01f, (int)mode_${suffix}, (int)hold_${suffix}, (int)loop_${suffix});\n` +
+      `      float y_${suffix}_env = mseg_step(&stage_${suffix}, &phase_${suffix}, &start_${suffix}, &out_${suffix}, &prevGate_${suffix}, &retrig_${suffix}, &eoc_${suffix}, ${gate}, level_${suffix}, stageRate_${suffix}, ${v.timeMul.ref}, ${depth}, curvePercent_${suffix} * 0.01f, (int)mode_${suffix}, (int)hold_${suffix}, (int)loop_${suffix});\n` +
       `      float y_${suffix}_eoc = eoc_${suffix};\n` +
       `      (void)y_${suffix}_env; (void)y_${suffix}_eoc;\n`
     )
   },
   advanceStatement: () => '',
-  helpers: [MSEG_RATE_HELPER, MSEG_STEP_HELPER, CLAMPF_HELPER],
+  helpers: [MSEG_RATE_HELPER, MSEG_STEP_HELPER, MSEG_TIME_CTL_HELPER, CLAMPF_HELPER],
   noteOnStatement: (suffix) => `    noteHeld_${suffix} = 1.f;\n    retrig_${suffix} = 1;\n`,
   noteOffStatement: (suffix) => `    noteHeld_${suffix} = 0.f;\n`,
   params: [
@@ -500,7 +518,7 @@ export const multistageEnvelopePrimitive: LoguePrimitive = {
       max: 100,
       default: time,
       setStatement: (suffix: string, valueExpr: string) =>
-        `stageTime_${suffix}[${i}] = ${valueExpr};`
+        `stageRate_${suffix}[${i}] = mseg_rate_from_percent(${valueExpr});`
     })),
     {
       name: 'CURVE',

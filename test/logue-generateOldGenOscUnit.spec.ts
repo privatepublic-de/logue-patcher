@@ -554,7 +554,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       const result = generateOldGenOscUnit(doc, { name: 'filter chain' })
       expect(result.oscCpp).toContain('float y_osc1 = osc_sinf(phase_osc1);')
       expect(result.oscCpp).toContain(
-        'float y_filt1 = onepole_step(&z1_filt1, y_osc1, cutoff_warp(cutoff_filt1));'
+        'float y_filt1 = onepole_step(&z1_filt1, y_osc1, blkOnepoleA_filt1);'
       )
       expect(result.oscCpp).toContain('static float onepole_step(float *z1, float x, float a)')
       // unwired cutoff defaults to fully open (100 -> 1.0f)
@@ -575,7 +575,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         notes: ''
       }
       const result = generateOldGenOscUnit(doc, { name: 'unwired in' })
-      expect(result.oscCpp).toContain('onepole_step(&z1_filt1, 0.f, cutoff_warp(cutoff_filt1))')
+      expect(result.oscCpp).toContain('onepole_step(&z1_filt1, 0.f, blkOnepoleA_filt1)')
     })
 
     it("a wired cutoff inlet adds the upstream instance's own variable to the CUTOFF param", () => {
@@ -600,9 +600,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         'onepole_step(&z1_filt1, y_osc1, cutoff_warp((cutoff_filt1 + (y_lfo1))))'
       )
       // the dial is the centre the wired value moves around, so it's still read
-      expect(result.oscCpp).not.toContain(
-        'onepole_step(&z1_filt1, y_osc1, cutoff_warp(cutoff_filt1))'
-      )
+      expect(result.oscCpp).not.toContain('onepole_step(&z1_filt1, y_osc1, blkOnepoleA_filt1)')
     })
 
     it('a custom unwired CUTOFF value reaches the generated init, not just the 100 default', () => {
@@ -630,8 +628,8 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       const result = generateOldGenOscUnit(doc, { name: 'two filters' })
       const occurrences = result.oscCpp.split('static float onepole_step').length - 1
       expect(occurrences).toBe(1)
-      expect(result.oscCpp).toContain('onepole_step(&z1_filt1, y_osc1, cutoff_warp(cutoff_filt1))')
-      expect(result.oscCpp).toContain('onepole_step(&z1_filt2, y_filt1, cutoff_warp(cutoff_filt2))')
+      expect(result.oscCpp).toContain('onepole_step(&z1_filt1, y_osc1, blkOnepoleA_filt1)')
+      expect(result.oscCpp).toContain('onepole_step(&z1_filt2, y_filt1, blkOnepoleA_filt2)')
     })
 
     it('cutoff_warp is a plain cheap cube (no libm), emitted exactly once regardless of instance count', () => {
@@ -1540,7 +1538,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(doc, { name: 'highpass test' })
       expect(result.oscCpp).toContain(
-        'float y_hp1 = ((y_osc1) - onepole_step(&z1_hp1, y_osc1, cutoff_warp(cutoff_hp1)));'
+        'float y_hp1 = ((y_osc1) - onepole_step(&z1_hp1, y_osc1, blkOnepoleA_hp1));'
       )
       expect(result.oscCpp).toContain('static float onepole_step(float *z1, float x, float a)')
       expect(result.oscCpp).toContain('static float cutoff_warp(float t)')

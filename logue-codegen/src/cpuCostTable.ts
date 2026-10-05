@@ -32,9 +32,9 @@ export const CPU_COST_TABLE: Record<
   },
   'logue/env/follower': { variants: { base: 20 }, worst: 20, snapshotHash: 'f7893e7c4cfddfe4' },
   'logue/env/multistage': {
-    variants: { base: 123, control: 47, 'heavy-cycle': 113 },
-    worst: 123,
-    snapshotHash: '8672d9936f6615d1'
+    variants: { base: 110, control: 42, 'heavy-cycle': 100 },
+    worst: 110,
+    snapshotHash: '13bbe27c71cd6bc6'
   },
   'logue/env/one-knob-adsr': {
     variants: { base: 51, control: 42, 'heavy-moving-shape': 131 },
@@ -52,9 +52,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: '3064386816179abd'
   },
   'logue/filter/highpass-cheap': {
-    variants: { base: 16, control: 16 },
-    worst: 16,
-    snapshotHash: '4dc6fa6c0e39cc62'
+    variants: { base: 7, control: 7 },
+    worst: 7,
+    snapshotHash: '5918f33ffc84533f'
   },
   'logue/filter/hilbert': { variants: { base: 103 }, worst: 103, snapshotHash: 'f56fb7646016882f' },
   'logue/filter/ladder': {
@@ -69,9 +69,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: '14f53da66bd476e6'
   },
   'logue/filter/lowpass-cheap': {
-    variants: { base: 15, control: 16 },
-    worst: 16,
-    snapshotHash: 'bfb55ed722e29c07'
+    variants: { base: 6, control: 6 },
+    worst: 6,
+    snapshotHash: '9498d8e54c739257'
   },
   'logue/filter/string': {
     variants: { base: 367, control: 392 },
@@ -79,9 +79,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: 'd2fb4b7548c8393b'
   },
   'logue/filter/svf': {
-    variants: { base: 45, control: 45, TRACK: 47, 'TRACK+control': 47 },
-    worst: 47,
-    snapshotHash: 'c762be0833d80be7'
+    variants: { base: 40, control: 40, TRACK: 42, 'TRACK+control': 42 },
+    worst: 42,
+    snapshotHash: '70af74469f857696'
   },
   'logue/gain/vca': {
     variants: { base: 0, control: 0 },
@@ -353,6 +353,11 @@ export const CPU_COST_TABLE: Record<
   'logue/sense/resonance': { variants: { base: 0 }, worst: 0, snapshotHash: '547eb218df760f8c' },
   'logue/sense/shape': { variants: { base: 0 }, worst: 0, snapshotHash: '325e380beee3bc55' },
   'logue/sense/shape-2': { variants: { base: 0 }, worst: 0, snapshotHash: '0a03598e05e5c340' },
+  'logue/shape/drive': {
+    variants: { base: 26, control: 27 },
+    worst: 27,
+    snapshotHash: 'fd99dae03aa4746d'
+  },
   'logue/shape/soft-clip': {
     variants: { base: 20, control: 30 },
     worst: 30,

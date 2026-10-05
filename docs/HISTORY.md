@@ -2770,3 +2770,33 @@ checked against the example effects built whole on the emulator (all at SDRAM pe
   which a moving `trig` deliberately counts as always recording.
 - On the way: an oscillator in an effect cost twice what it does in an oscillator (square 333 vs
   153), which became the w0 block constant (entry above).
+
+### Radio on the xd: where the CPU went, and `shape/drive` (2026-10-05)
+
+The user's Radio modfx sat near dropouts on a real xd with other effects on, and they asked for a
+lighter saturator than the wavefolder they used for grit. Profiled first (`profileFxUnit.ts`,
+then the emulator at Time 1, where the crackle envelope actually fires): the whole unit was 450
+cycles a sample (509 with the crackle running), and the wavefolder ~15 of it -- its test input
+never reached a fold. The cost was spread over the crackle section: the svf highpass (~70),
+the multistage envelope (~55), two sample-holds, the lfsr, chance.
+- svf divided `1/(1+g(g+k))` every sample inside `svf_step`, even with g and k per block (an
+  older note claimed that divide was per block). It now caches it with the g/k it came from:
+  Radio's lfsr changes them every few dozen samples. A control-rate ramp (the ladder's way) was
+  rejected: Radio's cutoff toggles between closed and open at ~3 kHz, and that switching is the
+  crackle. A first version passed a block-constant `a1` and inlined the cache into each instance:
+  cheapest for one still svf (36 xd fx cycles vs 45) but a third instance went 81 -> 119, so the
+  cache moved into the shared out-of-line `svf_step`. Cost of that choice: a continuously moving
+  cutoff (an LFO) is 106 -> 118.
+- The cheap one-poles warped an unwired CUTOFF every sample.
+- multistage converted its six stage times every block (~10 cycles a sample in a 64-frame
+  effect block) and a moving TIME every sample (a clamp and a divide). Stage times now convert
+  in their set statements, TIME at control rate. Forcing `mseg_step` inline changed nothing: GCC
+  already inlines a one-caller helper.
+- Result: 450 -> 418, 509 -> 459 (whole unit, emulator), 5336 -> 5140 B of the modfx's 6 KB.
+  A host render with TIME unwired is bit-identical; with TIME moving it differs by <= 3e-6.
+  Oscillator table: svf 45 -> 40, lowpass/highpass-cheap 15/16 -> 6/7, multistage 123 -> 110.
+  Effect table: multistage `control` 183 -> 146, svf still 55 -> 45.
+- `shape/drive` was built as asked (soft clip + tilt tone + LEVEL), but it is not cheaper than
+  wavefolder + lowpass-cheap in Radio: ~33 against ~25 (a `fabsf`-based clamp was no faster).
+  Radio with drive in place of those two measures 434 / 475. Its point is the sound (a real
+  saturation level and a tone control), not the CPU.

@@ -79,9 +79,10 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
+    const float blkOnepoleA_n = cutoff_warp(cutoff_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = onepole_step(&z1_n, 0.f, cutoff_warp(cutoff_n));
+      float y_n = onepole_step(&z1_n, 0.f, blkOnepoleA_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -254,9 +255,10 @@ public:
   {
       float y_c_in = value_c_in;
       float y_c_cutoff = value_c_cutoff;
+    const float blkOnepoleA_n = cutoff_warp((cutoff_n + (y_c_cutoff)));
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = onepole_step(&z1_n, y_c_in, cutoff_warp((cutoff_n + (y_c_cutoff))));
+      float y_n = onepole_step(&z1_n, y_c_in, blkOnepoleA_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -452,9 +454,10 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
+    const float blkOnepoleA_n = cutoff_warp(cutoff_n);
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = onepole_step(&z1_n, 0.f, cutoff_warp(cutoff_n));
+      float y_n = onepole_step(&z1_n, 0.f, blkOnepoleA_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly

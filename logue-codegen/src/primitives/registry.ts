@@ -103,7 +103,7 @@ import {
   senseShapePrimitive,
   senseTempoPrimitive
 } from './sense'
-import { saturatorPrimitive, wavefolderPrimitive } from './shape'
+import { drivePrimitive, saturatorPrimitive, wavefolderPrimitive } from './shape'
 import {
   bipolarToUnipolarPrimitive,
   bufferPrimitive,
@@ -176,6 +176,7 @@ const PRIMITIVES: LoguePrimitive[] = [
   lfsrPrimitive,
   wavefolderPrimitive,
   saturatorPrimitive,
+  drivePrimitive,
   combFilterPrimitive,
   pluckedStringPrimitive,
   pluckExciterPrimitive,

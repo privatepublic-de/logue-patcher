@@ -694,6 +694,34 @@ export const FOLLOWER_SENS_DB: ParamUnit = {
 export const WAVEFOLDER_DRIVE_DB = linearDbUnit(1, 0.07)
 // `driveGainExpr(..., 0.09)` -- primitives.ts:1789 (`saturatorPrimitive`'s own call site).
 export const SOFTCLIP_DRIVE_DB = linearDbUnit(1, 0.09)
+/** `logue/shape/drive`'s DRIVE: 0 .. +`DRIVE_RANGE_DB` dB of pre-gain, linear in dB. */
+export const DRIVE_RANGE_DB = 36
+export const DRIVE_DB: ParamUnit = {
+  toDisplay(raw) {
+    return `+${((raw * DRIVE_RANGE_DB) / 100).toFixed(1)} dB`
+  },
+  parseInput(text) {
+    const db = Number.parseFloat(text)
+    return Number.isFinite(db) ? (Math.abs(db) * 100) / DRIVE_RANGE_DB : undefined
+  }
+}
+/** `logue/shape/drive`'s TONE: a tilt, dark (a lowpass) at 0, flat at 50, thin (a highpass) at
+ *  100, shown as how far it leans either way. */
+export const DRIVE_TONE: ParamUnit = {
+  toDisplay(raw) {
+    if (raw === 50) return 'Flat'
+    const amount = Math.round(Math.abs(raw - 50) * 2)
+    return raw < 50 ? `Dark ${amount}%` : `Thin ${amount}%`
+  },
+  parseInput(text) {
+    if (/^\s*flat\s*$/i.test(text)) return 50
+    const m = /^\s*(dark|thin)?\s*(-?[\d.]+)/i.exec(text)
+    if (!m) return undefined
+    const n = Number.parseFloat(m[2])
+    if (!Number.isFinite(n)) return undefined
+    return m[1]?.toLowerCase() === 'dark' ? 50 - n / 2 : m[1] ? 50 + n / 2 : n
+  }
+}
 // `logue/filter/ladder`'s DRIVE: `1.f + raw * 0.09f`, the saturator's own curve.
 export const LADDER_DRIVE_DB = linearDbUnit(1, 0.09)
 /** `logue/filter/ladder`'s free CUTOFF is a note, `LADDER_NOTE_LO + raw * LADDER_NOTE_SPAN / 100`:

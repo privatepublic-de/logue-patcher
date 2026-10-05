@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 100 primitives, 5 of them superseded and 4 internal, both hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 101 primitives, 5 of them superseded and 4 internal, both hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -103,13 +103,13 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-100 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+101 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
 history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (15:
 sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (11: mix2/crossfader/pan/pan-mix2/width/stereo-mix2/stereo-crossfader, plus the internal bus-send/bus-receive/bus-send-stereo/bus-receive-stereo -- see "Buses"), `filter` (9:
 lowpass-cheap/highpass-cheap/comb/string/svf/ladder/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (15: constant/unipolar-to-bipolar/bipolar-to-unipolar/
-glide/slew/sample-hold/sample-delay/delay/long-delay/quantize/freq-shift/buffer/buffer-tap/grain/reverse-tap), `shape` (2: wavefolder/soft-clip), `math` (11: negate/one-minus/curve/add/subtract/multiply/scale/min/max/
+glide/slew/sample-hold/sample-delay/delay/long-delay/quantize/freq-shift/buffer/buffer-tap/grain/reverse-tap), `shape` (3: wavefolder/soft-clip/drive), `math` (11: negate/one-minus/curve/add/subtract/multiply/scale/min/max/
 clamp/abs), `logic` (10: greater-than/less-than/equal/and/or/xor/schmitt/edge/chance/round-robin), `mux` (3: mux2/
 mux4/demux2).
 
@@ -221,7 +221,10 @@ matching when adding a new one):
   153/152. **Not done**: `formant` computes its coefficients inside `formant_step` (next to its
   xd-crash `always_inline`/`formant_note_w0` workarounds), about 80+ cycles of per-block work;
   hoisting it means splitting that helper, which deserves its own change with a hardware check.
-  The filter helpers' own `1/(1+g(g+k))` divides are per-block too but live inside the helpers.
+  `svf`'s `1/(1+g(g+k))` was still divided every sample inside `svf_step` until 2026-10-05: it
+  now redoes it only when g or k changed (exact; see "`filter/svf`"). The cheap one-poles' unwired CUTOFF warp is a
+  block constant (`blkOnepoleA`) since then too, and `env/multistage` converts its stage times
+  where they're set.
   Every oscillator's transposed `w0` (`transposedW0`, 2026-10-03: sine/saw/square/pulse/
   triangle/additive, fast-square's TRACK) is one too while `pitch`/`harmonic` don't move -- they
   called `note_w0` once or twice a sample. xd emulator base cycles: sine 110 -> 50, saw 153 -> 86,
@@ -471,9 +474,11 @@ only": the example stereo reverb (~1660 whole, 1632 estimated) runs on a real xd
 other effect slots off (user, 2026-10-03); beyond it "dropouts". The colours keep the busy-slots
 scale (red = fails with all three running). Verdicts in the tooltip, which also says the slots
 share one MCU. The amber band (~8 %) is narrower than the estimate's error.
-`scripts/checkFxCpuEstimate.ts` compares that with every example built whole: -10..+22 % at
+`scripts/checkFxCpuEstimate.ts` compares that with every example built whole: -10..+31 % at
 penalty 8, SDRAM counts exact except the random-trigger grain-mill units (5-5.5 accesses against
-8: the deliberate overcount, +15/+22 %); without those -10..+18 %. `scripts/profileFxUnit.ts`
+8: the deliberate overcount, +16/+24 %); without those -10..+2 % but auto-wah +31 % (2026-10-05:
+the svf `control` variant moves cutoff, resonance and pitch at audio rate, and since svf caches
+its divide that variant costs 118, while auto-wah's svf, only its cutoff moving, costs ~60). `scripts/profileFxUnit.ts`
 attributes a unit's per-line profile (`PROFILE=1 PROFILE_LINES=0`, now with SDRAM per line) to
 instances, helpers and SDK headers next to the table -- how the misses above were found.
 `osc/additive` and `filter/string` don't fit an xd delfx: they're listed in `FX_CPU_DOES_NOT_FIT`
@@ -840,6 +845,13 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   (user's call, 2026-09-30), whose range reduction linked ~3.2 KB: the xd auto-wah example went
   5540 -> 1476 B of a modfx's 6 KB, and TRACK with every input wired 276 -> 206 cycles (xd
   emulator). No hardware pass of the new one yet.
+  `svf_step` caches `a1 = 1/(1+g(g+k))` with the g and k it was made from (`svfA1Cache_[3]`,
+  +12 B; 2026-10-05, the Radio patch) and divides only when either changed: never while both are
+  per block, every few dozen samples from a stepped source (lfsr, sample-hold), every sample from
+  an LFO. Bit-identical output. xd fx emulator: still 55 -> 45, a third instance 81 -> 79, but a
+  continuously moving cutoff 106 -> 118 (the compare on top of the divide). Passing a block
+  constant `a1` instead, with an always-inline cache only for a moving g/k, was 36 for one still
+  svf but a third instance cost 119 (still) / 255 (moving): GCC stopped sharing the code.
 - **`filter/ladder`** (2026-10-04): a Moog-style 24 dB/oct lowpass, Zavalishin's ZDF/TPT
   ladder (four bilinear one-poles, the loop solved linearly for an output estimate) with the
   cubic soft clip on the input + feedback sum, where the ladder's differential pair sits. It bounds
@@ -893,6 +905,24 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   ~37.5% of the xd's RAM), with a runtime Nyquist clamp. The 6-frame version builds to 13.6 KB on the xd (17.5 KB on
   NTS-1 mkII) and plays on both devices (user, 2026-09-30).
 - **`gain/vca`**: `GAIN` is 0-4x, unity at raw `25`.
+- **`shape/drive`** (2026-10-05, for the Radio patch's grit): a saturator with a tone control.
+  DRIVE 0..+36 dB pre-gain, linear in dB (`DRIVE_DB`; an effect's input is ~0.18 peak, so the
+  clip starts around +15 dB), into the cubic soft clip (bass-support's / the ladder's: no divide,
+  unlike `soft-clip`'s `x/(1+|x|)`), then half the drive's dB taken back (`h = 10^(dB/40)`:
+  pre-gain `h^2`, makeup `1/h`). TONE tilts around 800 Hz with one one-pole (`DRIVE_TONE`): 0 a
+  6 dB/oct lowpass there, 50 exactly flat, 100 the matching highpass. LEVEL is `LEVEL_PARAM`.
+  Additive `drive`/`tone` (depth 50). Three always-inline leaves pick the path (`driveCode`):
+  both still -> `drive_step` with every gain a block constant; a moving `tone` ->
+  `drive_step_t` (a clamp, a few multiplies); a moving `drive` -> `drive_step_h` (an
+  `exp_approx` and a divide a sample). Harness (`scripts/runDriveHarness.ts`, xd, ASan/UBSan):
+  the settled curve within 1.6e-6 of `clip(c*h^2)/h`, the tilt within 0.05 dB of the one-pole's
+  exact response at 65/784/4186 Hz for every TONE, the moving paths bit-identical to the dial,
+  fuzz clean. Not lighter than what it replaced in Radio: ~33 xd fx emulator cycles against ~25
+  for wavefolder + lowpass-cheap there, where the wavefolder's input (0.3 peak test noise x3)
+  never reached a fold, so its loop ran once (a hot input folding costs it ~6 more per fold).
+  CPU tables: xd osc 26 base / 27 control; xd fx 26 base, 121 with moving `drive` and `tone`
+  (the per-sample `exp_approx` and divide; a control-rate drive would be the next saving). No
+  hardware pass yet.
 - **`mix/pan`** (2026-09-30, grain-mill phase 3): equal-power placement ADDED onto a stereo bus
   (`l`/`r` in and out), so pans chain into a mix with no mixer node. Gains are
   `sqrt(clamp((100 -+ PAN)*0.005))`: unclamped, `0.5 - 100*0.005f` went negative in float (a NaN
@@ -953,13 +983,15 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   Outlets `env` (bipolar) and `eoc` (a one-sample gate at each wrap and at the end); it can't be
   called `out`, which codegen treats as the single-outlet case. A wired `gate` replaces the note
   (and suppresses the note-on retrigger); unwired, note-on always restarts (legato too), from
-  the current level. `mseg_step` is a leaf: the six rates are block constants
-  (`mseg_rate_from_percent`), at most one stage change per sample and rate <= 1, so zero-time
+  the current level. `mseg_step` is a leaf: the six rates (`stageRate_[6]`) are converted by the
+  T params' set statements (`mseg_rate_from_percent`; before 2026-10-05 per block, ~10 xd fx
+  cycles a sample with 64-frame blocks), a moving `time` is re-read every 16 samples
+  (`mseg_time_ctl`, as ad/ahd's times), at most one stage change per sample and rate <= 1, so zero-time
   loops can't spin. `MODE`/`HOLD`/`LOOP` are 0-based selects (`SelectParam.names` gives NTS-1
   mkII the mode names; the xd shows 1..N). Harness-checked per mode (ASan/UBSan clean); real
   ARM builds link on both (`scripts/stageMultistageEnv.ts`), `mseg_step` is inlined into the
   xd's `process`, and the xd RAM estimate matches its bss exactly. Emulator cost (xd, per
-  voice-sample, table of 2026-10-03): 123 base, 47 with control inputs wired, 113 for
+  voice-sample, table of 2026-10-05): 110 base, 42 with control inputs wired, 100 for
   `heavy-cycle` (cycle mode, short stages, inputs wired) -- counted once MODE or another param is on a knob. Moving the
   hold/loop clamps per block or adding a sustain early-return didn't pay off at `-Os` (+15 for the
   early return). Confirmed on both devices, all four modes (user, 2026-09-30).
@@ -1741,6 +1773,9 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
 - `env/adsr`/`env/one-knob-adsr` (2026-10-02) are harness-, link- and emulator-checked only:
   no listening pass, and the NTS-1 mkII SHAPE name display (a 101-entry `strings` row) hasn't
   been seen on a device. Staged: `lp-xd-oneknob`(`-lfo`), `lp-nts1-oneknob`(`-lfo`).
+- `shape/drive` (2026-10-05) is harness-, link- and emulator-checked only: no listening pass.
+  `~/Documents/logue-patches/Radio drive.loguepatch` is the user's Radio with it in place of
+  wavefolder + lowpass-cheap (DRIVE 50, TONE 40 -- starting points, not tuned by ear).
 - `filter/ladder` (2026-10-04) is harness-, link- and emulator-checked only. No listening pass
   yet, and the half bass compensation and k_max 4.8 are untested by ear. Staged:
   `lp-xd-ladder`/`-env`/`-osc` and the `lp-nts1-*` equivalents (FB_DRIVE on menu param 3).

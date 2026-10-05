@@ -126,7 +126,7 @@ export {
   senseGatePrimitive,
   senseVelocityPrimitive
 } from './primitives/sense'
-export { wavefolderPrimitive, saturatorPrimitive } from './primitives/shape'
+export { wavefolderPrimitive, saturatorPrimitive, drivePrimitive } from './primitives/shape'
 export {
   constantPrimitive,
   unipolarToBipolarPrimitive,

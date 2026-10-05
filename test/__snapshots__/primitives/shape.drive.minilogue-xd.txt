@@ -17,8 +17,10 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    z1_n = 0.f;
-    cutoff_n = 0 * 0.01f;
+    z_n = 0.f;
+    drivePercent_n = 50;
+    tonePercent_n = 50;
+    levelPercent_n = 100;
   }
 
   // No longer precomputes a
@@ -79,10 +81,15 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
-    const float blkOnepoleA_n = cutoff_warp(cutoff_n);
+    const float blkLevel_n = (levelPercent_n >= 100.f ? 1.f : levelPercent_n <= 0.f ? 0.f : exp_approx((levelPercent_n - 100.f) * 0.055262042f));
+    const float blkDriveH_n = exp_approx((drivePercent_n) * 0.020723266f);
+    const float blkDrivePre_n = blkDriveH_n * blkDriveH_n;
+    const float blkDrivePost_n = blkLevel_n / blkDriveH_n;
+    const float blkDriveHi_n = ((tonePercent_n) < 50.f ? (tonePercent_n) * 0.02f : 1.f) * blkDrivePost_n;
+    const float blkDriveD_n = (((tonePercent_n) > 50.f ? (100.f - (tonePercent_n)) * 0.02f : 1.f) - ((tonePercent_n) < 50.f ? (tonePercent_n) * 0.02f : 1.f)) * blkDrivePost_n;
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = ((0.f) - onepole_step(&z1_n, 0.f, blkOnepoleA_n));
+      float y_n = drive_step(&z_n, 0.f, blkDrivePre_n, blkDriveHi_n, blkDriveD_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -114,24 +121,63 @@ private:
   float shapeParam01_;
   float shape01_;
   float shape2_01_;
-  float z1_n;
-  float cutoff_n;
+  float z_n;
+  float drivePercent_n;
+  float tonePercent_n;
+  float levelPercent_n;
 
-  static float onepole_step(float *z1, float x, float a)
+  // Pre-gain, the cubic soft clip (x - 4x^3/27, reaching 1 with zero slope at 1.5; no divide),
+  // then TONE's tilt: the clipped signal split by a one-pole at 800 Hz, its highs weighted
+  // by hi and its lows by hi + d (both with the makeup and LEVEL folded in). At TONE 50, d is 0
+  // and the tilt is exactly the clipped signal times hi. A leaf.
+  static inline __attribute__((always_inline)) float drive_step(float *z, float x, float pre, float hi, float d)
   {
-    float aClamped = a;
-    if (aClamped < 0.f) aClamped = 0.f;
-    else if (aClamped > 1.f) aClamped = 1.f;
-    float y = *z1 + aClamped * (x - *z1);
-    *z1 = y;
-    return y;
+    x *= pre;
+    x = x < -1.5f ? -1.5f : (x > 1.5f ? 1.5f : x);
+    x = x - 0.148148148f * x * x * x;
+    const float lp = *z + 0.099423131f * (x - *z);
+    *z = lp;
+    return x * hi + lp * d;
+  }
+  // A moving TONE (percent, clamped here): below 50 the highs fade out, above it the lows.
+  static inline __attribute__((always_inline)) float drive_step_t(float *z, float x, float pre, float post, float t)
+  {
+    t = t < 0.f ? 0.f : (t > 100.f ? 100.f : t);
+    const float hi = t < 50.f ? t * 0.02f : 1.f;
+    const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
+    return drive_step(z, x, pre, hi * post, (lo - hi) * post);
+  }
+  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
+  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  {
+    return drive_step_t(z, x, h * h, level / h, t);
   }
 
-  static float cutoff_warp(float t)
+  // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real `expf` call, a deliberate,
+  // real finding: unlike `tanf` (which links clean, no extra stubs needed; svf used it until
+  // 2026-09-30), a real local-toolchain build failed to LINK `expf` at all --
+  // its newlib implementation pulls in the full reentrant syscall stubs (_sbrk/_read/_write/
+  // _close/_lseek), none of which this minimal embedded target provides, a real toolchain-
+  // version-specific risk this approximation sidesteps entirely by staying libm-free like the
+  // rest of this file. Plain Padé[2/2] (accurate only very close to 0) is range-reduced first
+  // (x/8, applied, then squared 3 times -- the standard "exp via repeated squaring" trick) for
+  // accuracy across the WIDER range this primitive's own noteOn-time decay-gain formula
+  // actually uses -- verified numerically to <0.01% relative error across that whole range
+  // (x in roughly [-3, 0]), far tighter than a musical decay-time control needs.
+  static float exp_approx(float x)
   {
-    if (t < 0.f) t = 0.f;
-    else if (t > 1.f) t = 1.f;
-    return t * t * t;
+    float y = x * 0.125f;
+    float y2 = y * y;
+    float r = (1.f + y * 0.5f + y2 * (1.f/12.f)) / (1.f - y * 0.5f + y2 * (1.f/12.f));
+    r = r * r;
+    r = r * r;
+    r = r * r;
+    return r;
+  }
+
+  static float clampf(float v, float lo, float hi)
+  {
+    return v < lo ? lo : (v > hi ? hi : v);
   }
 };
 
@@ -189,10 +235,13 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    z1_n = 0.f;
+    z_n = 0.f;
     value_c_in = 37 * 0.01f;
-    value_c_cutoff = 37 * 0.01f;
-    cutoff_n = 0 * 0.01f;
+    value_c_drive = 37 * 0.01f;
+    value_c_tone = 37 * 0.01f;
+    drivePercent_n = 50;
+    tonePercent_n = 50;
+    levelPercent_n = 100;
   }
 
   // No longer precomputes a
@@ -254,11 +303,17 @@ public:
   void process(int32_t *yn, uint32_t frames)
   {
       float y_c_in = value_c_in;
-      float y_c_cutoff = value_c_cutoff;
-    const float blkOnepoleA_n = cutoff_warp((cutoff_n + (y_c_cutoff)));
+      float y_c_drive = value_c_drive;
+      float y_c_tone = value_c_tone;
+    const float blkLevel_n = (levelPercent_n >= 100.f ? 1.f : levelPercent_n <= 0.f ? 0.f : exp_approx((levelPercent_n - 100.f) * 0.055262042f));
+    const float blkDriveH_n = exp_approx((clampf(drivePercent_n + (y_c_drive) * 50.f, 0.f, 100.f)) * 0.020723266f);
+    const float blkDrivePre_n = blkDriveH_n * blkDriveH_n;
+    const float blkDrivePost_n = blkLevel_n / blkDriveH_n;
+    const float blkDriveHi_n = ((clampf(tonePercent_n + (y_c_tone) * 50.f, 0.f, 100.f)) < 50.f ? (clampf(tonePercent_n + (y_c_tone) * 50.f, 0.f, 100.f)) * 0.02f : 1.f) * blkDrivePost_n;
+    const float blkDriveD_n = (((clampf(tonePercent_n + (y_c_tone) * 50.f, 0.f, 100.f)) > 50.f ? (100.f - (clampf(tonePercent_n + (y_c_tone) * 50.f, 0.f, 100.f))) * 0.02f : 1.f) - ((clampf(tonePercent_n + (y_c_tone) * 50.f, 0.f, 100.f)) < 50.f ? (clampf(tonePercent_n + (y_c_tone) * 50.f, 0.f, 100.f)) * 0.02f : 1.f)) * blkDrivePost_n;
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = ((y_c_in) - onepole_step(&z1_n, y_c_in, blkOnepoleA_n));
+      float y_n = drive_step(&z_n, y_c_in, blkDrivePre_n, blkDriveHi_n, blkDriveD_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -291,25 +346,65 @@ private:
   float shape01_;
   float shape2_01_;
   float value_c_in;
-  float value_c_cutoff;
-  float z1_n;
-  float cutoff_n;
+  float value_c_drive;
+  float value_c_tone;
+  float z_n;
+  float drivePercent_n;
+  float tonePercent_n;
+  float levelPercent_n;
 
-  static float onepole_step(float *z1, float x, float a)
+  // Pre-gain, the cubic soft clip (x - 4x^3/27, reaching 1 with zero slope at 1.5; no divide),
+  // then TONE's tilt: the clipped signal split by a one-pole at 800 Hz, its highs weighted
+  // by hi and its lows by hi + d (both with the makeup and LEVEL folded in). At TONE 50, d is 0
+  // and the tilt is exactly the clipped signal times hi. A leaf.
+  static inline __attribute__((always_inline)) float drive_step(float *z, float x, float pre, float hi, float d)
   {
-    float aClamped = a;
-    if (aClamped < 0.f) aClamped = 0.f;
-    else if (aClamped > 1.f) aClamped = 1.f;
-    float y = *z1 + aClamped * (x - *z1);
-    *z1 = y;
-    return y;
+    x *= pre;
+    x = x < -1.5f ? -1.5f : (x > 1.5f ? 1.5f : x);
+    x = x - 0.148148148f * x * x * x;
+    const float lp = *z + 0.099423131f * (x - *z);
+    *z = lp;
+    return x * hi + lp * d;
+  }
+  // A moving TONE (percent, clamped here): below 50 the highs fade out, above it the lows.
+  static inline __attribute__((always_inline)) float drive_step_t(float *z, float x, float pre, float post, float t)
+  {
+    t = t < 0.f ? 0.f : (t > 100.f ? 100.f : t);
+    const float hi = t < 50.f ? t * 0.02f : 1.f;
+    const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
+    return drive_step(z, x, pre, hi * post, (lo - hi) * post);
+  }
+  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
+  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  {
+    return drive_step_t(z, x, h * h, level / h, t);
   }
 
-  static float cutoff_warp(float t)
+  // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real `expf` call, a deliberate,
+  // real finding: unlike `tanf` (which links clean, no extra stubs needed; svf used it until
+  // 2026-09-30), a real local-toolchain build failed to LINK `expf` at all --
+  // its newlib implementation pulls in the full reentrant syscall stubs (_sbrk/_read/_write/
+  // _close/_lseek), none of which this minimal embedded target provides, a real toolchain-
+  // version-specific risk this approximation sidesteps entirely by staying libm-free like the
+  // rest of this file. Plain Padé[2/2] (accurate only very close to 0) is range-reduced first
+  // (x/8, applied, then squared 3 times -- the standard "exp via repeated squaring" trick) for
+  // accuracy across the WIDER range this primitive's own noteOn-time decay-gain formula
+  // actually uses -- verified numerically to <0.01% relative error across that whole range
+  // (x in roughly [-3, 0]), far tighter than a musical decay-time control needs.
+  static float exp_approx(float x)
   {
-    if (t < 0.f) t = 0.f;
-    else if (t > 1.f) t = 1.f;
-    return t * t * t;
+    float y = x * 0.125f;
+    float y2 = y * y;
+    float r = (1.f + y * 0.5f + y2 * (1.f/12.f)) / (1.f - y * 0.5f + y2 * (1.f/12.f));
+    r = r * r;
+    r = r * r;
+    r = r * r;
+    return r;
+  }
+
+  static float clampf(float v, float lo, float hi)
+  {
+    return v < lo ? lo : (v > hi ? hi : v);
   }
 };
 
@@ -348,7 +443,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
   s_osc.setParameter(index, (int32_t)value);
 }
 
-//// exposed CUTOFF
+//// exposed DRIVE,TONE,LEVEL
 // manifest.json
 {
     "header": {
@@ -359,10 +454,22 @@ void OSC_PARAM(uint16_t index, uint16_t value)
         "prg_id": 0,
         "version": "1.0-0",
         "name": "snap",
-        "num_param": 1,
+        "num_param": 3,
         "params": [
             [
-                "CUTOFF",
+                "DRIVE",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "TONE",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "LEVEL",
                 0,
                 100,
                 "%"
@@ -389,8 +496,10 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    z1_n = 0.f;
-    cutoff_n = 0 * 0.01f;
+    z_n = 0.f;
+    drivePercent_n = 50;
+    tonePercent_n = 50;
+    levelPercent_n = 100;
   }
 
   // No longer precomputes a
@@ -447,17 +556,24 @@ public:
   {
     switch (index)
     {
-    case 0: cutoff_n = value * 0.01f; break;
+    case 0: drivePercent_n = value; break;
+    case 1: tonePercent_n = value; break;
+    case 2: levelPercent_n = value; break;
     default: break;
     }
   }
 
   void process(int32_t *yn, uint32_t frames)
   {
-    const float blkOnepoleA_n = cutoff_warp(cutoff_n);
+    const float blkLevel_n = (levelPercent_n >= 100.f ? 1.f : levelPercent_n <= 0.f ? 0.f : exp_approx((levelPercent_n - 100.f) * 0.055262042f));
+    const float blkDriveH_n = exp_approx((drivePercent_n) * 0.020723266f);
+    const float blkDrivePre_n = blkDriveH_n * blkDriveH_n;
+    const float blkDrivePost_n = blkLevel_n / blkDriveH_n;
+    const float blkDriveHi_n = ((tonePercent_n) < 50.f ? (tonePercent_n) * 0.02f : 1.f) * blkDrivePost_n;
+    const float blkDriveD_n = (((tonePercent_n) > 50.f ? (100.f - (tonePercent_n)) * 0.02f : 1.f) - ((tonePercent_n) < 50.f ? (tonePercent_n) * 0.02f : 1.f)) * blkDrivePost_n;
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = ((0.f) - onepole_step(&z1_n, 0.f, blkOnepoleA_n));
+      float y_n = drive_step(&z_n, 0.f, blkDrivePre_n, blkDriveHi_n, blkDriveD_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -489,24 +605,63 @@ private:
   float shapeParam01_;
   float shape01_;
   float shape2_01_;
-  float z1_n;
-  float cutoff_n;
+  float z_n;
+  float drivePercent_n;
+  float tonePercent_n;
+  float levelPercent_n;
 
-  static float onepole_step(float *z1, float x, float a)
+  // Pre-gain, the cubic soft clip (x - 4x^3/27, reaching 1 with zero slope at 1.5; no divide),
+  // then TONE's tilt: the clipped signal split by a one-pole at 800 Hz, its highs weighted
+  // by hi and its lows by hi + d (both with the makeup and LEVEL folded in). At TONE 50, d is 0
+  // and the tilt is exactly the clipped signal times hi. A leaf.
+  static inline __attribute__((always_inline)) float drive_step(float *z, float x, float pre, float hi, float d)
   {
-    float aClamped = a;
-    if (aClamped < 0.f) aClamped = 0.f;
-    else if (aClamped > 1.f) aClamped = 1.f;
-    float y = *z1 + aClamped * (x - *z1);
-    *z1 = y;
-    return y;
+    x *= pre;
+    x = x < -1.5f ? -1.5f : (x > 1.5f ? 1.5f : x);
+    x = x - 0.148148148f * x * x * x;
+    const float lp = *z + 0.099423131f * (x - *z);
+    *z = lp;
+    return x * hi + lp * d;
+  }
+  // A moving TONE (percent, clamped here): below 50 the highs fade out, above it the lows.
+  static inline __attribute__((always_inline)) float drive_step_t(float *z, float x, float pre, float post, float t)
+  {
+    t = t < 0.f ? 0.f : (t > 100.f ? 100.f : t);
+    const float hi = t < 50.f ? t * 0.02f : 1.f;
+    const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
+    return drive_step(z, x, pre, hi * post, (lo - hi) * post);
+  }
+  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
+  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  {
+    return drive_step_t(z, x, h * h, level / h, t);
   }
 
-  static float cutoff_warp(float t)
+  // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real `expf` call, a deliberate,
+  // real finding: unlike `tanf` (which links clean, no extra stubs needed; svf used it until
+  // 2026-09-30), a real local-toolchain build failed to LINK `expf` at all --
+  // its newlib implementation pulls in the full reentrant syscall stubs (_sbrk/_read/_write/
+  // _close/_lseek), none of which this minimal embedded target provides, a real toolchain-
+  // version-specific risk this approximation sidesteps entirely by staying libm-free like the
+  // rest of this file. Plain Padé[2/2] (accurate only very close to 0) is range-reduced first
+  // (x/8, applied, then squared 3 times -- the standard "exp via repeated squaring" trick) for
+  // accuracy across the WIDER range this primitive's own noteOn-time decay-gain formula
+  // actually uses -- verified numerically to <0.01% relative error across that whole range
+  // (x in roughly [-3, 0]), far tighter than a musical decay-time control needs.
+  static float exp_approx(float x)
   {
-    if (t < 0.f) t = 0.f;
-    else if (t > 1.f) t = 1.f;
-    return t * t * t;
+    float y = x * 0.125f;
+    float y2 = y * y;
+    float r = (1.f + y * 0.5f + y2 * (1.f/12.f)) / (1.f - y * 0.5f + y2 * (1.f/12.f));
+    r = r * r;
+    r = r * r;
+    r = r * r;
+    return r;
+  }
+
+  static float clampf(float v, float lo, float hi)
+  {
+    return v < lo ? lo : (v > hi ? hi : v);
   }
 };
 
@@ -546,6 +701,8 @@ void OSC_PARAM(uint16_t index, uint16_t value)
   switch (index)
   {
   case 0: if (v < 0) v = 0; else if (v > 100) v = 100; break;
+  case 1: if (v < 0) v = 0; else if (v > 100) v = 100; break;
+  case 2: if (v < 0) v = 0; else if (v > 100) v = 100; break;
   default: break;
   }
   s_osc.setParameter(index, v);

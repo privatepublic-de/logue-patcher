@@ -62,6 +62,9 @@ public:
     shape2_01_ = 0.f;
     svfS1_n = 0.f;
     svfS2_n = 0.f;
+    svfA1Cache_n[0] = -1.f;
+    svfA1Cache_n[1] = 0.f;
+    svfA1Cache_n[2] = 1.f;
     cutoff_n = 100 * 0.01f;
     resonancePercent_n = 0;
     coarse_n = 0;
@@ -117,7 +120,7 @@ public:
       float svfG_n = blkSvfG_n;
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
-      svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, &y_n_lp, &y_n_bp, &y_n_hp);
+      svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
       (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
       out[i] = clip1m1f(y_n_lp);
     }
@@ -149,16 +152,25 @@ private:
   float coarse_n;
   float fine_n;
   float track_n;
+  float svfA1Cache_n[3];
 
   // Andrew Simper's zero-delay-feedback (trapezoidal-integrated) state-variable filter --
   // see logue/filter/svf's own doc comment for the derivation/why. *s1/*s2 are the filter's own
   // per-sample integrator state (NOT literally "the bandpass/lowpass value", a real ZDF
   // implementation detail -- see the referenced paper), each fed back doubled ("2.f*v-...") by
   // design, the standard trick that makes this form delay-free without an iterative solve.
-  static void svf_step(float *s1, float *s2, float in, float g, float k,
+  // cache[] holds g, k and a1 = 1/(1 + g(g + k)): the divide is redone only when g or k changed
+  // (never while both are per block; a stepped source every few dozen samples).
+  static void svf_step(float *s1, float *s2, float in, float g, float k, float *cache,
     float *outLp, float *outBp, float *outHp)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
+    if (g != cache[0] || k != cache[1])
+    {
+      cache[0] = g;
+      cache[1] = k;
+      cache[2] = 1.f / (1.f + g * (g + k));
+    }
+    const float a1 = cache[2];
     float a2 = g * a1;
     float a3 = g * a2;
     float v3 = in - *s2;
@@ -280,6 +292,9 @@ public:
     shape2_01_ = 0.f;
     svfS1_n = 0.f;
     svfS2_n = 0.f;
+    svfA1Cache_n[0] = -1.f;
+    svfA1Cache_n[1] = 0.f;
+    svfA1Cache_n[2] = 1.f;
     value_c_in = 37 * 0.01f;
     value_c_cutoff = 37 * 0.01f;
     value_c_resonance = 37 * 0.01f;
@@ -343,7 +358,7 @@ public:
       float svfG_n = blkSvfG_n;
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
-      svf_step(&svfS1_n, &svfS2_n, y_c_in, svfG_n, svfK_n, &y_n_lp, &y_n_bp, &y_n_hp);
+      svf_step(&svfS1_n, &svfS2_n, y_c_in, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
       (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
       out[i] = clip1m1f(y_n_lp);
     }
@@ -379,16 +394,25 @@ private:
   float coarse_n;
   float fine_n;
   float track_n;
+  float svfA1Cache_n[3];
 
   // Andrew Simper's zero-delay-feedback (trapezoidal-integrated) state-variable filter --
   // see logue/filter/svf's own doc comment for the derivation/why. *s1/*s2 are the filter's own
   // per-sample integrator state (NOT literally "the bandpass/lowpass value", a real ZDF
   // implementation detail -- see the referenced paper), each fed back doubled ("2.f*v-...") by
   // design, the standard trick that makes this form delay-free without an iterative solve.
-  static void svf_step(float *s1, float *s2, float in, float g, float k,
+  // cache[] holds g, k and a1 = 1/(1 + g(g + k)): the divide is redone only when g or k changed
+  // (never while both are per block; a stepped source every few dozen samples).
+  static void svf_step(float *s1, float *s2, float in, float g, float k, float *cache,
     float *outLp, float *outBp, float *outHp)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
+    if (g != cache[0] || k != cache[1])
+    {
+      cache[0] = g;
+      cache[1] = k;
+      cache[2] = 1.f / (1.f + g * (g + k));
+    }
+    const float a1 = cache[2];
     float a2 = g * a1;
     float a3 = g * a2;
     float v3 = in - *s2;
@@ -510,6 +534,9 @@ public:
     shape2_01_ = 0.f;
     svfS1_n = 0.f;
     svfS2_n = 0.f;
+    svfA1Cache_n[0] = -1.f;
+    svfA1Cache_n[1] = 0.f;
+    svfA1Cache_n[2] = 1.f;
     cutoff_n = 100 * 0.01f;
     resonancePercent_n = 0;
     coarse_n = 0;
@@ -565,7 +592,7 @@ public:
       float svfG_n = blkSvfG_n;
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
-      svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, &y_n_lp, &y_n_bp, &y_n_hp);
+      svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
       (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
       out[i] = clip1m1f(y_n_lp);
     }
@@ -597,16 +624,25 @@ private:
   float coarse_n;
   float fine_n;
   float track_n;
+  float svfA1Cache_n[3];
 
   // Andrew Simper's zero-delay-feedback (trapezoidal-integrated) state-variable filter --
   // see logue/filter/svf's own doc comment for the derivation/why. *s1/*s2 are the filter's own
   // per-sample integrator state (NOT literally "the bandpass/lowpass value", a real ZDF
   // implementation detail -- see the referenced paper), each fed back doubled ("2.f*v-...") by
   // design, the standard trick that makes this form delay-free without an iterative solve.
-  static void svf_step(float *s1, float *s2, float in, float g, float k,
+  // cache[] holds g, k and a1 = 1/(1 + g(g + k)): the divide is redone only when g or k changed
+  // (never while both are per block; a stepped source every few dozen samples).
+  static void svf_step(float *s1, float *s2, float in, float g, float k, float *cache,
     float *outLp, float *outBp, float *outHp)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
+    if (g != cache[0] || k != cache[1])
+    {
+      cache[0] = g;
+      cache[1] = k;
+      cache[2] = 1.f / (1.f + g * (g + k));
+    }
+    const float a1 = cache[2];
     float a2 = g * a1;
     float a3 = g * a2;
     float v3 = in - *s2;
@@ -728,6 +764,9 @@ public:
     shape2_01_ = 0.f;
     svfS1_n = 0.f;
     svfS2_n = 0.f;
+    svfA1Cache_n[0] = -1.f;
+    svfA1Cache_n[1] = 0.f;
+    svfA1Cache_n[2] = 1.f;
     value_c_in = 37 * 0.01f;
     value_c_cutoff = 37 * 0.01f;
     value_c_resonance = 37 * 0.01f;
@@ -791,7 +830,7 @@ public:
       float svfG_n = blkSvfG_n;
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
-      svf_step(&svfS1_n, &svfS2_n, y_c_in, svfG_n, svfK_n, &y_n_lp, &y_n_bp, &y_n_hp);
+      svf_step(&svfS1_n, &svfS2_n, y_c_in, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
       (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
       out[i] = clip1m1f(y_n_lp);
     }
@@ -827,16 +866,25 @@ private:
   float coarse_n;
   float fine_n;
   float track_n;
+  float svfA1Cache_n[3];
 
   // Andrew Simper's zero-delay-feedback (trapezoidal-integrated) state-variable filter --
   // see logue/filter/svf's own doc comment for the derivation/why. *s1/*s2 are the filter's own
   // per-sample integrator state (NOT literally "the bandpass/lowpass value", a real ZDF
   // implementation detail -- see the referenced paper), each fed back doubled ("2.f*v-...") by
   // design, the standard trick that makes this form delay-free without an iterative solve.
-  static void svf_step(float *s1, float *s2, float in, float g, float k,
+  // cache[] holds g, k and a1 = 1/(1 + g(g + k)): the divide is redone only when g or k changed
+  // (never while both are per block; a stepped source every few dozen samples).
+  static void svf_step(float *s1, float *s2, float in, float g, float k, float *cache,
     float *outLp, float *outBp, float *outHp)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
+    if (g != cache[0] || k != cache[1])
+    {
+      cache[0] = g;
+      cache[1] = k;
+      cache[2] = 1.f / (1.f + g * (g + k));
+    }
+    const float a1 = cache[2];
     float a2 = g * a1;
     float a3 = g * a2;
     float v3 = in - *s2;
@@ -963,6 +1011,9 @@ public:
     shape2_01_ = 0.f;
     svfS1_n = 0.f;
     svfS2_n = 0.f;
+    svfA1Cache_n[0] = -1.f;
+    svfA1Cache_n[1] = 0.f;
+    svfA1Cache_n[2] = 1.f;
     cutoff_n = 100 * 0.01f;
     resonancePercent_n = 0;
     coarse_n = 0;
@@ -1018,7 +1069,7 @@ public:
       float svfG_n = blkSvfG_n;
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
-      svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, &y_n_lp, &y_n_bp, &y_n_hp);
+      svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
       (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
       out[i] = clip1m1f(y_n_lp);
     }
@@ -1050,16 +1101,25 @@ private:
   float coarse_n;
   float fine_n;
   float track_n;
+  float svfA1Cache_n[3];
 
   // Andrew Simper's zero-delay-feedback (trapezoidal-integrated) state-variable filter --
   // see logue/filter/svf's own doc comment for the derivation/why. *s1/*s2 are the filter's own
   // per-sample integrator state (NOT literally "the bandpass/lowpass value", a real ZDF
   // implementation detail -- see the referenced paper), each fed back doubled ("2.f*v-...") by
   // design, the standard trick that makes this form delay-free without an iterative solve.
-  static void svf_step(float *s1, float *s2, float in, float g, float k,
+  // cache[] holds g, k and a1 = 1/(1 + g(g + k)): the divide is redone only when g or k changed
+  // (never while both are per block; a stepped source every few dozen samples).
+  static void svf_step(float *s1, float *s2, float in, float g, float k, float *cache,
     float *outLp, float *outBp, float *outHp)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
+    if (g != cache[0] || k != cache[1])
+    {
+      cache[0] = g;
+      cache[1] = k;
+      cache[2] = 1.f / (1.f + g * (g + k));
+    }
+    const float a1 = cache[2];
     float a2 = g * a1;
     float a3 = g * a2;
     float v3 = in - *s2;
