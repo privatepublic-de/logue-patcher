@@ -181,3 +181,54 @@ export function trackPeak(
   const mean = hz.reduce((a, b) => a + b, 0) / Math.max(1, hz.length)
   return { hz, mean, max: Math.max(...hz), min: Math.min(...hz), minAmplitude }
 }
+
+/** Welch power spectrum: Hann segments of `n` samples, half overlapping, averaged. */
+export function welch(
+  x: Float32Array,
+  n = 4096
+): { power: Float64Array; binHz: (sr: number) => number } {
+  const power = new Float64Array(n / 2)
+  const w = new Float64Array(n)
+  for (let i = 0; i < n; i++) w[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / n)
+  let count = 0
+  for (let start = 0; start + n <= x.length; start += n / 2) {
+    const re = new Float64Array(n)
+    const im = new Float64Array(n)
+    for (let i = 0; i < n; i++) re[i] = x[start + i] * w[i]
+    fft(re, im)
+    for (let i = 0; i < n / 2; i++) power[i] += re[i] * re[i] + im[i] * im[i]
+    count++
+  }
+  for (let i = 0; i < n / 2; i++) power[i] /= Math.max(1, count)
+  return { power, binHz: (sr) => sr / n }
+}
+
+/** Third-octave band centres from 50 Hz to 16 kHz (base-2, 1 kHz included). */
+export const THIRD_OCTAVES: number[] = Array.from(
+  { length: 26 },
+  (_, k) => 1000 * Math.pow(2, (k - 13) / 3)
+).filter((f) => f >= 49 && f <= 16500)
+
+/** Power per third-octave band (summed bins), in dB. */
+export function bandLevels(x: Float32Array, sampleRate: number): number[] {
+  // 16384 points: even the 50 Hz band then spans a few bins (at 4096 it held one).
+  const { power, binHz } = welch(x, 16384)
+  const bin = binHz(sampleRate)
+  return THIRD_OCTAVES.map((fc) => {
+    const lo = Math.ceil((fc * Math.pow(2, -1 / 6)) / bin)
+    const hi = Math.floor((fc * Math.pow(2, 1 / 6)) / bin)
+    let s = 0
+    for (let i = lo; i <= hi; i++) s += power[i]
+    return 10 * Math.log10(s + 1e-30)
+  })
+}
+
+/** Level (dB, Welch power summed over the main lobe) of the tone nearest `hz`. */
+export function toneLevel(x: Float32Array, sampleRate: number, hz: number): number {
+  const { power, binHz } = welch(x, 16384)
+  const bin = binHz(sampleRate)
+  const c = Math.round(hz / bin)
+  let s = 0
+  for (let i = Math.max(1, c - 3); i <= c + 3 && i < power.length; i++) s += power[i]
+  return 10 * Math.log10(s + 1e-30)
+}

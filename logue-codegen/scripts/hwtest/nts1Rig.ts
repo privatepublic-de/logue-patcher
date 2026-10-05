@@ -4,7 +4,11 @@
  * The device's MIDI implementation (Korg, v1.00 2024-03-18) is summarized in
  * `logue-codegen/harness/sysex-emu/PROTOCOL-nts1mkii.md`.
  */
-import { discoverLogueDevices, LogueDeviceSession } from '../../src/sysex/deviceSession'
+import {
+  DeviceNakError,
+  discoverLogueDevices,
+  LogueDeviceSession
+} from '../../src/sysex/deviceSession'
 import type { LogueUnitModule } from '../../src/sysex/korgUserUnitMessages'
 import { pack7, unpack7 } from '../../src/sysex/pack7'
 import { Helper } from '../midiHelperClient'
@@ -106,8 +110,19 @@ export class Nts1Rig {
     if (m[6] !== ACK) throw new Error(`program write refused (${m[6].toString(16)})`)
   }
 
+  /** The device has now and then refused one of many quick uploads into the same slot with
+   *  USER INTERNAL ERROR (2F); a pause and a retry got it through. */
   async upload(module: LogueUnitModule, slot: number, body: Uint8Array): Promise<void> {
-    await this.session.upload(module, slot, body)
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await this.session.upload(module, slot, body)
+        return
+      } catch (e) {
+        if (!(e instanceof DeviceNakError) || e.code !== 0x2f || attempt >= 2) throw e
+        console.log(`  upload refused (${e.statusName}), retrying in 3 s`)
+        await sleep(3000)
+      }
+    }
   }
 
   async download(module: LogueUnitModule, slot: number): Promise<Uint8Array | undefined> {

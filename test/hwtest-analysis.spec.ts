@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { peakFrequency, scanGlitches, trackPeak } from '../logue-codegen/scripts/hwtest/analysis'
+import {
+  bandLevels,
+  peakFrequency,
+  scanGlitches,
+  toneLevel,
+  trackPeak
+} from '../logue-codegen/scripts/hwtest/analysis'
 import {
   cyclesFromFxTone,
   DETECTOR_HZ,
@@ -83,5 +89,23 @@ describe('scanGlitches', () => {
     y.set(x.subarray(0, 30064))
     y.set(x.subarray(30000, x.length - 64), 30064)
     expect(scanGlitches(y, SR, freqsOf(y)).times.length).toBeGreaterThan(0)
+  })
+})
+
+describe('bandLevels / toneLevel', () => {
+  it('read white noise flat at 3 dB per third octave and a tone 20 dB down at its level', () => {
+    const x = new Float32Array(SR * 4)
+    let seed = 7
+    for (let i = 0; i < x.length; i++) {
+      seed = (seed * 1664525 + 1013904223) >>> 0
+      x[i] = (seed / 2 ** 32 - 0.5) * 0.5
+    }
+    const b = bandLevels(x, SR)
+    const slope = (b[b.length - 4] - b[3]) / (b.length - 7)
+    expect(Math.abs(slope - 10 * Math.log10(Math.pow(2, 1 / 3)))).toBeLessThan(0.1)
+    const y = new Float32Array(SR * 2)
+    for (let i = 0; i < y.length; i++)
+      y[i] = Math.sin((2 * Math.PI * 1000 * i) / SR) + 0.1 * Math.sin((2 * Math.PI * 3000 * i) / SR)
+    expect(toneLevel(y, SR, 1000) - toneLevel(y, SR, 3000)).toBeCloseTo(20, 1)
   })
 })

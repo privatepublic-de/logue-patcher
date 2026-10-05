@@ -2839,3 +2839,15 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   intercept did no better than the plain two-term one.
 - The old probe readings against today's: buffer + 1 tap 588 -> 561, 4 taps 1061 -> 1234, one
   grain 504 -> 394, reverb 3406 -> 2840, grain-mill 3610 (hand settings) -> 2332 (authored).
+
+### NTS-1 mkII functional checks against the host render (2026-10-06)
+
+- 25 reverb-slot cases (`hwtest/functional.ts`), one clean run: every one within 0.3 dB rms per
+  third octave of the host render of the same code. Band levels first used a 4096-point Welch,
+  where the 50 Hz third octave held one bin: tilt+100 read +1.3 dB there; 16384 points -> +1.0.
+- An upload was refused once (USER INTERNAL ERROR, the 13th quick upload into the reverb slot);
+  the run's restore still verified. A retry after a pause is now built in.
+- The -28 dB 3rd harmonic on the first osc test unit: not the output chain (a reverb-slot sine
+  at -6 dBFS: -69 dB) but the voice section, falling 12 dB per 6 dB of osc level. The first
+  attempt to show that read the same level at every GAIN: four uploads with the same unit id
+  into the selected slot never reloaded it.
