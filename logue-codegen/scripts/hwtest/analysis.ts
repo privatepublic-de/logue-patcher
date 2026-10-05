@@ -225,10 +225,12 @@ export function bandLevels(x: Float32Array, sampleRate: number): number[] {
 
 /** Level (dB, Welch power summed over the main lobe) of the tone nearest `hz`. */
 export function toneLevel(x: Float32Array, sampleRate: number, hz: number): number {
-  const { power, binHz } = welch(x, 16384)
+  // 0.73 Hz bins and the Hann main lobe only: a 12 Hz tone next to sub-10 Hz rumble read the
+  // rumble with 16384 points and +-3 bins.
+  const { power, binHz } = welch(x, x.length >= 2 * 65536 ? 65536 : 16384)
   const bin = binHz(sampleRate)
   const c = Math.round(hz / bin)
   let s = 0
-  for (let i = Math.max(1, c - 3); i <= c + 3 && i < power.length; i++) s += power[i]
+  for (let i = Math.max(1, c - 2); i <= c + 2 && i < power.length; i++) s += power[i]
   return 10 * Math.log10(s + 1e-30)
 }

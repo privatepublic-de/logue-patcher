@@ -2868,3 +2868,15 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   either; only a program load does. A mod pass-through then read 353 at DEPTH 0 -- most likely
   the same staleness or the DEPTH CC racing the load (the tempo swell later measured 137), not a
   costly mod shell; it wasn't re-measured.
+
+### minilogue xd functional checks (2026-10-06)
+
+- First xd run, unattenuated: 3 of 22 failed. lfsr-short and tilt+100 at 63 Hz (+2.3/+2.0 dB);
+  the freq-shifter's wrong sideband at 12 Hz read -26 dB against the host's -48 -- the tone
+  window (16384 points, +-3 bins) caught sub-10 Hz rumble; the 11.7 Hz peak itself was -48.
+  Fixed with 65536 points and the main lobe only.
+- A `chain-silence` case showed the xd's floor is quiet (-89 dB RMS): the low-band excess comes
+  with the signal. tilt+100 (bright noise) grew fluctuating 30-120 Hz energy, 5-15x the host's:
+  +2.0 dB at full level, +9.4 dB reproducibly at -6 dB, clean at -12 and -24 dB. Not monotonic
+  in level, so not plain clipping; the same code renders the same at every level on the host. The
+  xd's cases now end in a -12 dB VCA; all 22 pass.

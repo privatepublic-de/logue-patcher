@@ -657,7 +657,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   RMS 1/3 (white's is 0.577), unclamped: pink/brown pass +-1 in ~0.2% of samples. Harness
   (`scripts/runNoiseHarness.ts`): slopes -3.11/-5.99/+5.98 dB/oct over 25 Hz-12.8 kHz, octave
   ripple <= 0.4 dB. State 68 B (the pink rows), = the xd bss. The exciter keeps its own Kellet
-  pink (`PINK_NOISE_STEP_HELPER`). As an NTS-1 mkII effect unit, the device's output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
+  pink (`PINK_NOISE_STEP_HELPER`). As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **Noise LEVEL** (`osc/noise`, `osc/lfsr`, 2026-10-03, the Radio patch): measured
   (`scripts/measureRadioLevels.ts`, NTS-1 mkII fx shell) the noise sits 10-15 dB above an
   effect's input (white -4.8, coloured ~-9.4 dBFS RMS vs a 0.18-peak saw at -19.7), so a hiss
@@ -675,7 +675,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   (harness: 0.00-0.05 ct, 55 Hz-2 kHz) -- stepping a register at 127x the note would need
   several steps a sample above ~380 Hz. Position is integer 8.24 (no float compare a sample);
   the block constant is already the fixed-point increment. Naive +-1 output. xd emulator: 28
-  base, 17 Short. As an NTS-1 mkII effect unit, the device's output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
+  base, 17 Short. As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`osc/exciter`**: one `BOW` knob from pluck to bow, built for `string`/`comb`.
   `pluck_exciter_step` is `ahd`'s 4-stage machine with a BOW-dependent decay while held (0 at
   BOW=100). Attack is always the fast `env_rate_from_percent(0)`; softness comes from a decaying
@@ -916,7 +916,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
     clean.
   - Builds (`scripts/stageLadder.ts`: `lp-xd-ladder`/`-env`/`-osc`, `lp-nts1-*`): only leaf calls
     below the xd's `process`, and the RAM estimate equals the bss (108 B an instance). Both fx sweeps link.
-    As an NTS-1 mkII effect unit, the device's output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
+    As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`filter/eq-band`** (2026-10-05): one parametric EQ band, TYPE Bell / Low shelf / High
   shelf / Notch (a select, NTS-1 mkII names `Bell`/`LoShelf`/`HiShelf`/`Notch`). Simper's SVF EQ:
   `svf_step` (shared with `svf`) with `y = m0*in + m1*bp + m2*lp`, g/k/m per TYPE worked out per
@@ -938,7 +938,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   into freq and gain measured ~120 above the LFO, but the `control` variant is the known
   hoisted-constant gap, see "CPU"; no `heavy-*` variant, since the estimators count those for a
   knob binding, which always takes the still path); xd fx 52 still, 137 with moving control
-  inputs. As an NTS-1 mkII effect unit, the device's output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
+  inputs. As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`filter/tilt`** (2026-10-05): a first-order tilt EQ, TILT +-9 dB per side around CENTER
   (`TILT_DB`: "Bright/Dark x dB"). `y = G*in + (1/G - G)*lp`, a TPT one-pole with its pole at
   CENTER*G, prewarped AT the pivot (`tan(pi*w0)*G`, not `tan(pi*w0*G)`), so the pivot is exactly
@@ -947,7 +947,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   (100); moving, `tilt_ctl` every 16 samples, ramped. Harness: within 0.007 dB of the prototype,
   pivot within 0.002 dB, plateaus as set. CPU: xd osc 18 base (~68 above an LFO moving TILT, unrecorded for the same reason); xd fx 21
   still, 80 moving. 40 B
-  state. As an NTS-1 mkII effect unit, the device's output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
+  state. As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`filter/formant`**: 3 ZDF bandpasses on Peterson & Barney formants, `VOWEL` order
   `u o a e i` (alphabetical makes F2 jump). `CHARACTER` (2026-09-29) blends the male table (0, the
   original) -> women's (50) -> children's (100) in note space via the leaf `formant_note`
@@ -977,7 +977,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   never reached a fold, so its loop ran once (a hot input folding costs it ~6 more per fold).
   CPU tables: xd osc 26 base / 27 control; xd fx 26 base, 121 with moving `drive` and `tone`
   (the per-sample `exp_approx` and divide; a control-rate drive would be the next saving).
-  As an NTS-1 mkII effect unit, the device's output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
+  As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`mix/pan`** (2026-09-30, grain-mill phase 3): equal-power placement ADDED onto a stereo bus
   (`l`/`r` in and out), so pans chain into a mix with no mixer node. Gains are
   `sqrt(clamp((100 -+ PAN)*0.005))`: unclamped, `0.5 - 100*0.005f` went negative in float (a NaN
@@ -1227,7 +1227,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   at FEEDBACK +-100 (measured behind a 0.25x VCA, since the unit's output clip hides it) 0.1 DC
   settles at 0.10-0.11 and full-scale noise peaks at ~3.3 (bounded). Both link clean in the fx
   sweeps (xd: leaf calls only). xd emulator 105 / 285 (322 wired). Example `examples/effects/freq-shifter.loguepatch`.
-  As an NTS-1 mkII effect unit, the device's output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
+  As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`env/follower`** (2026-09-30): rectify x gain, one-pole up at ATTACK (0.1-100 ms) and down
   at RELEASE (1 ms-2 s), clamped 0..1. The gain goes to +24 dB because an effect's input is quiet
   (~0.18 peak for a saw on NTS-1 mkII). It is `SENS` since 2026-10-03 (was `GAIN`, a
@@ -1810,7 +1810,14 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   beyond the clock offset, tones above -60 dB within 1 dB); exit code 1 on a failure. Limits: it
   exercises the EFFECT path only (fx_sinf, the fastpow2f note stand-in, note 60), not an
   oscillator's tables, note tracking or voices; and third octaves can't resolve a narrow feature
-  (a Q 8 bell's peak, a notch's depth), only the shape around it. The chain itself:
+  (a Q 8 bell's peak, a notch's depth), only the shape around it. A `chain-silence` case measures
+  each device's own floor; bands and tones within 10 dB of it aren't judged.
+  **On the xd** (`--xd`, 2026-10-06, against harness/minilogue-xd-fx): all 22 pass too (rms
+  <= 0.3 dB; pitch 0.01 ct: its clock matches the interface's). Its chain is flat to -1.7 dB at
+  16 kHz/-1 dB at 50 Hz, +0.4 dB of gain, and misbehaves loud: a -6 dBFS sine's H3 at -37 dB,
+  and bright noise (tilt+100) grows fluctuating 30-120 Hz energy (+2.0 dB at 63 Hz at full level,
+  +9.4 reproducibly at -6 dB, clean at -12 and -24) -- the analog output or the interface, not
+  the code. So xd cases end in a VCA at -12 dB (`withOutputTrim`, `HWTEST_XD_TRIM`). The chain itself:
   flat within +-0.6 dB 50 Hz-16 kHz, -8.1 dB, H2 -52/H3 -69 dB for a -6 dBFS sine from the reverb
   slot. Recordings (device and host WAVs) and `functional.json` land in the run's snapshot folder.
 - **minilogue xd** (2026-10-06): the same scripts take `--xd` (`LogueRig.connect('minilogue-xd')`,
@@ -1893,24 +1900,24 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   full patch 857/969 cycles -- past the ~750 clean anchor, so the xd gets `reverse-wash-xd` (one
   line, one allpass a side): 606/670. SOFTEN's detector constants are from a simulation and the
   harness, not ears.
-- `osc/noise`'s COLOR and `osc/lfsr` (2026-10-03) match the host render in an NTS-1 mkII effect
-  unit (`hwtest/functional.ts`), not in an oscillator or on an xd; no listening pass. Staged: `lp-xd-noise`/`lp-xd-lfsr`/`lp-xd-lfsr-lfo` and the
+- `osc/noise`'s COLOR and `osc/lfsr` (2026-10-03) match the host render in an effect unit on both
+  devices (`hwtest/functional.ts`), not in an oscillator; no listening pass. Staged: `lp-xd-noise`/`lp-xd-lfsr`/`lp-xd-lfsr-lfo` and the
   `lp-nts1-*` equivalents (`scripts/stageNoiseTypes.ts`; COLOR/MODE/TRACK as menu params).
 - `env/adsr`/`env/one-knob-adsr` (2026-10-02) are harness-, link- and emulator-checked only:
   no listening pass, and the NTS-1 mkII SHAPE name display (a 101-entry `strings` row) hasn't
   been seen on a device. Staged: `lp-xd-oneknob`(`-lfo`), `lp-nts1-oneknob`(`-lfo`).
-- `shape/drive` (2026-10-05) matches the host render in an NTS-1 mkII effect unit, not in an
-  oscillator or on an xd; no listening pass.
+- `shape/drive` (2026-10-05) matches the host render in an effect unit on both devices, not in
+  an oscillator; no listening pass.
   `~/Documents/logue-patches/Radio drive.loguepatch` is the user's Radio with it in place of
   wavefolder + lowpass-cheap (DRIVE 50, TONE 40 -- starting points, not tuned by ear).
 - `filter/eq-band`, `filter/tilt` and svf's `notch`/`ap` outlets (2026-10-05) match the host
-  render in an NTS-1 mkII effect unit, not in an oscillator or on an xd; no listening pass. Staged: `lp-xd-eq`/`-eq-lfo`/`-notch` and
+  render in an effect unit on both devices, not in an oscillator; no listening pass. Staged: `lp-xd-eq`/`-eq-lfo`/`-notch` and
   the `lp-nts1-*` equivalents (`scripts/stageEq.ts`).
-- `filter/ladder` (2026-10-04) matches the host render in an NTS-1 mkII effect unit
-  (self-oscillation included), not in an oscillator or on an xd. No listening pass yet, and the half bass compensation and k_max 4.8 are untested by ear. Staged:
+- `filter/ladder` (2026-10-04) matches the host render in an effect unit on both
+  devices (self-oscillation included), not in an oscillator. No listening pass yet, and the half bass compensation and k_max 4.8 are untested by ear. Staged:
   `lp-xd-ladder`/`-env`/`-osc` and the `lp-nts1-*` equivalents (FB_DRIVE on menu param 3).
-- `filter/hilbert`/`util/freq-shift` match the host render in an NTS-1 mkII effect unit (a +250
-  Hz shift); the freq-shifter example has no listening pass on either device yet (staged as `lp-fx-freqshift`/`lp-xdfx-freqshift`).
+- `filter/hilbert`/`util/freq-shift` match the host render in an effect unit on both devices (a
+  +250 Hz shift); the freq-shifter example has no listening pass on either device yet (staged as `lp-fx-freqshift`/`lp-xdfx-freqshift`).
 - `logue/osc/exciter`'s tone/decay/strike-train constants (`EXCITER_HELD_DECAY_RATE_MAX`/
   `EXCITER_PLUCK_A`/`EXCITER_TRACKED_HARMONICS`/`EXCITER_TRACKED_MIN_A`/`EXCITER_STRIKE_MAX_COUNT`/
   `EXCITER_STRIKE_GAIN_RATIO`) are ear-tune starting points, not measured — no real hardware/
