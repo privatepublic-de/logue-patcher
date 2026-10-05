@@ -7,7 +7,8 @@
  *   interface filters), measured by the `chain-white` case against its host render;
  * - for tonal cases, the listed tones' levels relative to the first (the fundamental), and its
  *   frequency.
- * The chain's linearity is checked with a sine at two levels (harmonics against the host's).
+ * The chain's linearity is shown with a sine at two levels (harmonics against the host's).
+ * Each other case passes or fails against `TOLERANCE`; the exit code is 1 if any fails.
  *
  * Usage: npx tsx logue-codegen/scripts/hwtest/functional.ts [name filter ...]
  * Writes each recording (device and host, float WAV) into the run's snapshot folder.
@@ -185,17 +186,36 @@ function writeWav(path: string, x: Float32Array): void {
   writeFileSync(path, Buffer.concat([h, Buffer.from(x.buffer, x.byteOffset, x.byteLength)]))
 }
 
+/**
+ * What passes, from the first clean run's spread (every case within 0.3 dB rms, worst band
+ * 1.0 dB, pitch +0.23..0.27 ct of interface clock). Bands under 60 Hz hold too few bins to judge;
+ * tones the host puts below -60 dB re the first are under the device chain's own distortion
+ * (its H2 at -52 dB for a -6 dBFS sine) and are only shown.
+ */
+const TOLERANCE = {
+  bandRms: 0.5,
+  bandWorst: 1.5,
+  minBandHz: 60,
+  cents: 1,
+  toneDb: 1,
+  toneFloor: -60
+}
+
 const db = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`
 
 async function main(): Promise<void> {
   const filters = process.argv.slice(2)
   const cases = CASES.filter(
-    (c) => !filters.length || c.name === 'chain-white' || filters.some((f) => c.name.includes(f))
+    (c) => !filters.length || c.name.startsWith('chain-') || filters.some((f) => c.name.includes(f))
   )
   const rig = await Nts1Rig.connect()
   let snapshot: Snapshot | undefined
   const results: Record<string, unknown>[] = []
   let chain: number[] | undefined
+  // The interface's clock against the device's, from the first chain sine (cents).
+  let clockCents: number | undefined
+  const failures: string[] = []
+  let checked = 0
   try {
     snapshot = await takeSnapshot(rig, ['revfx'])
     for (const [i, c] of cases.entries()) {
@@ -234,11 +254,16 @@ async function main(): Promise<void> {
       const top = Math.max(...hb)
       const errs = hb
         .map((h, k) => ({ f: THIRD_OCTAVES[k], e: devBands[k] - chain![k] - h, h }))
-        .filter((b) => b.h > top - 45)
+        .filter((b) => b.h > top - 45 && b.f >= TOLERANCE.minBandHz)
       const worst = errs.reduce((a, b) => (Math.abs(b.e) > Math.abs(a.e) ? b : a))
       const rmsErr = Math.sqrt(errs.reduce((s, b) => s + b.e * b.e, 0) / errs.length)
       let line = `${c.name.padEnd(20)} bands: rms ${rmsErr.toFixed(2)} dB, worst ${db(worst.e)} dB at ${worst.f.toFixed(0)} Hz`
       const result: Record<string, unknown> = { name: c.name, rmsErr, worst }
+      const info = c.name.startsWith('chain-')
+      const why: string[] = []
+      if (rmsErr > TOLERANCE.bandRms) why.push(`band rms ${rmsErr.toFixed(2)} dB`)
+      if (Math.abs(worst.e) > TOLERANCE.bandWorst)
+        why.push(`band ${worst.f.toFixed(0)} Hz ${db(worst.e)} dB`)
       if (c.tones) {
         const chainAt = (hz: number): number => {
           const k = THIRD_OCTAVES.reduce(
@@ -266,8 +291,22 @@ async function main(): Promise<void> {
             .map((t, k) => `${t.toFixed(0)} ${d[k + 1].toFixed(1)}/${h[k + 1].toFixed(1)}`)
             .join(', ')
         Object.assign(result, { f0, hf0, device: d, host: h })
+        const cents = centsBetween(f0, hf0)
+        if (info) clockCents ??= cents
+        else if (Math.abs(cents - (clockCents ?? 0)) > TOLERANCE.cents)
+          why.push(`pitch ${cents.toFixed(2)} ct`)
+        c.tones.forEach((t, k) => {
+          if (k === 0 || info || h[k] < TOLERANCE.toneFloor) return
+          if (Math.abs(d[k] - h[k]) > TOLERANCE.toneDb)
+            why.push(`${t.toFixed(0)} Hz ${d[k].toFixed(1)} vs ${h[k].toFixed(1)} dB`)
+        })
       }
-      console.log(line)
+      if (!info) {
+        checked++
+        if (why.length) failures.push(`${c.name}: ${why.join(', ')}`)
+      }
+      console.log(`${info ? 'info' : why.length ? 'FAIL' : 'pass'} ${line}`)
+      Object.assign(result, { pass: info ? undefined : why.length === 0, why })
       results.push(result)
     }
   } finally {
@@ -277,6 +316,12 @@ async function main(): Promise<void> {
     }
     rig.close()
   }
+  console.log(
+    failures.length
+      ? `\n${failures.length} of ${checked} FAILED:\n${failures.join('\n')}`
+      : `\nall ${checked} passed`
+  )
+  if (failures.length) process.exitCode = 1
 }
 
 main().catch((e) => {
