@@ -15,10 +15,11 @@ import type { SubpatchDefinitions } from './subpatches'
 import { isEffectModule } from './unitKinds'
 
 /**
- * An EFFECT unit's CPU estimate: `fxCpuCostTable.ts`' emulator measurements summed
- * per active instance, in cycles per sample of the one unit (an effect runs once, not per voice),
- * on the emulator's own scale -- an estimate, not a hardware measurement. Against every example
- * effect built whole (`scripts/checkFxCpuEstimate.ts`): -10..+31 % at the gauge's penalty.
+ * An EFFECT unit's CPU estimate: `fxCpuCostTable.ts`' emulator measurements summed per active
+ * instance, in cycles per sample of the one unit (an effect runs once, not per voice), converted
+ * to the platform's real cycles by a fit against units measured on the device (`fxCyclesOn`).
+ * The sums stay on the emulator's scale (`sum`/`max`); against every example effect built whole
+ * (`scripts/checkFxCpuEstimate.ts`) they're within -10..+31 % at `XD_FX_SDRAM_PENALTY`.
  *
  * Each instance counts the variant matching it -- flipped checkboxes, and `control` once a
  * control inlet is fed from a per-sample source -- as the unit's first instance of its primitive
@@ -39,19 +40,32 @@ import { isEffectModule } from './unitKinds'
  */
 
 /**
- * Cycles added per SDRAM access. The F446's real cost per access isn't known; 8 is the scale the
- * hardware anchors below were read at, so estimate and anchors agree whatever the true value.
+ * The emulator's SDRAM penalty for comparing its own numbers (`fxCycles`, checkFxCpuEstimate.ts).
+ * The gauge no longer uses it: it converts to measured cycles (`XD_FX_CYCLE_SCALE`).
  */
 export const XD_FX_SDRAM_PENALTY = 8
-/** grain-mill's xd delay at ~680-750 stayed clean with the factory mod and reverb running. */
-export const XD_FX_CLEAN_CYCLES = 750
-/** At ~814 the same delay dropped out with both running (user, a real xd, 2026-10-01). */
-export const XD_FX_DROPOUT_CYCLES = 814
 /**
- * The example stereo reverb (~1660 measured whole) runs on a real xd only with both other effect
- * slots off (user, 2026-10-03): past the dropout anchor, a unit up to here can still run alone.
+ * minilogue xd: real effects-MCU cycles (180 MHz, 3750 per sample in all) = SCALE * emulator
+ * cycles + SDRAM_CYCLES * SDRAM accesses, fitted (relative error, no intercept) to 13 generated
+ * units measured on a real xd through audio telemetry (`scripts/hwtest/calibrateFx.ts --xd`,
+ * 2026-10-06): every one within -11..+15 %. The emulator counts a Cortex-M4 running from flash;
+ * the unit runs from SRAM, which may be why every instruction costs ~1.5x (a guess).
  */
-export const XD_FX_SOLO_CYCLES = 1660
+export const XD_FX_CYCLE_SCALE = 1.46
+export const XD_FX_SDRAM_CYCLES = 26
+/**
+ * Measured with a unit burning an exact load (`scripts/hwtest/cpuCeiling.ts --xd`, 2026-10-06):
+ * in the DELAY slot with the factory chorus and a factory reverb (hall/plate/room, dry/wet 0)
+ * running, clean at 1040-1060, dropouts from 1060-1080 (in the REVERB slot with chorus + stereo
+ * delay: 1280); with the other slots off, clean at 2980, dropouts from 3000 (both slots). "Fine"
+ * ends where an estimate 11 % low (the fit's worst) still clears the busy ceiling. Earlier
+ * listening reports on the emulator scale (grain-mill's xd delay clean ~680-750 with mod and
+ * reverb on, dropping out at ~814; the stereo reverb needing both slots off) agree in kind; the
+ * grain-mill units measure 1110-1200 here, a little over the measured busy ceiling.
+ */
+export const XD_FX_DROPOUT_CYCLES = 1040
+export const XD_FX_SOLO_CYCLES = 2980
+export const XD_FX_CLEAN_CYCLES = 925
 export const XD_FX_CPU_GAUGE = { fineUpTo: XD_FX_CLEAN_CYCLES, limit: XD_FX_DROPOUT_CYCLES }
 
 /**
@@ -99,7 +113,7 @@ export const fxCycles = (c: FxCpuCost, penalty = XD_FX_SDRAM_PENALTY): number =>
 export const fxCyclesOn = (c: FxCpuCost, platform: LoguePlatform): number =>
   platform === 'nts1mkii'
     ? NTS1MKII_FX_CYCLE_SCALE * c.cycles + NTS1MKII_FX_SDRAM_CYCLES * c.sdram
-    : fxCycles(c)
+    : XD_FX_CYCLE_SCALE * c.cycles + XD_FX_SDRAM_CYCLES * c.sdram
 
 type FxCpuEntry = (typeof FX_CPU_COST_TABLE)[string]
 

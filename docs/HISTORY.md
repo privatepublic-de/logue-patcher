@@ -2851,3 +2851,20 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   at -6 dBFS: -69 dB) but the voice section, falling 12 dB per 6 dB of osc level. The first
   attempt to show that read the same level at every GAIN: four uploads with the same unit id
   into the selected slot never reloaded it.
+
+### minilogue xd: effect CPU measured, the gauge on real cycles (2026-10-06)
+
+- The gauge used to be on the emulator's scale at an SDRAM penalty of 8, anchored by listening:
+  grain-mill's xd delay clean at ~680-750 with the factory mod and reverb on, dropping out at
+  ~814 (crackling ~1000, ~1200 with either alone); the example stereo reverb (~1660) needing
+  both other slots off.
+- Measured (hwtest, telemetry on the effects MCU's DWT counter): the budget is 3750 cycles per
+  sample (180 MHz); a burn unit is clean alone up to 2980 (delay or reverb slot), with chorus +
+  stereo delay up to 1280 (reverb slot), with chorus + a hall/plate/room reverb at dry up to
+  1040-1060 (delay slot). Real cost of 13 generated effects = 1.46 x the emulator's cycles + 26
+  per SDRAM access (-11..+15 %): the stereo reverb 2678, the xd grain-mill units 1110-1200.
+- The first xd calibration read all three mod units at ~255 (the first one's cost): re-uploading
+  into a slot doesn't replace the running code, choosing a factory type in between doesn't
+  either; only a program load does. A mod pass-through then read 353 at DEPTH 0 -- most likely
+  the same staleness or the DEPTH CC racing the load (the tempo swell later measured 137), not a
+  costly mod shell; it wasn't re-measured.

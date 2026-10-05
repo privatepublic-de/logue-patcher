@@ -1,32 +1,34 @@
 /**
- * A connected NTS-1 mkII for scripted hardware tests: notes and CCs, the current-program dump
+ * A connected NTS-1 mkII or minilogue xd for scripted hardware tests: notes and CCs, the current-program dump
  * (read, edit, write back), and user-slot uploads/downloads -- all over the native MIDI helper.
- * The device's MIDI implementation (Korg, v1.00 2024-03-18) is summarized in
- * `logue-codegen/harness/sysex-emu/PROTOCOL-nts1mkii.md`.
+ * The devices' MIDI implementations are summarized in
+ * `logue-codegen/harness/sysex-emu/PROTOCOL-nts1mkii.md` / `PROTOCOL.md`.
  */
 import {
   DeviceNakError,
   discoverLogueDevices,
   LogueDeviceSession
 } from '../../src/sysex/deviceSession'
+import type { LoguePlatform } from '../../../src/shared/domain/patch'
 import type { LogueUnitModule } from '../../src/sysex/korgUserUnitMessages'
 import { pack7, unpack7 } from '../../src/sysex/pack7'
 import { Helper } from '../midiHelperClient'
 
 const KORG = 0x42
-const FAMILY = [0x00, 0x01, 0x73]
+const FAMILY: Record<LoguePlatform, number> = { nts1mkii: 0x73, 'minilogue-xd': 0x51 }
 const ACK = 0x23
 
-export class Nts1Rig {
+export class LogueRig {
   private constructor(
     private helper: Helper,
     private input: number,
     private output: number,
     readonly channel: number,
-    readonly session: LogueDeviceSession
+    readonly session: LogueDeviceSession,
+    readonly platform: LoguePlatform
   ) {}
 
-  static async connect(): Promise<Nts1Rig> {
+  static async connect(platform: LoguePlatform = 'nts1mkii'): Promise<LogueRig> {
     const helper = new Helper()
     const { sources, destinations } = (await helper.request({ cmd: 'list' })) as unknown as {
       sources: { id: number }[]
@@ -40,15 +42,15 @@ export class Nts1Rig {
       })),
       sources.map((s) => ({ id: String(s.id), subscribe: (cb) => helper.subscribe(s.id, cb) }))
     )
-    const d = devices.find((x) => x.platform === 'nts1mkii')
+    const d = devices.find((x) => x.platform === platform)
     if (!d) {
       helper.close()
-      throw new Error('no NTS-1 mkII connected')
+      throw new Error(`no ${platform} connected`)
     }
     const input = Number(d.inputId)
     const output = Number(d.outputId)
-    const session = new LogueDeviceSession(helper.link(input, output), 'nts1mkii', d.channel)
-    return new Nts1Rig(helper, input, output, d.channel, session)
+    const session = new LogueDeviceSession(helper.link(input, output), platform, d.channel)
+    return new LogueRig(helper, input, output, d.channel, session, platform)
   }
 
   close(): void {
@@ -76,7 +78,7 @@ export class Nts1Rig {
   }
 
   private header(fn: number): number[] {
-    return [0xf0, KORG, 0x30 | this.channel, ...FAMILY, fn]
+    return [0xf0, KORG, 0x30 | this.channel, 0x00, 0x01, FAMILY[this.platform], fn]
   }
 
   /** Sends a SysEx and resolves with the first reply whose function is in `fns`. */
@@ -87,7 +89,7 @@ export class Nts1Rig {
         reject(new Error(`no reply to ${msg[6].toString(16)}`))
       }, timeoutMs)
       const off = this.helper.subscribe(this.input, (m) => {
-        if (m[0] !== 0xf0 || m[1] !== KORG || m[3] !== 0 || m[5] !== 0x73) return
+        if (m[0] !== 0xf0 || m[1] !== KORG || m[3] !== 0 || m[5] !== FAMILY[this.platform]) return
         if (!fns.includes(m[6])) return
         clearTimeout(timer)
         off()
@@ -97,7 +99,8 @@ export class Nts1Rig {
     })
   }
 
-  /** The edit buffer, unpacked (TABLE 2 of the MIDI implementation, little-endian words). */
+  /** The edit buffer, unpacked (TABLE 2 of the device's MIDI implementation; NTS-1 mkII 504
+   *  bytes, little-endian words; minilogue xd 336). */
   async readProgram(): Promise<Uint8Array> {
     const m = await this.exchange([...this.header(0x10), 0xf7], [0x40, 0x24])
     if (m[6] !== 0x40) throw new Error(`program dump refused (${m[6].toString(16)})`)

@@ -4,7 +4,6 @@ import { describe, it, expect } from 'vitest'
 import {
   estimateFxCpuCost,
   fxCpuZone,
-  fxCycles,
   fxCyclesOn,
   NTS1MKII_FX_CLEAN_CYCLES,
   NTS1MKII_FX_DROPOUT_CYCLES,
@@ -19,7 +18,11 @@ import type { LogueModule, Net, ObjNode, PatchDocument } from '../src/shared/dom
 import { parsePatchFile } from '../src/shared/json/patchCodec'
 import { CPU_COST_TABLE } from '../logue-codegen/src/cpuCostTable'
 import { exampleSubpatches, examplesDir } from '../logue-codegen/scripts/exampleSubpatches'
-import { NTS1MKII_FX_PROBE_READINGS } from '../logue-codegen/scripts/nts1FxProbeUnits'
+import {
+  NTS1MKII_FX_PROBE_READINGS,
+  XD_FX_DEVICE_READINGS,
+  type DeviceReading
+} from '../logue-codegen/scripts/nts1FxProbeUnits'
 
 function node(type: string, name: string, params: ObjNode['params'] = []): ObjNode {
   return { kind: 'obj', type, name, x: 0, y: 0, params }
@@ -45,7 +48,8 @@ function ok(
 }
 
 const delay = FX_CPU_COST_TABLE['logue/util/long-delay'].variants
-const cost = (c: { cycles: number; sdram: number }): number => Math.round(fxCycles(c))
+const cost = (c: { cycles: number; sdram: number }): number =>
+  Math.round(fxCyclesOn(c, 'minilogue-xd'))
 
 describe('estimateFxCpuCost', () => {
   it('counts a primitive first, then shared + extra, then extra', () => {
@@ -74,7 +78,7 @@ describe('estimateFxCpuCost', () => {
       ['c', 'base #3', cost(delay.base.extra)]
     ])
     expect(e.baselineCycles).toBe(cost(FX_CPU_BASELINE.delfx))
-    expect(e.cyclesPerSample).toBe(Math.round(fxCycles(e.sum)))
+    expect(e.cyclesPerSample).toBe(Math.round(fxCyclesOn(e.sum, 'minilogue-xd')))
   })
 
   it('takes the module baseline', () => {
@@ -166,27 +170,45 @@ describe('estimateFxCpuCost', () => {
   })
 })
 
-describe('estimateFxCpuCost on the NTS-1 mkII', () => {
-  // Calibration, like the table specs: a drift only warns (a re-measured table or a rewritten
-  // example must not block `npm run build`); CPU_COST_STRICT=1 makes it fail.
-  it('lands every device reading within the calibration band', () => {
-    const subpatches = exampleSubpatches()
-    const drifted: string[] = []
-    for (const r of NTS1MKII_FX_PROBE_READINGS) {
-      const doc = r.doc ?? parsePatchFile(readFileSync(join(examplesDir, r.example!), 'utf-8'))
-      const result = estimateFxCpuCost(doc, subpatches, 'nts1mkii')
-      if (result.status !== 'ok') throw new Error(result.reason)
-      const error = result.estimate.cyclesPerSample / r.cycles - 1
-      if (error <= -0.25 || error >= 0.25) drifted.push(`${r.name} ${(error * 100).toFixed(0)} %`)
-    }
-    if (drifted.length === 0) return
-    const message =
-      `NTS-1 mkII effect estimate outside -25..+25 % of the device reading: ${drifted.join(', ')}. ` +
-      'Run npx tsx logue-codegen/scripts/checkNts1FxCpuEstimate.ts and re-fit.'
-    if (process.env.CPU_COST_STRICT === '1') throw new Error(message)
-    console.warn(message)
-  })
+// Calibration, like the table specs: a drift only warns (a re-measured table or a rewritten
+// example must not block `npm run build`); CPU_COST_STRICT=1 makes it fail.
+function checkReadings(platform: 'nts1mkii' | 'minilogue-xd', readings: DeviceReading[]): void {
+  const subpatches = exampleSubpatches()
+  const drifted: string[] = []
+  for (const r of readings) {
+    const doc = r.doc ?? parsePatchFile(readFileSync(join(examplesDir, r.example!), 'utf-8'))
+    const result = estimateFxCpuCost(doc, subpatches, platform)
+    if (result.status !== 'ok') throw new Error(result.reason)
+    const error = result.estimate.cyclesPerSample / r.cycles - 1
+    if (error <= -0.25 || error >= 0.25) drifted.push(`${r.name} ${(error * 100).toFixed(0)} %`)
+  }
+  if (drifted.length === 0) return
+  const message =
+    `${platform} effect estimate outside -25..+25 % of the device reading: ${drifted.join(', ')}. ` +
+    'Re-run logue-codegen/scripts/hwtest/calibrateFx.ts and re-fit.'
+  if (process.env.CPU_COST_STRICT === '1') throw new Error(message)
+  console.warn(message)
+}
 
+describe('estimateFxCpuCost against device readings', () => {
+  it('lands every NTS-1 mkII reading within the calibration band', () => {
+    checkReadings('nts1mkii', NTS1MKII_FX_PROBE_READINGS)
+  })
+  it('lands every minilogue xd reading within the calibration band', () => {
+    expect(XD_FX_DEVICE_READINGS.length).toBeGreaterThan(10)
+    checkReadings('minilogue-xd', XD_FX_DEVICE_READINGS)
+  })
+  it('puts the example stereo reverb in the xd\'s "solo only" band', () => {
+    // Measured 2678 on a real xd: over the busy ceiling, under the alone one.
+    const doc = parsePatchFile(readFileSync(join(examplesDir, 'stereo-reverb.loguepatch'), 'utf-8'))
+    const r = estimateFxCpuCost(doc, new Map(), 'minilogue-xd')
+    if (r.status !== 'ok') throw new Error(r.reason)
+    expect(r.estimate.cyclesPerSample).toBeGreaterThan(XD_FX_DROPOUT_CYCLES)
+    expect(r.estimate.cyclesPerSample).toBeLessThanOrEqual(XD_FX_SOLO_CYCLES)
+  })
+})
+
+describe('estimateFxCpuCost on the NTS-1 mkII', () => {
   it('converts the xd table to M7 cycles, baseline included', () => {
     const doc = fx(
       [node('logue/util/long-delay', 'd')],

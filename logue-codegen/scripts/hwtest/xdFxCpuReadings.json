@@ -1,0 +1,106 @@
+[
+  {
+    "name": "lp-fx-buf1",
+    "date": "2026-10-05",
+    "cycles": 481,
+    "maxCycles": 483,
+    "xdCycles": 201,
+    "sdram": 6
+  },
+  {
+    "name": "lp-fx-buf4",
+    "date": "2026-10-05",
+    "cycles": 1007,
+    "maxCycles": 1009,
+    "xdCycles": 445,
+    "sdram": 18
+  },
+  {
+    "name": "lp-fx-grain",
+    "date": "2026-10-05",
+    "cycles": 477,
+    "maxCycles": 566,
+    "xdCycles": 234,
+    "sdram": 5
+  },
+  {
+    "name": "auto-wah",
+    "date": "2026-10-05",
+    "cycles": 252,
+    "maxCycles": 255,
+    "xdCycles": 198,
+    "sdram": 0
+  },
+  {
+    "name": "freq-shifter",
+    "date": "2026-10-05",
+    "cycles": 977,
+    "maxCycles": 982,
+    "xdCycles": 633,
+    "sdram": 0
+  },
+  {
+    "name": "grain-mill-xd-free",
+    "date": "2026-10-05",
+    "cycles": 1174,
+    "maxCycles": 1185,
+    "xdCycles": 609,
+    "sdram": 8
+  },
+  {
+    "name": "grain-mill-xd-rnd",
+    "date": "2026-10-05",
+    "cycles": 1112,
+    "maxCycles": 1220,
+    "xdCycles": 650,
+    "sdram": 8
+  },
+  {
+    "name": "grain-mill-xd-rndsync",
+    "date": "2026-10-05",
+    "cycles": 1155,
+    "maxCycles": 1225,
+    "xdCycles": 689,
+    "sdram": 8
+  },
+  {
+    "name": "grain-mill-xd-sync",
+    "date": "2026-10-05",
+    "cycles": 1195,
+    "maxCycles": 1201,
+    "xdCycles": 648,
+    "sdram": 8
+  },
+  {
+    "name": "reverse-wash-xd",
+    "date": "2026-10-05",
+    "cycles": 1136,
+    "maxCycles": 1140,
+    "xdCycles": 556,
+    "sdram": 8
+  },
+  {
+    "name": "reverse-wash",
+    "date": "2026-10-05",
+    "cycles": 1689,
+    "maxCycles": 1694,
+    "xdCycles": 782,
+    "sdram": 14
+  },
+  {
+    "name": "stereo-reverb",
+    "date": "2026-10-05",
+    "cycles": 2678,
+    "maxCycles": 2679,
+    "xdCycles": 1386,
+    "sdram": 32
+  },
+  {
+    "name": "tempo-swell",
+    "date": "2026-10-05",
+    "cycles": 137,
+    "maxCycles": 139,
+    "xdCycles": 91,
+    "sdram": 0
+  }
+]

@@ -438,8 +438,8 @@ emulator's scale) is a small fraction of the NTS-1 mkII's ceiling; RAM runs out 
 `scripts/emulateXdFxCycles.py` (2026-10-01) is the effect-unit counterpart of the xd oscillator
 emulator: it runs a built xd effect's `_entry`/`_hook_param`/`_hook_process` in unicorn with the
 same M4 weights, maps SDRAM, answers `fx_get_bpmf` with 120, and adds `SDRAM_PENALTY` cycles per
-SDRAM access (the F446 has no data cache; the real cost is unknown, so bracket it). An estimate
-for comparing builds; no xd effect has been measured on hardware for CPU. The one anchor so far
+SDRAM access (the F446 has no data cache). An estimate for comparing builds; real cycles are
+measured with `hwtest/calibrateFx.ts --xd` since 2026-10-06 (see "The gauge"). The first anchor
 (user, 2026-10-01): grain-mill's xd delay at ~680-750 emulator cycles/sample (penalty 8) stays
 clean with the factory mod and reverb running; ~814 dropped out with both, ~1000 crackled with
 both, ~1200 with either.
@@ -465,15 +465,20 @@ unwired for their readers (grain-mill's envelope times took the per-block path; 
 ~90 high), a grain whose `trig` moves counts `heavy-capturing` (trigger rate vs SIZE is
 unknowable; grain-mill sync/free record all the time), and the knob-reachable maximum follows
 the oscillator rules (a knob-bound checkbox both ways, `heavy-*` once a knob or moving input can
-move a setting). **The gauge** (Build panel, xd effects; NTS-1 mkII below):
-cycles per sample at `XD_FX_SDRAM_PENALTY` 8, the scale the anchors were read at, so the unknown
-real penalty doesn't shift estimate against anchor. Green to `XD_FX_CLEAN_CYCLES` 750 (grain-mill's
-xd delay clean at ~680-750 with the factory mod and reverb on), red at `XD_FX_DROPOUT_CYCLES` 814
-(it dropped out there with both). Past that, up to `XD_FX_SOLO_CYCLES` 1660, the row reads "solo
-only": the example stereo reverb (~1660 whole, 1632 estimated) runs on a real xd only with both
-other effect slots off (user, 2026-10-03); beyond it "dropouts". The colours keep the busy-slots
-scale (red = fails with all three running). Verdicts in the tooltip, which also says the slots
-share one MCU. The amber band (~8 %) is narrower than the estimate's error.
+move a setting). **The gauge** (Build panel, xd effects; NTS-1 mkII below; measured scale since
+2026-10-06): REAL effects-MCU cycles per sample (180 MHz, 3750 in all) as `1.46 * cycles + 26 *
+sdram` (`XD_FX_CYCLE_SCALE`/`XD_FX_SDRAM_CYCLES`), fitted to 13 generated effects measured on a
+real xd by `scripts/hwtest/calibrateFx.ts --xd` (readings `hwtest/xdFxCpuReadings.json`, loaded
+as `XD_FX_DEVICE_READINGS`): every one within -11..+15 %. Every instruction costs ~1.5x what the
+emulator counts (maybe because a unit runs from SRAM; a guess) and an SDRAM access ~26. Anchors
+from `hwtest/cpuCeiling.ts --xd`: red at `XD_FX_DROPOUT_CYCLES` 1040 (the burn unit in the DELAY
+slot with factory chorus and a hall/plate/room reverb, dry, running: clean 1040-1060; in the
+REVERB slot with chorus + stereo delay 1280), "solo only" up to `XD_FX_SOLO_CYCLES` 2980 (the
+other slots off, either slot), green to `XD_FX_CLEAN_CYCLES` 925 (an estimate 11 % low still
+clears 1040), "tight" between. The example stereo reverb measures 2678 (solo only: matches the
+user's report); the xd grain-mill units 1110-1200, a little over 1040 although they ran clean
+with the user's factory mod and reverb (lighter types or settings, presumably). The emulator-scale
+anchors the gauge had before (750/814/1660 at penalty 8) are in docs/HISTORY.md.
 `scripts/checkFxCpuEstimate.ts` compares that with every example built whole: -10..+31 % at
 penalty 8, SDRAM counts exact except the random-trigger grain-mill units (5-5.5 accesses against
 8: the deliberate overcount, +16/+24 %); without those -10..+2 % but auto-wah +31 % (2026-10-05:
@@ -1808,6 +1813,16 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   (a Q 8 bell's peak, a notch's depth), only the shape around it. The chain itself:
   flat within +-0.6 dB 50 Hz-16 kHz, -8.1 dB, H2 -52/H3 -69 dB for a -6 dBFS sine from the reverb
   slot. Recordings (device and host WAVs) and `functional.json` land in the run's snapshot folder.
+- **minilogue xd** (2026-10-06): the same scripts take `--xd` (`LogueRig.connect('minilogue-xd')`,
+  channel 3 here, family `51`; its audio arrives on the same X18 inputs, so only one synth may
+  play). Units are selected by CC (USER1 of a slot; mod `88`/`96`, delay `89`, reverb `90`, on/off
+  `92`-`94`) and knobs set as 10-bit CCs (`63` first); the program dump (1024 bytes on firmware
+  2.10, the spec says 336) is only saved and restored. Telemetry wraps the xd effect hook
+  (`withXdFxTelemetry`, mod/delay/reverb; BURN on the DEPTH knob, 0..`burnMax`); the effects
+  MCU's DWT counter works. App-built xd units have no developer id: test units are told apart by
+  their "HT "/"FN " names. **The xd keeps running a slot's previous code after a re-upload until
+  a program load** -- three mod units in a row all read the first one's cost, whatever CCs came
+  between -- so the scripts write the saved program back after every upload.
 - Gotcha: a slot re-uploaded with the SAME unit id while selected keeps playing the old code;
   every test unit gets its own id and the module is deselected before an upload.
 - Gotcha: the device has refused one of many quick uploads with USER INTERNAL ERROR (2F);
@@ -1867,10 +1882,10 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
 
 ## Known open items / verification debt
 
-- The xd effect CPU gauge has three anchors from two units (see "Effect CPU table"); between 814
-  and 1660 only "with the others off" is known, not where one other slot is still fine. The NTS-1
-  mkII effect anchors were measured with factory CHORUS + STEREO delay as the "busy" case; heavier
-  factory effects (or a heavy user oscillator) leave less, unmeasured.
+- Both effect gauges' "busy" anchors are measured with particular factory effects (NTS-1 mkII:
+  CHORUS + STEREO delay; xd: CHORUS + a reverb), not the heaviest of every type, and with a
+  factory oscillator. A knob can move an effect's cost a lot (the xd auto-wah: 532 cycles at
+  DEPTH 0, 254 at 64), which the knob-reachable maximum doesn't model for continuous params.
 - `logue/osc/granular`'s CPU per voice isn't measured on-device (it plays on both devices).
 - `util/reverse-tap` and the reverse-wash examples (2026-10-01) are harness-, link- and
   emulator-checked only; no listening pass yet. Staged: `lp-fx-revwash` (+ `-cpu` with the probe

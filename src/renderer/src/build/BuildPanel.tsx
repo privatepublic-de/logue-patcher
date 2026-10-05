@@ -40,7 +40,6 @@ import {
   fxCpuZone,
   NTS1MKII_FX_DROPOUT_CYCLES,
   NTS1MKII_FX_SOLO_CYCLES,
-  XD_FX_CLEAN_CYCLES,
   XD_FX_DROPOUT_CYCLES,
   XD_FX_SOLO_CYCLES
 } from '@logue-codegen/estimateFxCpuCost'
@@ -569,9 +568,7 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 z === 'fine'
                   ? 'likely fine'
                   : z === 'between'
-                    ? xd
-                      ? 'untested'
-                      : 'tight: may drop out when the other effect slots are busy'
+                    ? 'tight: may drop out when the other effect slots are busy'
                     : solo(cycles)
                       ? 'likely to drop out with the other effects on; needs the other two effect slots off'
                       : 'likely to drop out, even alone'
@@ -579,20 +576,18 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 z === 'fine'
                   ? 'fine'
                   : z === 'between'
-                    ? xd
-                      ? 'untested'
-                      : 'tight'
+                    ? 'tight'
                     : solo(cycles)
                       ? 'solo only'
                       : 'dropouts'
               const scale = xd
-                ? ' (emulator, not measured on the synth; whole example effects come out ' +
-                  'within -10..+31 % of their estimate).\n\n' +
-                  `An xd delay unit at ~680-${XD_FX_CLEAN_CYCLES} stayed clean with the factory ` +
-                  `mod and reverb running; at ~${XD_FX_DROPOUT_CYCLES} it dropped out with both, ` +
-                  '~1000 crackled with both, ~1200 with either alone. A reverb at ' +
-                  `~${XD_FX_SOLO_CYCLES} runs only with both other slots off. All three effect ` +
-                  'slots share one processor, so busier effects in the others leave this one less.'
+                ? ". The xd emulator's costs, scaled to real cycles by 13 effects measured on the " +
+                  'synth (each within -11..+15 % of its reading).\n\n' +
+                  'Measured on a real minilogue xd (its effects processor: 3750 cycles per sample ' +
+                  `in all): an effect drops out past ~${XD_FX_DROPOUT_CYCLES} with the factory ` +
+                  `chorus and a reverb running, past ~${XD_FX_SOLO_CYCLES} with the other effect ` +
+                  'slots off. Lighter effects in the other slots leave more: an xd grain-mill ' +
+                  'delay (~1100-1200) has run clean with the factory mod and reverb on.'
                 : ". The minilogue xd emulator's costs stand in, scaled to NTS-1 mkII cycles by " +
                   '14 effects measured on the synth (each within -22..+19 % of its reading).\n\n' +
                   'Measured on a real NTS-1 mkII: an effect drops out past ' +

@@ -126,30 +126,34 @@ export const GRAIN_TEST = doc(
   ]
 )
 
-/**
- * Effect cycles per sample measured on a real NTS-1 mkII through audio telemetry, the calibration
- * of `estimateFxCpuCost`'s NTS-1 mkII scale: written by `hwtest/calibrateFx.ts` into
- * `hwtest/nts1FxCpuReadings.json`. A name is one of this file's test units or an example in
- * examples/effects (`example`). The CPU probe's earlier hand readings are in docs/HISTORY.md.
- */
-export const NTS1MKII_FX_PROBE_READINGS: {
+export interface DeviceReading {
   name: string
   date: string
   cycles: number
   doc?: PatchDocument
   example?: string
-}[] = (
-  JSON.parse(
-    readFileSync(
-      join(dirname(new URL(import.meta.url).pathname), 'hwtest', 'nts1FxCpuReadings.json'),
-      'utf-8'
-    )
-  ) as { name: string; date: string; cycles: number }[]
-).map(({ name, date, cycles }) => {
-  const doc = {
-    'lp-fx-buf1': bufferTest(1),
-    'lp-fx-buf4': bufferTest(4),
-    'lp-fx-grain': GRAIN_TEST
-  }[name]
-  return doc ? { name, date, cycles, doc } : { name, date, cycles, example: `${name}.loguepatch` }
-})
+}
+
+/** A `hwtest/calibrateFx.ts` readings file, each name resolved to a test unit or an example. */
+function readingsFrom(file: string): DeviceReading[] {
+  return (
+    JSON.parse(
+      readFileSync(join(dirname(new URL(import.meta.url).pathname), 'hwtest', file), 'utf-8')
+    ) as { name: string; date: string; cycles: number }[]
+  ).map(({ name, date, cycles }) => {
+    const doc = {
+      'lp-fx-buf1': bufferTest(1),
+      'lp-fx-buf4': bufferTest(4),
+      'lp-fx-grain': GRAIN_TEST
+    }[name]
+    return doc ? { name, date, cycles, doc } : { name, date, cycles, example: `${name}.loguepatch` }
+  })
+}
+
+/**
+ * Effect cycles per sample measured through audio telemetry, the calibration of
+ * `estimateFxCpuCost`'s conversion to real cycles: written by `hwtest/calibrateFx.ts` (`--xd`).
+ * The NTS-1 mkII CPU probe's earlier hand readings are in docs/HISTORY.md.
+ */
+export const NTS1MKII_FX_PROBE_READINGS = readingsFrom('nts1FxCpuReadings.json')
+export const XD_FX_DEVICE_READINGS = readingsFrom('xdFxCpuReadings.json')

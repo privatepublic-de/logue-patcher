@@ -11,7 +11,7 @@ import { homedir } from 'os'
 import { join } from 'path'
 import type { LogueUnitModule } from '../../src/sysex/korgUserUnitMessages'
 import { HWTEST_DEV_ID, type BuiltUnit } from './buildUnit'
-import type { Nts1Rig } from './nts1Rig'
+import type { LogueRig } from './rig'
 
 export const BACKUP_DIR =
   process.env.HWTEST_BACKUP_DIR ?? join(homedir(), 'Documents/logue-patches/backups/hwtest')
@@ -38,6 +38,9 @@ export interface Snapshot {
   slots: Partial<Record<LogueUnitModule, Uint8Array | null>>
 }
 
+/** Test units' names (`calibrateFx.ts`' "HT n", `functional.ts`' "FN n"): the xd's only tell. */
+const TEST_UNIT_NAME = /^(HT|FN) /
+
 const selectsTestUnit = (program: Uint8Array): boolean =>
   Object.values(SELECTION).some(
     ({ selection }) =>
@@ -48,7 +51,12 @@ const selectsTestUnit = (program: Uint8Array): boolean =>
 function earlierRuns(except: string): string[] {
   if (!existsSync(BACKUP_DIR)) return []
   return readdirSync(BACKUP_DIR)
-    .filter((d) => d.startsWith('run-') && join(BACKUP_DIR, d) !== except)
+    .filter(
+      (d) =>
+        d.startsWith('run-') &&
+        join(BACKUP_DIR, d) !== except &&
+        d.endsWith('-xd') === except.endsWith('-xd')
+    )
     .sort()
     .reverse()
     .map((d) => join(BACKUP_DIR, d))
@@ -70,20 +78,22 @@ function fromEarlier(
   throw new Error(`${what} holds a test unit and no earlier snapshot has it -- restore it by hand`)
 }
 
-export async function takeSnapshot(rig: Nts1Rig, modules: LogueUnitModule[]): Promise<Snapshot> {
+export async function takeSnapshot(rig: LogueRig, modules: LogueUnitModule[]): Promise<Snapshot> {
   const d = new Date()
   const two = (n: number): string => String(n).padStart(2, '0')
   const stamp = `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}`
-  const dir = join(BACKUP_DIR, `run-${stamp}`)
+  const dir = join(BACKUP_DIR, rig.platform === 'nts1mkii' ? `run-${stamp}` : `run-${stamp}-xd`)
   mkdirSync(dir, { recursive: true })
   let program = await rig.readProgram()
-  if (selectsTestUnit(program)) program = fromEarlier(dir, 'the program', PROGRAM_FILE)!
+  // The xd selects units by slot, so its program never names a test unit.
+  if (rig.platform === 'nts1mkii' && selectsTestUnit(program))
+    program = fromEarlier(dir, 'the program', PROGRAM_FILE)!
   writeFileSync(join(dir, PROGRAM_FILE), program)
   const slots: Snapshot['slots'] = {}
   for (const m of modules) {
     const status = await rig.session.slotStatus(m, 0)
     const body =
-      !status.empty && status.devId === HWTEST_DEV_ID
+      !status.empty && (status.devId === HWTEST_DEV_ID || TEST_UNIT_NAME.test(status.name))
         ? fromEarlier(dir, `${m} slot 1`, slotFile(m), emptyFile(m))
         : status.empty
           ? null
@@ -103,7 +113,7 @@ const same = (a: Uint8Array, b: Uint8Array): boolean =>
   a.length === b.length && a.every((v, i) => v === b[i])
 
 /** Puts the snapshot back, then reads it all back: returns one line per item. */
-export async function restore(rig: Nts1Rig, snapshot: Snapshot): Promise<string[]> {
+export async function restore(rig: LogueRig, snapshot: Snapshot): Promise<string[]> {
   const lines: string[] = []
   for (const [m, body] of Object.entries(snapshot.slots) as [
     LogueUnitModule,

@@ -1,5 +1,5 @@
 /**
- * CPU telemetry through audio for NTS-1 mkII effect units. The unit still renders its graph (so
+ * CPU telemetry through audio for NTS-1 mkII and minilogue xd effect units. The unit still renders its graph (so
  * the cost is real), then its output is replaced by three tones the recording decodes:
  *
  * - `DETECTOR_HZ`: a phase-continuous sine, for finding dropouts (any gap or repeated block is a
@@ -11,8 +11,10 @@
  * counter until BURN cycles per sample have passed since the call started (graph included), so
  * the load is exact.
  *
- * The reading uses the Cortex-M7 DWT cycle counter, which a user unit may switch on (the CPU
- * probe of stageNts1CpuProbe.ts / stageFxUnits.ts does the same). For measuring only.
+ * The reading uses the DWT cycle counter (NTS-1 mkII: the Cortex-M7; xd: the effects MCU's
+ * Cortex-M4), which a user unit may switch on (the CPU probe of stageNts1CpuProbe.ts /
+ * stageFxUnits.ts does the same on the NTS-1 mkII). The xd's whole budget is far smaller, so its
+ * total tone has no offset (`XD_TELEMETRY`). For measuring only.
  */
 
 export const DETECTOR_HZ = 440
@@ -32,6 +34,17 @@ export const cyclesFromTotTone = (hz: number): number =>
 /** Where to look for each tone (cycles 0..12000 / 9000..14000). */
 export const FX_TONE_BAND: [number, number] = [fxToneHz(0) - 20, fxToneHz(12000)]
 export const TOT_TONE_BAND: [number, number] = [totToneHz(9000), totToneHz(14000)]
+
+/** The xd: fx 0..4500 and total 2000..8000 cycles per sample (its effects MCU, ~3750 at 180 MHz). */
+export const XD_TELEMETRY = {
+  totOffset: 0,
+  fxBand: [fxToneHz(0) - 20, fxToneHz(4500)] as [number, number],
+  totBand: [TOT_BASE_HZ + 2000 / CYCLES_PER_HZ, TOT_BASE_HZ + 8000 / CYCLES_PER_HZ] as [
+    number,
+    number
+  ]
+}
+export const cyclesFromXdTotTone = (hz: number): number => (hz - TOT_BASE_HZ) * CYCLES_PER_HZ
 
 const EMPTY_ROW = '{0, 0, 0, 0, k_unit_param_type_none, 0, 0, 0, {""}}'
 
@@ -123,4 +136,98 @@ static inline void telemetry_tone(float *out, uint32_t frames, int k, float hz)
     )
   }
   return { ...files, 'header.c': headerC, 'unit.cc': unitCc }
+}
+
+/**
+ * The minilogue xd counterpart: edits a generated effect's `fx.cpp` (`<PREFIX>_INIT`, the process
+ * hook -- in place on delay/reverb, main buffers on mod -- and `_PARAM`). With `burnMax`, the
+ * DEPTH knob sets the burn (0..burnMax cycles per sample; an xd effect has no menu params).
+ */
+export function withXdFxTelemetry(
+  files: Record<string, string>,
+  module: 'modfx' | 'delfx' | 'revfx',
+  opts: { burnMax?: number } = {}
+): Record<string, string> {
+  const prefix = module.toUpperCase()
+  let fxCpp = files['fx.cpp']
+  const replace = (from: string, to: string): void => {
+    if (!fxCpp.includes(from)) throw new Error(`xd telemetry: "${from.trim()}" not found`)
+    fxCpp = fxCpp.replace(from, to)
+  }
+  replace(
+    `void ${prefix}_INIT(uint32_t platform, uint32_t api)`,
+    `// Telemetry (logue-codegen/scripts/hwtest/telemetry.ts).
+#define DEMCR (*(volatile uint32_t *)0xE000EDFCu)
+#define DWT_CTRL (*(volatile uint32_t *)0xE0001000u)
+#define DWT_CYCCNT (*(volatile uint32_t *)0xE0001004u)
+static uint32_t s_t_prev = 0, s_t_have_prev = 0, s_t_fx = 0, s_t_tot = 0;
+static int32_t s_t_burn = 0;
+static float s_t_ph[3] = {0.f, 0.f, 0.f};
+static inline void telemetry_tone(float *out, uint32_t frames, int k, float hz)
+{
+  const float inc = hz / 48000.f;
+  float ph = s_t_ph[k];
+  for (uint32_t i = 0; i < frames; ++i)
+  {
+    const float s = ${TONE_AMPLITUDE}f * fx_sinf(ph);
+    out[2 * i] += s;
+    out[2 * i + 1] += s;
+    ph += inc;
+    if (ph >= 1.f) ph -= 1.f;
+  }
+  s_t_ph[k] = ph;
+}
+static void telemetry_process(const float *in, float *out, uint32_t frames);
+
+void ${prefix}_INIT(uint32_t platform, uint32_t api)`
+  )
+  replace('  s_fx.init();', '  DEMCR |= (1u << 24);\n  DWT_CTRL |= 1u;\n  s_fx.init();')
+  if (module === 'modfx')
+    replace(
+      '  s_fx.process(main_xn, main_yn, frames);',
+      '  telemetry_process(main_xn, main_yn, frames);'
+    )
+  else
+    replace(
+      `void ${prefix}_PROCESS(float *xn, uint32_t frames) { s_fx.process(xn, xn, frames); }`,
+      `void ${prefix}_PROCESS(float *xn, uint32_t frames) { telemetry_process(xn, xn, frames); }`
+    )
+  fxCpp += `
+static void telemetry_process(const float *in, float *out, uint32_t frames)
+{
+  const uint32_t t0 = DWT_CYCCNT;
+  if (s_t_have_prev && frames)
+  {
+    const uint32_t tot = ((t0 - s_t_prev) << 4) / frames;
+    s_t_tot = s_t_tot ? s_t_tot + ((int32_t)(tot - s_t_tot) >> 4) : tot;
+  }
+  s_t_prev = t0;
+  s_t_have_prev = 1;
+  s_fx.process(in, out, frames);
+  if (s_t_burn > 0)
+  {
+    const uint32_t until = (uint32_t)s_t_burn * frames;
+    while (DWT_CYCCNT - t0 < until) {}
+  }
+  if (frames)
+  {
+    const uint32_t fxc = ((DWT_CYCCNT - t0) << 4) / frames;
+    s_t_fx = s_t_fx ? s_t_fx + ((int32_t)(fxc - s_t_fx) >> 4) : fxc;
+  }
+  for (uint32_t i = 0; i < 2 * frames; ++i) out[i] = 0.f;
+  telemetry_tone(out, frames, 0, ${DETECTOR_HZ}.f);
+  telemetry_tone(out, frames, 1, ${FX_BASE_HZ}.f + (float)s_t_fx * ${1 / 16 / CYCLES_PER_HZ}f);
+  if (s_t_tot)
+    telemetry_tone(out, frames, 2, ${TOT_BASE_HZ}.f + (float)s_t_tot * ${1 / 16 / CYCLES_PER_HZ}f);
+}
+`
+  if (opts.burnMax !== undefined) {
+    replace(
+      `void ${prefix}_PARAM(uint8_t index, int32_t value) {`,
+      `void ${prefix}_PARAM(uint8_t index, int32_t value) {
+  if (index == k_user_${module}_param_depth)
+    s_t_burn = (int32_t)(clip01f(q31_to_f32(value)) * ${opts.burnMax}.f);`
+    )
+  }
+  return { ...files, 'fx.cpp': fxCpp }
 }

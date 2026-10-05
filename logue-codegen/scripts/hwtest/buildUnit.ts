@@ -1,5 +1,5 @@
 /**
- * Builds a document into an NTS-1 mkII unit for a hardware test: staged in the local logue-sdk
+ * Builds a document into a unit for a hardware test. NTS-1 mkII: staged in the local logue-sdk
  * checkout (platform/nts-1_mkii/<dir>) and compiled with the local ARM toolchain, like the app's
  * Build. Test units carry the harness's own developer id and a unit id per test, so the
  * current-program dump can select exactly that unit (every app-built unit has 0/0).
@@ -7,9 +7,12 @@
 import { execFileSync } from 'child_process'
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { homedir } from 'os'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import type { PatchDocument } from '../../../src/shared/domain/patch'
+import { generateMinilogueXdProject } from '../../src/minilogue-xd/projectFiles'
 import { generateNts1MkiiProject, nts1mkiiConfigMk } from '../../src/nts1mkii/projectFiles'
+import { buildMinilogueXdUnitBody } from '../../src/sysex/minilogueXdUnitBody'
+import type { OldGenUnitManifest } from '../../src/sysex/unitArchive'
 import type { SubpatchDefinitions } from '../../src/subpatches'
 
 /** 'LPHT': logue-patcher hardware test (not a registered Korg developer id). */
@@ -62,4 +65,40 @@ export function buildNts1Unit(
     unitId,
     version: 0x00010000
   }
+}
+
+const xdRoot = join(
+  process.env.LOGUE_SDK ?? join(homedir(), 'Documents/GitHub/logue-sdk'),
+  'platform',
+  'minilogue-xd'
+)
+
+/**
+ * The minilogue xd counterpart: staged in platform/minilogue-xd/<dir> with its generated scaffold,
+ * built, and returned as the body a slot upload takes (manifest + payload). An xd unit has no
+ * developer id to select it by (the xd selects by slot), so a test unit is told apart by its name.
+ */
+export function buildXdUnit(
+  doc: PatchDocument,
+  dir: string,
+  name: string,
+  subpatches: SubpatchDefinitions = new Map(),
+  edit?: (files: Record<string, string>) => Record<string, string>
+): { body: Uint8Array; name: string } {
+  const path = join(xdRoot, dir)
+  rmSync(path, { recursive: true, force: true })
+  const project = generateMinilogueXdProject(doc, name, subpatches)
+  const files = edit ? edit(project.files) : project.files
+  for (const [file, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(path, file)), { recursive: true })
+    writeFileSync(join(path, file), text)
+  }
+  execFileSync('make', ['-j8'], {
+    cwd: path,
+    env: { ...process.env, GCC_BIN_PATH: gccBin },
+    stdio: 'pipe'
+  })
+  const manifest = JSON.parse(files['manifest.json']) as OldGenUnitManifest
+  const payload = new Uint8Array(readFileSync(join(path, 'build', `${project.project}.bin`)))
+  return { body: buildMinilogueXdUnitBody(manifest, payload), name }
 }

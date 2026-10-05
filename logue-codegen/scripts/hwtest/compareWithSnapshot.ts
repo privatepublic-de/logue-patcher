@@ -2,25 +2,33 @@
  * Read-only: compares the device's slot 1s and current program with a snapshot folder
  * (`deviceState.ts`), e.g. after a run, or to check what a crashed run left behind.
  *
- * Usage: npx tsx logue-codegen/scripts/hwtest/compareWithSnapshot.ts [snapshot dir, default: newest]
+ * Usage: npx tsx logue-codegen/scripts/hwtest/compareWithSnapshot.ts [--xd | snapshot dir]
+ *   default: the newest NTS-1 mkII snapshot; --xd the newest minilogue xd one. A folder's
+ *   platform is its name's (`-xd` suffix).
  */
 import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import type { LogueUnitModule } from '../../src/sysex/korgUserUnitMessages'
 import { BACKUP_DIR } from './deviceState'
-import { Nts1Rig } from './nts1Rig'
+import { LogueRig } from './rig'
 
 async function main(): Promise<void> {
+  const arg = process.argv[2]
+  const xdWanted = arg === '--xd'
   const dir =
-    process.argv[2] ??
-    join(
-      BACKUP_DIR,
-      readdirSync(BACKUP_DIR)
-        .filter((d) => d.startsWith('run-'))
-        .sort()
-        .pop()!
-    )
-  const rig = await Nts1Rig.connect()
+    arg && !xdWanted
+      ? arg
+      : join(
+          BACKUP_DIR,
+          readdirSync(BACKUP_DIR)
+            .filter((d) => d.startsWith('run-') && d.endsWith('-xd') === xdWanted)
+            .sort()
+            .pop()!
+        )
+  const rig = await LogueRig.connect(
+    dir.replace(/\/$/, '').endsWith('-xd') ? 'minilogue-xd' : 'nts1mkii'
+  )
+  console.log(`${rig.platform}: ${dir}`)
   try {
     const same = (a: Uint8Array, b: Uint8Array): boolean =>
       a.length === b.length && a.every((v, i) => v === b[i])

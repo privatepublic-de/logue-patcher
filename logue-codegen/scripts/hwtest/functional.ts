@@ -24,7 +24,7 @@ import { record, SAMPLE_RATE } from './audioCapture'
 import { buildNts1Unit } from './buildUnit'
 import { factory, programFrom, restore, select, takeSnapshot, type Snapshot } from './deviceState'
 import { renderFxOnHost } from './hostRender'
-import { Nts1Rig, sleep } from './nts1Rig'
+import { LogueRig, sleep } from './rig'
 
 const SETTLE_S = 1.5
 const SECONDS = 4
@@ -208,7 +208,7 @@ async function main(): Promise<void> {
   const cases = CASES.filter(
     (c) => !filters.length || c.name.startsWith('chain-') || filters.some((f) => c.name.includes(f))
   )
-  const rig = await Nts1Rig.connect()
+  const rig = await LogueRig.connect()
   let snapshot: Snapshot | undefined
   const results: Record<string, unknown>[] = []
   let chain: number[] | undefined
