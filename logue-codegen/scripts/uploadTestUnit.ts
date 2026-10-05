@@ -10,90 +10,21 @@
  *   NTS-1 mkII and platform/minilogue-xd/lp-osc-sync/osc.mnlgxdunit to a connected xd, whichever
  *   exist, into that module's slot, and reads the slot back.
  */
-import { spawn } from 'child_process'
 import { existsSync, readFileSync } from 'fs'
 import { homedir } from 'os'
-import { dirname, join } from 'path'
-import { createInterface } from 'readline'
-import {
-  discoverLogueDevices,
-  LogueDeviceSession,
-  type SysexLink
-} from '../src/sysex/deviceSession'
-import { RawSysexAssembler } from '../src/sysex/rawSysexAssembler'
+import { join } from 'path'
+import { discoverLogueDevices, LogueDeviceSession } from '../src/sysex/deviceSession'
 import { readOldGenUnitArchive } from '../src/sysex/unitArchive'
 import { buildMinilogueXdUnitBody } from '../src/sysex/minilogueXdUnitBody'
 import { readNts1mkiiUnitHeader } from '../src/sysex/unitBackup'
 import { LOGUE_UNIT_MODULE_IDS, type LogueUnitModule } from '../src/sysex/korgUserUnitMessages'
 import type { LoguePlatform } from '../../src/shared/domain/patch'
+import { Helper } from './midiHelperClient'
 
-const here = dirname(new URL(import.meta.url).pathname)
-const helperPath = join(here, '..', '..', 'resources', 'bin', 'logue-midi-helper')
 const platformRoot = join(
   process.env.LOGUE_SDK ?? join(homedir(), 'Documents/GitHub/logue-sdk'),
   'platform'
 )
-
-/** The helper's line protocol (native/logue-midi-helper/main.swift, main/midi/midiHelper.ts). */
-class Helper {
-  private proc = spawn(helperPath, [], { stdio: ['pipe', 'pipe', 'pipe'] })
-  private nextId = 1
-  private pending = new Map<number, (msg: Record<string, unknown>) => void>()
-  private assemblers = new Map<number, RawSysexAssembler>()
-  private listeners = new Map<number, Set<(msg: Uint8Array) => void>>()
-
-  constructor() {
-    createInterface({ input: this.proc.stdout }).on('line', (line) => {
-      const msg = JSON.parse(line) as Record<string, unknown>
-      if (msg.event === 'data') {
-        const source = msg.source as number
-        let a = this.assemblers.get(source)
-        if (!a) {
-          a = new RawSysexAssembler((m) => this.listeners.get(source)?.forEach((l) => l(m)))
-          this.assemblers.set(source, a)
-        }
-        a.push(new Uint8Array(Buffer.from(msg.data as string, 'base64')))
-        return
-      }
-      const done = typeof msg.id === 'number' ? this.pending.get(msg.id) : undefined
-      if (done) {
-        this.pending.delete(msg.id as number)
-        done(msg)
-      }
-    })
-  }
-
-  request(msg: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const id = this.nextId++
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, (reply) =>
-        reply.ok ? resolve(reply) : reject(new Error(String(reply.error)))
-      )
-      this.proc.stdin.write(JSON.stringify({ ...msg, id }) + '\n')
-    })
-  }
-
-  send(dest: number, bytes: Uint8Array): void {
-    void this.request({ cmd: 'send', dest, data: Buffer.from(bytes).toString('base64') }).catch(
-      (e) => console.error('send failed:', e)
-    )
-  }
-
-  subscribe(source: number, cb: (msg: Uint8Array) => void): () => void {
-    let set = this.listeners.get(source)
-    if (!set) this.listeners.set(source, (set = new Set()))
-    set.add(cb)
-    return () => set.delete(cb)
-  }
-
-  link(input: number, output: number): SysexLink {
-    return { send: (m) => this.send(output, m), subscribe: (cb) => this.subscribe(input, cb) }
-  }
-
-  close(): void {
-    this.proc.stdin.end()
-  }
-}
 
 function prepare(
   platform: LoguePlatform,
