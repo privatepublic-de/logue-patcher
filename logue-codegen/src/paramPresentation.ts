@@ -748,6 +748,55 @@ function ladderCutoffHzUnit(): ParamUnit {
   }
 }
 
+/** `logue/filter/eq-band`'s TYPE choices, in select order (NTS-1 mkII: 7 characters at most). */
+export const EQ_TYPE_NAMES = ['Bell', 'LoShelf', 'HiShelf', 'Notch']
+export const EQ_TYPE_NAME = namedChoiceUnit(['Bell', 'Low shelf', 'High shelf', 'Notch'])
+/** `logue/filter/eq-band`'s GAIN: -100..100 is -`EQ_GAIN_RANGE_DB`..+`EQ_GAIN_RANGE_DB` dB. */
+export const EQ_GAIN_RANGE_DB = 18
+export const EQ_GAIN_DB: ParamUnit = {
+  toDisplay(raw) {
+    const db = (raw * EQ_GAIN_RANGE_DB) / 100
+    return `${db > 0 ? '+' : ''}${db.toFixed(1)} dB`
+  },
+  parseInput(text) {
+    const db = Number.parseFloat(text)
+    return Number.isFinite(db) ? (db * 100) / EQ_GAIN_RANGE_DB : undefined
+  }
+}
+/** `logue/filter/eq-band`'s Q: `EQ_Q_MIN * 2^(raw * EQ_Q_OCTAVES / 100)`, 0.25..16; 25 is 0.707. */
+export const EQ_Q_MIN = 0.25
+export const EQ_Q_OCTAVES = 6
+export const EQ_Q: ParamUnit = {
+  toDisplay(raw) {
+    const q = EQ_Q_MIN * 2 ** ((raw * EQ_Q_OCTAVES) / 100)
+    return `Q ${q.toFixed(q >= 10 ? 1 : 2)}`
+  },
+  parseInput(text) {
+    const q = Number.parseFloat(text.replace(/^\s*q\s*/i, ''))
+    if (!Number.isFinite(q) || q <= 0) return undefined
+    return (Math.log2(q / EQ_Q_MIN) * 100) / EQ_Q_OCTAVES
+  }
+}
+/** `logue/filter/tilt`'s TILT: -100..100 is up to `TILT_RANGE_DB` dB per side (highs up and lows
+ *  down by the same amount, or the reverse), shown as which way it leans. */
+export const TILT_RANGE_DB = 9
+export const TILT_DB: ParamUnit = {
+  toDisplay(raw) {
+    if (raw === 0) return 'Flat'
+    const db = (Math.abs(raw) * TILT_RANGE_DB) / 100
+    return `${raw > 0 ? 'Bright' : 'Dark'} ${db.toFixed(1)} dB`
+  },
+  parseInput(text) {
+    if (/^\s*flat\s*$/i.test(text)) return 0
+    const m = /^\s*(dark|bright)?\s*(-?[\d.]+)/i.exec(text)
+    if (!m) return undefined
+    const db = Number.parseFloat(m[2])
+    if (!Number.isFinite(db)) return undefined
+    const raw = (db * 100) / TILT_RANGE_DB
+    return m[1]?.toLowerCase() === 'dark' ? -Math.abs(raw) : m[1] ? Math.abs(raw) : raw
+  }
+}
+
 function trackWidget(label: string): BooleanParamWidget {
   return { onValue: 100, offValue: 0, threshold: TRACK_ON_THRESHOLD, label }
 }

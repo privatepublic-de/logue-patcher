@@ -23,7 +23,9 @@ import {
   lowpassCheapFilterPrimitive,
   pluckedStringPrimitive,
   svfFilterPrimitive,
-  ladderFilterPrimitive
+  ladderFilterPrimitive,
+  eqBandPrimitive,
+  tiltPrimitive
 } from './filter'
 import { vcaPrimitive } from './gain'
 import {
@@ -185,6 +187,8 @@ const PRIMITIVES: LoguePrimitive[] = [
   bassSupportPrimitive,
   svfFilterPrimitive,
   ladderFilterPrimitive,
+  eqBandPrimitive,
+  tiltPrimitive,
   formantFilterPrimitive,
   sensePitchPrimitive,
   senseControlPrimitive,

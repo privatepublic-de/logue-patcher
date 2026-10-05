@@ -199,11 +199,11 @@ describe('multi-outlet resolution', () => {
   it('throws a named error for an outlet name a multi-outlet primitive does not declare', () => {
     const doc: PatchDocument = {
       nodes: [svfNode('svf1'), audioOutNode('out')],
-      nets: [{ sources: [{ obj: 'svf1', outlet: 'notch' }], dests: [{ obj: 'out', inlet: 'in' }] }],
+      nets: [{ sources: [{ obj: 'svf1', outlet: 'peak' }], dests: [{ obj: 'out', inlet: 'in' }] }],
       settings: {},
       notes: ''
     }
-    expect(() => resolveAudioGraph(doc)).toThrow(/doesn't declare \(has: lp, bp, hp\)/)
+    expect(() => resolveAudioGraph(doc)).toThrow(/doesn't declare \(has: lp, bp, hp, notch, ap\)/)
   })
 
   it('ignores a stale/legacy outlet name on an ordinary single-outlet source', () => {

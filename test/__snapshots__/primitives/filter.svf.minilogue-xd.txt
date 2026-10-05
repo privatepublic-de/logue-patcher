@@ -95,7 +95,9 @@ public:
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
       svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
-      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
+      float y_n_notch = (0.f) - svfK_n * y_n_bp;
+      float y_n_ap = (0.f) - 2.f * svfK_n * y_n_bp;
+      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp; (void)y_n_notch; (void)y_n_ap;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -350,7 +352,9 @@ public:
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
       svf_step(&svfS1_n, &svfS2_n, y_c_in, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
-      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
+      float y_n_notch = (y_c_in) - svfK_n * y_n_bp;
+      float y_n_ap = (y_c_in) - 2.f * svfK_n * y_n_bp;
+      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp; (void)y_n_notch; (void)y_n_ap;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -601,7 +605,9 @@ public:
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
       svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
-      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
+      float y_n_notch = (0.f) - svfK_n * y_n_bp;
+      float y_n_ap = (0.f) - 2.f * svfK_n * y_n_bp;
+      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp; (void)y_n_notch; (void)y_n_ap;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -856,7 +862,9 @@ public:
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
       svf_step(&svfS1_n, &svfS2_n, y_c_in, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
-      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
+      float y_n_notch = (y_c_in) - svfK_n * y_n_bp;
+      float y_n_ap = (y_c_in) - 2.f * svfK_n * y_n_bp;
+      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp; (void)y_n_notch; (void)y_n_ap;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -1160,7 +1168,9 @@ public:
       float svfK_n = blkSvfK_n;
       float y_n_lp, y_n_bp, y_n_hp;
       svf_step(&svfS1_n, &svfS2_n, 0.f, svfG_n, svfK_n, svfA1Cache_n, &y_n_lp, &y_n_bp, &y_n_hp);
-      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp;
+      float y_n_notch = (0.f) - svfK_n * y_n_bp;
+      float y_n_ap = (0.f) - 2.f * svfK_n * y_n_bp;
+      (void)y_n_lp; (void)y_n_bp; (void)y_n_hp; (void)y_n_notch; (void)y_n_ap;
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly

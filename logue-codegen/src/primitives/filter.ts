@@ -1,6 +1,15 @@
 import {
   ALLPASS_MS,
   COMB_CUTOFF_MS,
+  EQ_GAIN_DB,
+  EQ_GAIN_RANGE_DB,
+  EQ_Q,
+  EQ_Q_MIN,
+  EQ_Q_OCTAVES,
+  EQ_TYPE_NAME,
+  EQ_TYPE_NAMES,
+  TILT_DB,
+  TILT_RANGE_DB,
   LADDER_CUTOFF_HZ,
   LADDER_DRIVE_DB,
   LADDER_NOTE_LO,
@@ -781,6 +790,8 @@ export const pluckedStringPrimitive: LoguePrimitive = {
  *   rings forever once excited but never starts from silence. Self-starting oscillation would
  *   need `k < 0` with a clip in the loop -- not asked for.
  * - `pitch`/`COARSE`/`FINE`/`TRACK` work exactly as on `logue/filter/comb`.
+ * - `notch` (`in - k*bp`, = lp + hp) and `ap` (`in - 2k*bp`, flat, phase only) cost nothing
+ *   unwired: GCC drops an unread local. The notch's width is `k`, so RESONANCE narrows it.
  */
 const SVF_CUTOFF_G_MAX = 8.0
 
@@ -902,14 +913,14 @@ export const svfFilterPrimitive: LoguePrimitive = {
   // 10 floats
   stateBytesPerInstance: 40,
   description:
-    'A resonant 2-pole state-variable filter with simultaneous lowpass, bandpass and highpass outputs, and optional pitch-tracked resonance.',
+    'A resonant 2-pole state-variable filter with simultaneous lowpass, bandpass, highpass, notch and allpass outputs, and optional pitch-tracked resonance. The notch narrows as RESONANCE rises (zero width at 100); the allpass shifts phase only.',
   inlets: [
     { name: 'in', role: 'audio' },
     { name: 'cutoff', trackGate: PITCH_TRACKED_GATE, role: 'control' },
     { name: 'resonance', role: 'control' },
     { name: 'pitch', trackGate: NEEDS_TRACK_GATE, role: 'control' }
   ],
-  outlets: [{ name: 'lp' }, { name: 'bp' }, { name: 'hp' }],
+  outlets: [{ name: 'lp' }, { name: 'bp' }, { name: 'hp' }, { name: 'notch' }, { name: 'ap' }],
   memberDecls: (suffix) =>
     `  float svfS1_${suffix};\n  float svfS2_${suffix};\n  float cutoff_${suffix};\n  float resonancePercent_${suffix};\n  float coarse_${suffix};\n  float fine_${suffix};\n  float track_${suffix};\n  float svfA1Cache_${suffix}[3];\n`,
   // g is never negative, so -1 forces svf_step's first divide.
@@ -941,7 +952,10 @@ export const svfFilterPrimitive: LoguePrimitive = {
       `      float y_${suffix}_lp, y_${suffix}_bp, y_${suffix}_hp;\n` +
       `      svf_step(&svfS1_${suffix}, &svfS2_${suffix}, ${inExpr}, svfG_${suffix}, svfK_${suffix}, svfA1Cache_${suffix}, ` +
       `&y_${suffix}_lp, &y_${suffix}_bp, &y_${suffix}_hp);\n` +
-      `      (void)y_${suffix}_lp; (void)y_${suffix}_bp; (void)y_${suffix}_hp;\n`
+      // lp + hp and lp - k*bp + hp, written from the input so they are exact.
+      `      float y_${suffix}_notch = (${inExpr}) - svfK_${suffix} * y_${suffix}_bp;\n` +
+      `      float y_${suffix}_ap = (${inExpr}) - 2.f * svfK_${suffix} * y_${suffix}_bp;\n` +
+      `      (void)y_${suffix}_lp; (void)y_${suffix}_bp; (void)y_${suffix}_hp; (void)y_${suffix}_notch; (void)y_${suffix}_ap;\n`
     )
   },
   advanceStatement: () => '',
@@ -1294,6 +1308,398 @@ export const ladderFilterPrimitive: LoguePrimitive = {
       max: 100,
       default: 0,
       setStatement: (suffix, valueExpr) => `track_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/** FREQ/CENTER as a note, the ladder's scale: 20 Hz at 0, ~20.5 kHz at 100. */
+function eqNoteExpr(member: string, suffix: string, wired: string | undefined): string {
+  const t =
+    wired !== undefined
+      ? `clampf(${member}_${suffix} + (${wired}), 0.f, 1.f)`
+      : `${member}_${suffix}`
+  return `(${LADDER_NOTE_LO}f + ${t} * ${LADDER_NOTE_SPAN}.f)`
+}
+
+/** GAIN percent -> ln(sqrt(A)), A = 10^(dB/40) being Simper's amplitude (the gain is A^2). */
+const EQ_LN_ROOT_A_PER_PERCENT = ((EQ_GAIN_RANGE_DB / 100) * Math.log(10)) / 80
+const EQ_LN_Q_PER_PERCENT = (EQ_Q_OCTAVES / 100) * Math.log(2)
+const EQ_Q_INLET_DEPTH = 50
+
+const EQ_BAND_HELPER: HelperBlock = {
+  key: 'eq_band',
+  code: `  // Simper's SVF EQ (see logue/filter/eq-band): y = m0*in + m1*bp + m2*lp, with the svf's own
+  // g/k changed per TYPE (0 bell, 1 low shelf, 2 high shelf, 3 notch). r = sqrt(A), A = 10^(dB/40).
+  static inline __attribute__((always_inline)) float eq_t(float w0)
+  {
+    return svf_tan(3.14159265f * (w0 < 0.45f ? w0 : 0.45f));
+  }
+  static inline __attribute__((always_inline)) float eq_root_a(float gainPct)
+  {
+    gainPct = gainPct < -100.f ? -100.f : (gainPct > 100.f ? 100.f : gainPct);
+    return exp_approx(gainPct * ${EQ_LN_ROOT_A_PER_PERCENT.toPrecision(8)}f);
+  }
+  static inline __attribute__((always_inline)) float eq_q(float qPct)
+  {
+    qPct = qPct < 0.f ? 0.f : (qPct > 100.f ? 100.f : qPct);
+    return ${EQ_Q_MIN}f * exp_approx(qPct * ${EQ_LN_Q_PER_PERCENT.toPrecision(8)}f);
+  }
+  static inline __attribute__((always_inline)) float eq_g(int32_t type, float t, float r)
+  {
+    return type == 1 ? t / r : (type == 2 ? t * r : t);
+  }
+  static inline __attribute__((always_inline)) float eq_k(int32_t type, float q, float A)
+  {
+    return type == 0 ? 1.f / (q * A) : 1.f / q;
+  }
+  static inline __attribute__((always_inline)) float eq_m0(int32_t type, float A)
+  {
+    return type == 2 ? A * A : 1.f;
+  }
+  static inline __attribute__((always_inline)) float eq_m1(int32_t type, float k, float A)
+  {
+    return type == 0 ? k * (A * A - 1.f) : (type == 1 ? k * (A - 1.f) : (type == 2 ? k * (1.f - A) * A : -k));
+  }
+  static inline __attribute__((always_inline)) float eq_m2(int32_t type, float A)
+  {
+    return type == 1 ? A * A - 1.f : (type == 2 ? 1.f - A * A : 0.f);
+  }
+  // One sample through the svf core. c: g, k, m0, m1, m2.
+  static inline __attribute__((always_inline)) float eq_band_step(float *s, float *cache, float in, float g, float k, float m0, float m1, float m2)
+  {
+    float lp, bp, hp;
+    svf_step(&s[0], &s[1], in, g, k, cache, &lp, &bp, &hp);
+    (void)hp;
+    return m0 * in + m1 * bp + m2 * lp;
+  }
+  // A moving input at control rate: every 16th call recomputes the coefficients. g and k (c[0],
+  // c[1]) step, so svf_step's cached divide is redone once per 16 samples; the weights m0..m2
+  // (c[2..4]) ramp there over the 16 (c[5..7] the steps), since a stepped GAIN zippers. The very
+  // first call jumps.
+  static inline __attribute__((always_inline)) void eq_ctl(uint32_t *n, float *c, int32_t type, float note, float gainPct, float qPct)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float r = eq_root_a(gainPct);
+      const float A = r * r;
+      const float k = eq_k(type, eq_q(qPct), A);
+      const float m0 = eq_m0(type, A);
+      const float m1 = eq_m1(type, k, A);
+      const float m2 = eq_m2(type, A);
+      c[0] = eq_g(type, eq_t(note_w0(note)), r);
+      c[1] = k;
+      if (*n == 0u) { c[2] = m0; c[3] = m1; c[4] = m2; }
+      c[5] = (m0 - c[2]) * 0.0625f;
+      c[6] = (m1 - c[3]) * 0.0625f;
+      c[7] = (m2 - c[4]) * 0.0625f;
+    }
+    (*n)++;
+    c[2] += c[5];
+    c[3] += c[6];
+    c[4] += c[7];
+  }
+`
+}
+
+interface EqValues {
+  note: BlockValue
+  gain: BlockValue
+  q: BlockValue
+  /** Set while nothing moves: the coefficients as block constants. */
+  still?: Record<'t' | 'r' | 'A' | 'g' | 'k' | 'm0' | 'm1' | 'm2', BlockValue>
+}
+
+function eqValues(suffix: string, inlets: Record<string, string | undefined>): EqValues {
+  const gain =
+    inlets.gain !== undefined
+      ? additiveInletExpr('gainPercent', suffix, inlets.gain, 100, -100, 100)
+      : `gainPercent_${suffix}`
+  const q =
+    inlets.q !== undefined
+      ? additiveInletExpr('qPercent', suffix, inlets.q, EQ_Q_INLET_DEPTH)
+      : `qPercent_${suffix}`
+  const values: EqValues = {
+    note: blockValue('blkEqNote', suffix, eqNoteExpr('freq', suffix, inlets.freq), [inlets.freq]),
+    gain: blockValue('blkEqGain', suffix, gain, [inlets.gain]),
+    q: blockValue('blkEqQ', suffix, q, [inlets.q])
+  }
+  const all = [inlets.freq, inlets.gain, inlets.q]
+  if (all.every(isBlockInvariant)) {
+    const type = `eqType_${suffix}`
+    const t = blockValue('blkEqT', suffix, `eq_t(note_w0(${values.note.ref}))`, all)
+    const r = blockValue('blkEqR', suffix, `eq_root_a(${values.gain.ref})`, all)
+    const A = blockValue('blkEqA', suffix, `${r.ref} * ${r.ref}`, all)
+    const k = blockValue('blkEqK', suffix, `eq_k(${type}, eq_q(${values.q.ref}), ${A.ref})`, all)
+    values.still = {
+      t,
+      r,
+      A,
+      g: blockValue('blkEqG', suffix, `eq_g(${type}, ${t.ref}, ${r.ref})`, all),
+      k,
+      m0: blockValue('blkEqM0', suffix, `eq_m0(${type}, ${A.ref})`, all),
+      m1: blockValue('blkEqM1', suffix, `eq_m1(${type}, ${k.ref}, ${A.ref})`, all),
+      m2: blockValue('blkEqM2', suffix, `eq_m2(${type}, ${A.ref})`, all)
+    }
+  }
+  return values
+}
+
+/**
+ * One band of a parametric EQ: a bell, a low or high shelf, or a notch, picked by TYPE.
+ *
+ * - Andrew Simper's SVF EQ ("SvfLinearTrapOptimised2"): `svf`'s own ZDF core, with the output
+ *   a weighted sum `m0*in + m1*bp + m2*lp`, and the shelves moving g by `sqrt(A)`
+ *   (`A = 10^(dB/40)`). So TYPE only changes per-block coefficients; the loop never branches on
+ *   it, and a device control can switch it while playing.
+ * - Bell: `k = 1/(Q*A)`, so a cut is the exact inverse of the same boost. Shelves: FREQ is the
+ *   midpoint (half the gain in dB), Q 0.71 is the plain shelf, higher Q adds the bump/dip either
+ *   side. Notch ignores GAIN (its depth is total, its width 1/Q).
+ * - GAIN 0 is a bit-exact pass-through for every type but the notch: `exp_approx(0)` is exactly
+ *   1, so m0 = 1 and m1 = m2 = 0.
+ * - FREQ is the ladder's note scale (20 Hz..20.5 kHz), so the additive `freq` (depth 100) sweeps
+ *   in pitch; w0 is capped at 0.45 before `svf_tan`. Q is 0.25..16, exponential (25 = 0.707).
+ * - Unwired (or from per-block values) every coefficient is a block constant. A moving
+ *   `freq`/`gain`/`q` recomputes them every 16 samples (`eq_ctl`). g and k step (svf_step caches
+ *   its divide by them, so a ramp would cost that divide every sample; a double-precision
+ *   simulation put the stepped g/k's zipper ~100 dB down), the three weights ramp (stepped, a
+ *   fast GAIN sweep zippered at ~-57 dB; ramped ~-106).
+ */
+export const eqBandPrimitive: LoguePrimitive = {
+  id: 'logue/filter/eq-band',
+  outletPolarity: 'inherit',
+  // eqS_[2] + eqCache_[3] + eqCtl_ + eqC_[8] + freq_ + gainPercent_ + qPercent_ + eqType_
+  // (eqCtl_/eqC_ only used while an input moves), 18 words
+  stateBytesPerInstance: 72,
+  description:
+    'One band of a parametric EQ: a bell (boost or cut around FREQ), a low or high shelf (FREQ is the midpoint), or a notch, picked by TYPE. GAIN is +-18 dB, Q the width (0.71 is a plain shelf). Chain several for a full EQ.',
+  searchTerms: ['eq', 'equalizer', 'parametric', 'peak', 'bell', 'shelf', 'shelving', 'notch'],
+  inlets: [
+    { name: 'in', role: 'audio' },
+    { name: 'freq', role: 'control' },
+    { name: 'gain', role: 'control' },
+    { name: 'q', role: 'control' }
+  ],
+  memberDecls: (suffix) =>
+    `  float eqS_${suffix}[2];\n  float eqCache_${suffix}[3];\n  uint32_t eqCtl_${suffix};\n  float eqC_${suffix}[8];\n  float freq_${suffix};\n  float gainPercent_${suffix};\n  float qPercent_${suffix};\n  int32_t eqType_${suffix};\n`,
+  // g is never negative, so -1 forces svf_step's first divide; eq_ctl's first call sets eqC_.
+  initStatement: (suffix) =>
+    `    eqS_${suffix}[0] = 0.f;\n    eqS_${suffix}[1] = 0.f;\n` +
+    `    eqCache_${suffix}[0] = -1.f;\n    eqCache_${suffix}[1] = 0.f;\n    eqCache_${suffix}[2] = 1.f;\n` +
+    `    eqCtl_${suffix} = 0;\n    for (int i = 0; i < 8; ++i) eqC_${suffix}[i] = 0.f;\n`,
+  blockConstants: (suffix, inlets) => {
+    const v = eqValues(suffix, inlets)
+    return blockDecls({ note: v.note, gain: v.gain, q: v.q, ...(v.still ?? {}) })
+  },
+  renderExpr: (suffix, inlets) => {
+    const v = eqValues(suffix, inlets)
+    const inExpr = inlets.in ?? '0.f'
+    const s = `eqS_${suffix}, eqCache_${suffix}, ${inExpr}`
+    if (v.still) {
+      const { g, k, m0, m1, m2 } = v.still
+      return `eq_band_step(${s}, ${g.ref}, ${k.ref}, ${m0.ref}, ${m1.ref}, ${m2.ref})`
+    }
+    const c = `eqC_${suffix}`
+    return (
+      `(eq_ctl(&eqCtl_${suffix}, ${c}, eqType_${suffix}, ${v.note.ref}, ${v.gain.ref}, ${v.q.ref}), ` +
+      `eq_band_step(${s}, ${c}[0], ${c}[1], ${c}[2], ${c}[3], ${c}[4]))`
+    )
+  },
+  advanceStatement: () => '',
+  helpers: [
+    EQ_BAND_HELPER,
+    SVF_STEP_HELPER,
+    SVF_TAN_HELPER,
+    EXP_APPROX_HELPER,
+    CLAMPF_HELPER,
+    NOTE_W0_HELPER
+  ],
+  params: [
+    {
+      name: 'TYPE',
+      unit: EQ_TYPE_NAME,
+      select: { count: 4, scale: 1, label: 'Type', names: EQ_TYPE_NAMES },
+      min: 0,
+      max: 3,
+      default: 0,
+      step: 1,
+      setStatement: (suffix, valueExpr) => `eqType_${suffix} = (int32_t)((${valueExpr}) + 0.5f);`
+    },
+    {
+      name: 'FREQ',
+      unit: LADDER_CUTOFF_HZ,
+      modulatedBy: { inlet: 'freq', shape: 'additive', depth: 100 },
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `freq_${suffix} = ${valueExpr} * 0.01f;`
+    },
+    {
+      name: 'GAIN',
+      unit: EQ_GAIN_DB,
+      modulatedBy: { inlet: 'gain', shape: 'additive' },
+      min: -100,
+      max: 100,
+      default: 0,
+      setStatement: (suffix, valueExpr) => `gainPercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'Q',
+      unit: EQ_Q,
+      modulatedBy: { inlet: 'q', shape: 'additive' },
+      min: 0,
+      max: 100,
+      default: 25,
+      setStatement: (suffix, valueExpr) => `qPercent_${suffix} = ${valueExpr};`
+    }
+  ]
+}
+
+/** TILT percent -> ln(G), G = 10^(dB per side / 20). */
+const TILT_LN_G_PER_PERCENT = ((TILT_RANGE_DB / 100) * Math.log(10)) / 20
+
+const TILT_HELPER: HelperBlock = {
+  key: 'tilt_step',
+  code: `  // A first-order tilt (see logue/filter/tilt): y = G*in + (1/G - G)*lp, lp a TPT one-pole with
+  // its pole at the pivot times G (prewarped at the pivot), so the pivot stays at exactly 0 dB.
+  // c: the one-pole's G1 = g/(1+g), then the two weights.
+  static inline __attribute__((always_inline)) float tilt_step(float *s, float x, float G1, float cIn, float cLp)
+  {
+    const float v = (x - *s) * G1;
+    const float lp = v + *s;
+    *s = lp + v;
+    return cIn * x + cLp * lp;
+  }
+  static inline __attribute__((always_inline)) float tilt_gain(float tiltPct)
+  {
+    tiltPct = tiltPct < -100.f ? -100.f : (tiltPct > 100.f ? 100.f : tiltPct);
+    return exp_approx(tiltPct * ${TILT_LN_G_PER_PERCENT.toPrecision(8)}f);
+  }
+  static inline __attribute__((always_inline)) float tilt_g1(float w0, float G)
+  {
+    const float g = svf_tan(3.14159265f * (w0 < 0.45f ? w0 : 0.45f)) * G;
+    return g / (1.f + g);
+  }
+  // A moving input at control rate: every 16th call works out the coefficients and ramps c[0..2]
+  // there over the next 16 samples (c[3..5] the steps); the very first call jumps.
+  static inline __attribute__((always_inline)) void tilt_ctl(uint32_t *n, float *c, float note, float tiltPct)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float G = tilt_gain(tiltPct);
+      const float G1 = tilt_g1(note_w0(note), G);
+      const float cLp = 1.f / G - G;
+      if (*n == 0u) { c[0] = G1; c[1] = G; c[2] = cLp; }
+      c[3] = (G1 - c[0]) * 0.0625f;
+      c[4] = (G - c[1]) * 0.0625f;
+      c[5] = (cLp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[3];
+    c[1] += c[4];
+    c[2] += c[5];
+  }
+`
+}
+
+interface TiltValues {
+  note: BlockValue
+  tilt: BlockValue
+  still?: Record<'G' | 'G1' | 'cLp', BlockValue>
+}
+
+function tiltValues(suffix: string, inlets: Record<string, string | undefined>): TiltValues {
+  const tilt =
+    inlets.tilt !== undefined
+      ? additiveInletExpr('tiltPercent', suffix, inlets.tilt, 100, -100, 100)
+      : `tiltPercent_${suffix}`
+  const values: TiltValues = {
+    note: blockValue('blkTiltNote', suffix, eqNoteExpr('center', suffix, inlets.center), [
+      inlets.center
+    ]),
+    tilt: blockValue('blkTilt', suffix, tilt, [inlets.tilt])
+  }
+  const all = [inlets.center, inlets.tilt]
+  if (all.every(isBlockInvariant)) {
+    const G = blockValue('blkTiltG', suffix, `tilt_gain(${values.tilt.ref})`, all)
+    values.still = {
+      G,
+      G1: blockValue('blkTiltG1', suffix, `tilt_g1(note_w0(${values.note.ref}), ${G.ref})`, all),
+      cLp: blockValue('blkTiltLp', suffix, `1.f / ${G.ref} - ${G.ref}`, all)
+    }
+  }
+  return values
+}
+
+/**
+ * A tilt EQ: one knob leans the whole spectrum darker or brighter around CENTER, which stays at
+ * 0 dB. TILT +100 is +9 dB at the top and -9 dB at the bottom (-100 the reverse), each a first-
+ * order (6 dB/oct) slope, so the change is broad and gentle, like a console's tilt control.
+ *
+ * - `y = G*in + (1/G - G)*lp`: lows `1/G`, highs `G`. The one-pole's pole sits at `CENTER*G`,
+ *   which puts the zero at `CENTER/G`, centred on CENTER (the pivot's gain is exactly 1 in the
+ *   analog prototype). The pole is prewarped AT the pivot (`tan(pi*w0)*G`, not `tan(pi*w0*G)`),
+ *   so the bilinear transform keeps that exact. `shape/drive`'s TONE is a different tilt (fixed
+ *   corner, weights only) that is not 0 dB at its pivot; this one is.
+ * - TILT 0 is a bit-exact pass-through (G is exactly 1, the lowpass weight exactly 0).
+ * - CENTER is the ladder's note scale (20 Hz..20.5 kHz); additive `center` (depth 100) and `tilt`
+ *   (depth 100: a +-1 source leans fully either way from Flat). Unwired, everything is a block
+ *   constant; moving, `tilt_ctl` works the coefficients out every 16 samples and ramps them.
+ */
+export const tiltPrimitive: LoguePrimitive = {
+  id: 'logue/filter/tilt',
+  outletPolarity: 'inherit',
+  // tiltS_ + tiltCtl_ + tiltC_[6] + center_ + tiltPercent_ (tiltCtl_/tiltC_ only while moving),
+  // 10 words
+  stateBytesPerInstance: 40,
+  description:
+    'A tilt EQ: TILT leans the whole spectrum darker or brighter around CENTER (which stays at 0 dB), up to 9 dB each way at the ends. A broad, gentle tone control.',
+  searchTerms: ['eq', 'equalizer', 'tone', 'tilt', 'bright', 'dark', 'shelf'],
+  inlets: [
+    { name: 'in', role: 'audio' },
+    { name: 'tilt', role: 'control' },
+    { name: 'center', role: 'control' }
+  ],
+  memberDecls: (suffix) =>
+    `  float tiltS_${suffix};\n  uint32_t tiltCtl_${suffix};\n  float tiltC_${suffix}[6];\n  float center_${suffix};\n  float tiltPercent_${suffix};\n`,
+  initStatement: (suffix) =>
+    `    tiltS_${suffix} = 0.f;\n    tiltCtl_${suffix} = 0;\n    for (int i = 0; i < 6; ++i) tiltC_${suffix}[i] = 0.f;\n`,
+  blockConstants: (suffix, inlets) => {
+    const v = tiltValues(suffix, inlets)
+    return blockDecls({ note: v.note, tilt: v.tilt, ...(v.still ?? {}) })
+  },
+  renderExpr: (suffix, inlets) => {
+    const v = tiltValues(suffix, inlets)
+    const inExpr = inlets.in ?? '0.f'
+    if (v.still) {
+      const { G, G1, cLp } = v.still
+      return `tilt_step(&tiltS_${suffix}, ${inExpr}, ${G1.ref}, ${G.ref}, ${cLp.ref})`
+    }
+    const c = `tiltC_${suffix}`
+    return (
+      `(tilt_ctl(&tiltCtl_${suffix}, ${c}, ${v.note.ref}, ${v.tilt.ref}), ` +
+      `tilt_step(&tiltS_${suffix}, ${inExpr}, ${c}[0], ${c}[1], ${c}[2]))`
+    )
+  },
+  advanceStatement: () => '',
+  helpers: [TILT_HELPER, SVF_TAN_HELPER, EXP_APPROX_HELPER, CLAMPF_HELPER, NOTE_W0_HELPER],
+  params: [
+    {
+      name: 'TILT',
+      unit: TILT_DB,
+      modulatedBy: { inlet: 'tilt', shape: 'additive' },
+      min: -100,
+      max: 100,
+      default: 0,
+      setStatement: (suffix, valueExpr) => `tiltPercent_${suffix} = ${valueExpr};`
+    },
+    {
+      name: 'CENTER',
+      unit: LADDER_CUTOFF_HZ,
+      modulatedBy: { inlet: 'center', shape: 'additive', depth: 100 },
+      min: 0,
+      max: 100,
+      default: 50,
+      setStatement: (suffix, valueExpr) => `center_${suffix} = ${valueExpr} * 0.01f;`
     }
   ]
 }

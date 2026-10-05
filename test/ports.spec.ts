@@ -73,9 +73,15 @@ describe('resolvePorts inlet roles', () => {
   // The one node with three outlets -- reads its outlet handles off the primitive's own
   // `outlets` spec (`logue/filter/svf` is the first/only multi-outlet primitive) rather than
   // the single hardcoded `{ name: 'out' }` every other primitive gets.
-  it('exposes all three outlets of the SVF filter', () => {
+  it('exposes all five outlets of the SVF filter', () => {
     const ports = resolvePorts(objNode('logue/filter/svf', 'svf1'), 'svf1', [])
-    expect(ports.outlets).toEqual([{ name: 'lp' }, { name: 'bp' }, { name: 'hp' }])
+    expect(ports.outlets).toEqual([
+      { name: 'lp' },
+      { name: 'bp' },
+      { name: 'hp' },
+      { name: 'notch' },
+      { name: 'ap' }
+    ])
   })
 
   it('declares a role for every inlet in the registry', () => {
@@ -196,11 +202,11 @@ describe('resolvePorts stale ports', () => {
 
   it('marks an unknown outlet stale only on a multi-outlet primitive (one outlet answers to any name)', () => {
     const nets: Net[] = [
-      { sources: [{ obj: 'f', outlet: 'notch' }], dests: [{ obj: 'x', inlet: 'in' }] },
+      { sources: [{ obj: 'f', outlet: 'peak' }], dests: [{ obj: 'x', inlet: 'in' }] },
       { sources: [{ obj: 'v', outlet: 'l' }], dests: [{ obj: 'x', inlet: 'in' }] }
     ]
     expect(resolvePorts(objNode('logue/filter/svf', 'f'), 'f', nets).outlets).toContainEqual({
-      name: 'notch',
+      name: 'peak',
       stale: true
     })
     expect(resolvePorts(objNode('logue/gain/vca', 'v'), 'v', nets).outlets).toEqual([

@@ -353,7 +353,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 496,
       helpers: [],
       unwired: { first: 608, extra: 392, helpers: [] },
-      snapshotHash: '70af74469f857696'
+      snapshotHash: '71e157475bbe46c8'
     },
     'logue/filter/ladder': {
       first: 1174,
@@ -361,6 +361,20 @@ export const CODE_SIZE_TABLE: Record<
       helpers: ['memset'],
       unwired: { first: 982, extra: 784, helpers: ['memset'] },
       snapshotHash: '14f53da66bd476e6'
+    },
+    'logue/filter/eq-band': {
+      first: 874,
+      extra: 676,
+      helpers: ['Osc::exp_approx(float)', 'memset'],
+      unwired: { first: 790, extra: 572, helpers: ['Osc::exp_approx(float)', 'memset'] },
+      snapshotHash: '51754dcc3757ff3f'
+    },
+    'logue/filter/tilt': {
+      first: 600,
+      extra: 352,
+      helpers: [],
+      unwired: { first: 548, extra: 280, helpers: [] },
+      snapshotHash: '99712da0bbd917df'
     },
     'logue/filter/formant': {
       first: 284,
@@ -1004,7 +1018,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 468,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 508, extra: 344, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '70af74469f857696'
+      snapshotHash: '71e157475bbe46c8'
     },
     'logue/filter/ladder': {
       first: 1294,
@@ -1012,6 +1026,24 @@ export const CODE_SIZE_TABLE: Record<
       helpers: ['Fx::note_w0(float)', 'memset'],
       unwired: { first: 886, extra: 776, helpers: ['Fx::note_w0(float)', 'memset'] },
       snapshotHash: '14f53da66bd476e6'
+    },
+    'logue/filter/eq-band': {
+      first: 954,
+      extra: 820,
+      helpers: ['Fx::exp_approx(float)', 'Fx::note_w0(float)', 'memset'],
+      unwired: {
+        first: 690,
+        extra: 568,
+        helpers: ['Fx::exp_approx(float)', 'Fx::note_w0(float)', 'memset']
+      },
+      snapshotHash: '51754dcc3757ff3f'
+    },
+    'logue/filter/tilt': {
+      first: 632,
+      extra: 464,
+      helpers: ['Fx::note_w0(float)'],
+      unwired: { first: 440, extra: 244, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '99712da0bbd917df'
     },
     'logue/filter/formant': {
       first: 302,
@@ -1699,7 +1731,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 730,
       helpers: [],
       unwired: { first: 661, extra: 626, helpers: [] },
-      snapshotHash: 'e22387028f8011d9'
+      snapshotHash: '1498d73a0939393f'
     },
     'logue/filter/ladder': {
       first: 1284,
@@ -1707,6 +1739,20 @@ export const CODE_SIZE_TABLE: Record<
       helpers: ['memset'],
       unwired: { first: 1120, extra: 846, helpers: ['memset'] },
       snapshotHash: 'cc8996b4ce647780'
+    },
+    'logue/filter/eq-band': {
+      first: 1066,
+      extra: 840,
+      helpers: ['Osc::exp_approx(float)', 'memset'],
+      unwired: { first: 982, extra: 740, helpers: ['Osc::exp_approx(float)', 'memset'] },
+      snapshotHash: '4fda9a92a6c5bc4c'
+    },
+    'logue/filter/tilt': {
+      first: 657,
+      extra: 488,
+      helpers: [],
+      unwired: { first: 601, extra: 420, helpers: [] },
+      snapshotHash: '68c43266f8ca9bcc'
     },
     'logue/filter/formant': {
       first: 507,
@@ -2348,7 +2394,7 @@ export const CODE_SIZE_TABLE: Record<
       extra: 630,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 601, extra: 526, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: 'e22387028f8011d9'
+      snapshotHash: '1498d73a0939393f'
     },
     'logue/filter/ladder': {
       first: 1472,
@@ -2356,6 +2402,24 @@ export const CODE_SIZE_TABLE: Record<
       helpers: ['Fx::note_w0(float)', 'memset'],
       unwired: { first: 1068, extra: 792, helpers: ['Fx::note_w0(float)', 'memset'] },
       snapshotHash: 'cc8996b4ce647780'
+    },
+    'logue/filter/eq-band': {
+      first: 1197,
+      extra: 905,
+      helpers: ['Fx::exp_approx(float)', 'Fx::note_w0(float)', 'memset'],
+      unwired: {
+        first: 933,
+        extra: 669,
+        helpers: ['Fx::exp_approx(float)', 'Fx::note_w0(float)', 'memset']
+      },
+      snapshotHash: '4fda9a92a6c5bc4c'
+    },
+    'logue/filter/tilt': {
+      first: 725,
+      extra: 533,
+      helpers: ['Fx::note_w0(float)'],
+      unwired: { first: 533, extra: 329, helpers: ['Fx::note_w0(float)'] },
+      snapshotHash: '68c43266f8ca9bcc'
     },
     'logue/filter/formant': {
       first: 514,

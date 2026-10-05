@@ -6,7 +6,7 @@ Electron/TypeScript/React patcher-style editor for building Korg *logue SDK osci
 ## What this is
 
 A visual node-graph editor: build a flat DSP graph from a fixed *logue primitive registry
-(`logue-codegen/src/primitives/`, 101 primitives, 5 of them superseded and 4 internal, both hidden) and either **Export** (write generated
+(`logue-codegen/src/primitives/`, 103 primitives, 5 of them superseded and 4 internal, both hidden) and either **Export** (write generated
 source only) or **Build** (a real compiled, installable unit) for either platform. Forked from
 `axo-modern` (an Axoloti patcher GUI) — all Axoloti-specific code has been removed; only the
 canvas/tab/IPC chassis (React Flow, Zustand, Electron IPC scaffolding) survives.
@@ -103,10 +103,10 @@ not here.
 
 ## logue-codegen (primitive registry)
 
-101 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
+103 primitives (`PRIMITIVES.length` in `primitives/registry.ts` — always re-count directly against the array; this doc's own
 history has drifted stale more than once). Categories by id's `logue/<cat>/*` segment: `osc` (15:
-sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (11: mix2/crossfader/pan/pan-mix2/width/stereo-mix2/stereo-crossfader, plus the internal bus-send/bus-receive/bus-send-stereo/bus-receive-stereo -- see "Buses"), `filter` (9:
-lowpass-cheap/highpass-cheap/comb/string/svf/ladder/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
+sine/saw/square/pulse/triangle/additive/granular/sample/wavetable/noise/lfsr/exciter/sync/phase-dist/bass-support), `mix` (11: mix2/crossfader/pan/pan-mix2/width/stereo-mix2/stereo-crossfader, plus the internal bus-send/bus-receive/bus-send-stereo/bus-receive-stereo -- see "Buses"), `filter` (11:
+lowpass-cheap/highpass-cheap/comb/string/svf/ladder/eq-band/tilt/formant/allpass/hilbert), `gain` (1: vca), `env` (6: ad/ahd/adsr/one-knob-adsr/multistage/follower), `lfo` (7:
 sine-lfo/triangle-lfo/square-lfo/ramp-up/ramp-down/random-steps/fast-square), `sense` (10: pitch/control/gate/velocity/tempo, plus
 the superseded shape/shape-2/cutoff/resonance/param), `util` (15: constant/unipolar-to-bipolar/bipolar-to-unipolar/
 glide/slew/sample-hold/sample-delay/delay/long-delay/quantize/freq-shift/buffer/buffer-tap/grain/reverse-tap), `shape` (3: wavefolder/soft-clip/drive), `math` (11: negate/one-minus/curve/add/subtract/multiply/scale/min/max/
@@ -181,7 +181,7 @@ matching when adding a new one):
 - A wireable inlet that drives a dial is one of two shapes. **Additive** is the rule
   (`effective = control + incoming*depth`, clamped to the control's own range): `depth` is half
   of a 0-100 param's range or a pitch param's own semitone max, never an invented constant, except
-  the filters' `cutoff`, crossfader `fade`, additive `timbre`, phase-dist `dcw` and wavetable `position`, which use the whole range
+  the filters' `cutoff` (and eq-band `freq`, tilt `center`), crossfader `fade`, additive `timbre`, phase-dist `dcw` and wavetable `position`, which use the whole range
   (depth 100) so one LFO sweeps closed to open. The formula needs no bipolar/unipolar branching:
   the dial is the centre and any source moves it sensibly. **Replace** is the exception, kept only
   where it's the natural meaning: `vca`'s `gain` (an envelope must close it whatever the dial
@@ -478,7 +478,7 @@ share one MCU. The amber band (~8 %) is narrower than the estimate's error.
 penalty 8, SDRAM counts exact except the random-trigger grain-mill units (5-5.5 accesses against
 8: the deliberate overcount, +16/+24 %); without those -10..+2 % but auto-wah +31 % (2026-10-05:
 the svf `control` variant moves cutoff, resonance and pitch at audio rate, and since svf caches
-its divide that variant costs 118, while auto-wah's svf, only its cutoff moving, costs ~60). `scripts/profileFxUnit.ts`
+its divide that variant costs 124 (118 before its `notch`/`ap` outlets were read too), while auto-wah's svf, only its cutoff moving, costs ~60). `scripts/profileFxUnit.ts`
 attributes a unit's per-line profile (`PROFILE=1 PROFILE_LINES=0`, now with SDRAM per line) to
 instances, helpers and SDK headers next to the table -- how the misses above were found.
 `osc/additive` and `filter/string` don't fit an xd delfx: they're listed in `FX_CPU_DOES_NOT_FIT`
@@ -852,6 +852,10 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   continuously moving cutoff 106 -> 118 (the compare on top of the divide). Passing a block
   constant `a1` instead, with an always-inline cache only for a moving g/k, was 36 for one still
   svf but a third instance cost 119 (still) / 255 (moving): GCC stopped sharing the code.
+  Outlets `notch` (`in - k*bp`) and `ap` (`in - 2k*bp`) since 2026-10-05, appended after `hp`:
+  free unwired (GCC drops the unread locals), the notch's width is `k` (zero at RESONANCE 100).
+  Harness (`runEqHarness.ts`): ap within 0.0004 dB of flat, notch -67..-85 dB. The fx table
+  reads every outlet, so svf's re-measure rose ~5 cycles (45 -> 50 still, 118 -> 124 moving).
 - **`filter/ladder`** (2026-10-04): a Moog-style 24 dB/oct lowpass, Zavalishin's ZDF/TPT
   ladder (four bilinear one-poles, the loop solved linearly for an output estimate) with the
   cubic soft clip on the input + feedback sum, where the ladder's differential pair sits. It bounds
@@ -893,6 +897,37 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   - Builds (`scripts/stageLadder.ts`: `lp-xd-ladder`/`-env`/`-osc`, `lp-nts1-*`): only leaf calls
     below the xd's `process`, and the RAM estimate equals the bss (108 B an instance). Both fx sweeps link.
     No hardware pass yet.
+- **`filter/eq-band`** (2026-10-05): one parametric EQ band, TYPE Bell / Low shelf / High
+  shelf / Notch (a select, NTS-1 mkII names `Bell`/`LoShelf`/`HiShelf`/`Notch`). Simper's SVF EQ:
+  `svf_step` (shared with `svf`) with `y = m0*in + m1*bp + m2*lp`, g/k/m per TYPE worked out per
+  block (`eq_g`/`eq_k`/`eq_m*`), so the loop never branches on TYPE. `A = 10^(dB/40)` via
+  `exp_approx` (no `powf`/`sqrtf`: `sqrtf` breaks the xd link). Bell `k = 1/(Q*A)` (a cut is the
+  boost's exact inverse); shelves move g by `sqrt(A)` and FREQ is their half-gain point; Notch
+  ignores GAIN. FREQ is the ladder's note scale (`LADDER_CUTOFF_HZ`, additive `freq` depth 100),
+  GAIN -100..100 = +-18 dB (`EQ_GAIN_DB`, additive depth 100), Q 0.25..16 exponential, 25 = 0.707
+  (`EQ_Q`, additive depth 50). GAIN 0 is a bit-exact pass-through (`exp_approx(0)` is exactly 1).
+  A moving input goes through `eq_ctl` every 16 samples: g/k STEP (svf_step's cached divide is
+  then redone once per 16), the three weights RAMP -- in a double-precision simulation stepped
+  weights zippered at ~-57 dB on a fast GAIN sweep, ramped ~-106; stepped g/k ~-100..-117.
+  Harness (`scripts/runEqHarness.ts`, xd, ASan/UBSan): every case within 0.015 dB of the
+  bilinear prototype from 40 Hz to 18 kHz, bell exactly GAIN at FREQ, shelves half at FREQ,
+  moving paths bit-identical to the dial, zipper on a Q 8 bell <= -118 dB, fuzz clean. A sine on
+  a Q 8 notch's note only drops ~-49 dB: `note_w0` truncates the fraction to 1/255 st (~0.4 ct).
+  Builds (`scripts/stageEq.ts`: `lp-xd-eq`/`-eq-lfo`/`-notch`, `lp-nts1-*`): only leaf calls
+  below the xd's `process`, RAM estimate = bss (72 B an instance). CPU: xd osc 51 base (an LFO
+  into freq and gain measured ~120 above the LFO, but the `control` variant is the known
+  hoisted-constant gap, see "CPU"; no `heavy-*` variant, since the estimators count those for a
+  knob binding, which always takes the still path); xd fx 52 still, 137 with moving control
+  inputs. No hardware pass yet.
+- **`filter/tilt`** (2026-10-05): a first-order tilt EQ, TILT +-9 dB per side around CENTER
+  (`TILT_DB`: "Bright/Dark x dB"). `y = G*in + (1/G - G)*lp`, a TPT one-pole with its pole at
+  CENTER*G, prewarped AT the pivot (`tan(pi*w0)*G`, not `tan(pi*w0*G)`), so the pivot is exactly
+  0 dB in the digital filter too. Deliberately not `shape/drive`'s TONE (fixed corner, weights
+  only: not 0 dB at its pivot). TILT 0 is bit-exact. Additive `tilt` (depth 100) and `center`
+  (100); moving, `tilt_ctl` every 16 samples, ramped. Harness: within 0.007 dB of the prototype,
+  pivot within 0.002 dB, plateaus as set. CPU: xd osc 18 base (~68 above an LFO moving TILT, unrecorded for the same reason); xd fx 21
+  still, 80 moving. 40 B
+  state. No hardware pass yet.
 - **`filter/formant`**: 3 ZDF bandpasses on Peterson & Barney formants, `VOWEL` order
   `u o a e i` (alphabetical makes F2 jump). `CHARACTER` (2026-09-29) blends the male table (0, the
   original) -> women's (50) -> children's (100) in note space via the leaf `formant_note`
@@ -1776,6 +1811,9 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
 - `shape/drive` (2026-10-05) is harness-, link- and emulator-checked only: no listening pass.
   `~/Documents/logue-patches/Radio drive.loguepatch` is the user's Radio with it in place of
   wavefolder + lowpass-cheap (DRIVE 50, TONE 40 -- starting points, not tuned by ear).
+- `filter/eq-band`, `filter/tilt` and svf's `notch`/`ap` outlets (2026-10-05) are harness-,
+  link- and emulator-checked only: no listening pass. Staged: `lp-xd-eq`/`-eq-lfo`/`-notch` and
+  the `lp-nts1-*` equivalents (`scripts/stageEq.ts`).
 - `filter/ladder` (2026-10-04) is harness-, link- and emulator-checked only. No listening pass
   yet, and the half bass compensation and k_max 4.8 are untested by ear. Staged:
   `lp-xd-ladder`/`-env`/`-osc` and the `lp-nts1-*` equivalents (FB_DRIVE on menu param 3).

@@ -46,6 +46,11 @@ export const CPU_COST_TABLE: Record<
     worst: 59,
     snapshotHash: '1fd2dcd5f18abf0e'
   },
+  'logue/filter/eq-band': {
+    variants: { base: 51, control: 51 },
+    worst: 51,
+    snapshotHash: '51754dcc3757ff3f'
+  },
   'logue/filter/formant': {
     variants: { base: 491, control: 543 },
     worst: 543,
@@ -81,7 +86,12 @@ export const CPU_COST_TABLE: Record<
   'logue/filter/svf': {
     variants: { base: 40, control: 40, TRACK: 42, 'TRACK+control': 42 },
     worst: 42,
-    snapshotHash: '70af74469f857696'
+    snapshotHash: '71e157475bbe46c8'
+  },
+  'logue/filter/tilt': {
+    variants: { base: 18, control: 18 },
+    worst: 18,
+    snapshotHash: '99712da0bbd917df'
   },
   'logue/gain/vca': {
     variants: { base: 0, control: 0 },

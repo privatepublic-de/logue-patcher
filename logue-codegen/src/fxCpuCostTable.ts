@@ -171,6 +171,21 @@ export const FX_CPU_COST_TABLE: Record<
     },
     snapshotHash: '1fd2dcd5f18abf0e'
   },
+  'logue/filter/eq-band': {
+    variants: {
+      base: {
+        first: { cycles: 52, sdram: 0 },
+        shared: { cycles: 29, sdram: 0 },
+        extra: { cycles: 95, sdram: 0 }
+      },
+      control: {
+        first: { cycles: 137, sdram: 0 },
+        shared: { cycles: 35, sdram: 0 },
+        extra: { cycles: 158, sdram: 0 }
+      }
+    },
+    snapshotHash: '51754dcc3757ff3f'
+  },
   'logue/filter/formant': {
     variants: {
       base: {
@@ -259,27 +274,42 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/filter/svf': {
     variants: {
       base: {
-        first: { cycles: 45, sdram: 0 },
-        shared: { cycles: 36, sdram: 0 },
-        extra: { cycles: 79, sdram: 0 }
+        first: { cycles: 50, sdram: 0 },
+        shared: { cycles: 38, sdram: 0 },
+        extra: { cycles: 89, sdram: 0 }
       },
       control: {
-        first: { cycles: 118, sdram: 0 },
-        shared: { cycles: 5, sdram: 0 },
-        extra: { cycles: 201, sdram: 0 }
+        first: { cycles: 124, sdram: 0 },
+        shared: { cycles: 8, sdram: 0 },
+        extra: { cycles: 211, sdram: 0 }
       },
       TRACK: {
-        first: { cycles: 47, sdram: 0 },
-        shared: { cycles: 37, sdram: 0 },
-        extra: { cycles: 81, sdram: 0 }
+        first: { cycles: 52, sdram: 0 },
+        shared: { cycles: 39, sdram: 0 },
+        extra: { cycles: 91, sdram: 0 }
       },
       'TRACK+control': {
-        first: { cycles: 271, sdram: 0 },
-        shared: { cycles: 51, sdram: 0 },
-        extra: { cycles: 317, sdram: 0 }
+        first: { cycles: 277, sdram: 0 },
+        shared: { cycles: 55, sdram: 0 },
+        extra: { cycles: 327, sdram: 0 }
       }
     },
-    snapshotHash: '70af74469f857696'
+    snapshotHash: '71e157475bbe46c8'
+  },
+  'logue/filter/tilt': {
+    variants: {
+      base: {
+        first: { cycles: 21, sdram: 0 },
+        shared: { cycles: -5, sdram: 0 },
+        extra: { cycles: 23, sdram: 0 }
+      },
+      control: {
+        first: { cycles: 80, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 77, sdram: 0 }
+      }
+    },
+    snapshotHash: '99712da0bbd917df'
   },
   'logue/gain/vca': {
     variants: {
