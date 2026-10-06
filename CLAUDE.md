@@ -1963,7 +1963,6 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   CHORUS + STEREO delay; xd: CHORUS + a reverb), not the heaviest of every type, and with a
   factory oscillator. A knob can move an effect's cost a lot (the xd auto-wah: 532 cycles at
   DEPTH 0, 254 at 64), which the knob-reachable maximum doesn't model for continuous params.
-- `logue/osc/granular`'s CPU per voice isn't measured on-device (it plays on both devices).
 - `util/reverse-tap` and the reverse-wash examples (2026-10-01) are harness-, link- and
   emulator-checked only; no listening pass yet. Staged: `lp-fx-revwash` (+ `-cpu` with the probe
   on WIDTH's row) and `lp-xdfx-revwash`/`lp-xdfx-revwash-xd`. xd emulator (penalty 0/8): the
