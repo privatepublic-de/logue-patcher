@@ -456,8 +456,12 @@ function ObjectNode({ id, data, selected }: NodeProps<ObjectFlowNode>): React.JS
                   // Keeps every label in the column lined up once any inlet has a marker.
                   hasInletMarkers && <span className="patch-node__inlet-mod" aria-hidden="true" />
                 )}
-                {inlets.length > 1 && (
+                {inlets.length > 1 ? (
                   <span className="patch-node__port-label">{port.label ?? port.name}</span>
+                ) : (
+                  // Without a label the row has no height (the handle is absolute), so labelled
+                  // outlet rows beside it would overflow the node (`filter/hilbert`'s i/q).
+                  outlets.length > 1 && <span className="patch-node__port-label">&nbsp;</span>
                 )}
                 {inletGate && <InletTrackBadge id={id} gate={inletGate} />}
               </div>
