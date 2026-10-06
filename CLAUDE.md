@@ -989,8 +989,9 @@ Current rules only. The round-by-round reports, measurements and reversals behin
 - **`filter/formant`**: 3 ZDF bandpasses on Peterson & Barney formants, `VOWEL` order
   `u o a e i` (alphabetical makes F2 jump). `CHARACTER` (2026-09-29) blends the male table (0, the
   original) -> women's (50) -> children's (100) in note space via the leaf `formant_note`
-  (always_inline); SHIFT stays on top. Women's/children's rows are
-  from memory of the published averages: check against the paper. Confirmed on both devices (user, 2026-09-30), on the xd at its 668-cycle estimate -- but the user's own patch (VOWEL/CHARACTER on the knobs) later hung an xd at ~1700 real cycles a voice. Quiet at high `RESONANCE` by design (unity peak
+  (always_inline); SHIFT stays on top. All three tables match the
+  paper's published averages exactly (checked 2026-10-06 against a reproduction of its Table II,
+  and within 2.6 % of averages recomputed from the per-speaker data Praat ships). Confirmed on both devices (user, 2026-09-30), on the xd at its 668-cycle estimate -- but the user's own patch (VOWEL/CHARACTER on the knobs) later hung an xd at ~1700 real cycles a voice. Quiet at high `RESONANCE` by design (unity peak
   gain; use a VCA). On the xd, `formant_bp_step`/`formant_g_from_note` must stay
   `always_inline` and use their own `formant_note_w0` copy -- removing that brings back a real
   hardware crash at `-Os` that was cornered (11-build bisect) but never root-caused.

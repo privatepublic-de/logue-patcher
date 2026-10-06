@@ -3052,3 +3052,13 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   byte-identical). Developer id 'LPAT'.
 - Every NTS-1 mkII golden file changed in its two id lines only; the code-size table was
   re-measured for its hashes (sizes unchanged).
+
+### formant's vowel tables checked against Peterson & Barney (2026-10-06)
+
+- The women's and children's rows (CHARACTER 50/100) had been written from memory. Compared with
+  a reproduction of the paper's average table (SFU's acoustics handbook, "Formant"; the PDF
+  itself was unreachable) every value of all three groups matches exactly. Recomputed from the
+  1520 per-speaker measurements in Praat's `Table_dataSets.cpp` (vowels uw/ao/aa/eh/iy for
+  u/o/a/e/i), the averages agree within 2.6 % (46 cents); the largest gaps are F3 (men's i 2937
+  vs 3010, children's o 3263 vs 3180), the published averages being rounded and not a plain mean
+  of every token. No change to the tables.
