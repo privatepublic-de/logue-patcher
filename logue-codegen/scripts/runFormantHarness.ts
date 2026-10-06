@@ -37,12 +37,12 @@ const net = (from: string, outlet: string, to: string, inlet: string): Net => ({
   dests: [{ obj: to, inlet }]
 })
 
-const INLETS = ['vowel', 'shift', 'resonance', 'character'] as const
+type FormantInlet = 'vowel' | 'shift' | 'resonance' | 'character'
 
 /** A saw (or noise) -> formant -> out, with `drive` sources wired into formant inlets. */
 function doc(
   params: Params,
-  drive: Partial<Record<(typeof INLETS)[number], Node>> = {},
+  drive: Partial<Record<FormantInlet, Node>> = {},
   source: Node = obj('logue/osc/saw', 'src')
 ): PatchDocument {
   const nodes: Node[] = [
