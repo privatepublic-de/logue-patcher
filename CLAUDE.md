@@ -431,7 +431,11 @@ code path, `estimateOscCpuCost(doc, defs, 'nts1mkii')`, `CPU_GAUGE`): the xd tab
 per-primitive costs (no M7 emulator), converted as above, a helper-less primitive with no xd
 measurement (`sense/velocity`) counts as free, knob exposure is read per platform. Red at 6700
 (`NTS1MKII_OSC_DROPOUT_CYCLES`: factory chorus, stereo delay and hall reverb on), "effects off"
-up to 7350 (`NTS1MKII_OSC_SOLO_CYCLES`), green to 4200 (0.63 x 6700). The first measurement
+up to 10000 (`NTS1MKII_OSC_SOLO_CYCLES`), green to 4200 (0.63 x 6700). **The oscillator and
+the three effect slots share the M7**: a user oscillator and user effects get ~9800 cycles per
+sample together with the factory effects off (`NTS1MKII_SHARED_CYCLES`; burn osc 3000 + burn
+effect 6800, 6000 + 3800), and the three factory effects (chorus, stereo, hall) take ~3350. Each
+gauge sees only its own unit, so both NTS-1 mkII tooltips say to add up the estimates. The first measurement
 (2026-09-28), with
 `scripts/stageNts1CpuProbe.ts`, a unit that times its own render with the M7's DWT cycle counter
 (a user unit may read it) and shows it as a strings-param value: the clock is ~549 MHz (the
@@ -1870,8 +1874,11 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   voice). formant at its authored settings costs ~1700 for ONE voice and hung the xd during the
   calibration (power cycle needed; `calibrateOsc.ts` now skips an xd patch whose converted
   estimate / 0.66 reaches `XD_OSC_HANG_CYCLES`). `cpuCeiling.ts --osc` (NTS-1 mkII): clean to
-  7350 with the effects off, dropouts from 7400; with factory chorus + stereo delay + hall reverb
-  clean to 6700, dropouts from 6750. `cpuCeiling.ts --xd --osc [--notes n]` (BURN on the multi
+  10000 with the effects off, dropouts from 10050 (a first run read 7350 / 7400, which two later
+  runs on the same program didn't reproduce); with factory chorus + stereo delay + hall reverb
+  clean to 6650, dropouts from 6700 (reproduced). `--osc-load n` (effect sweep) holds a burn
+  oscillator at n alongside (its tones at `LOAD_TONES`, the effect passing them through, both
+  streams scanned for dropouts): the shared pool above. `cpuCeiling.ts --xd --osc [--notes n]` (BURN on the multi
   engine's Shape knob, CC 54 + LSB 63): one voice clean to 1290, FROZE at 1300; 4 notes clean at
   1225, breaking up from 1250 (effects off). It stops at the first failure and doesn't restore
   (each needs a power cycle; the next run's snapshot restores from an earlier one), and counts a

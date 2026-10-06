@@ -2921,3 +2921,17 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   The old xd anchors land where they should on the new scale: cpiano ~700 green, granular ~1280
   red, formant ~1120 amber. The amber text first said "may hang with chords", but cpiano's knob
   maximum (917) lands there and it plays chords fine; it now names the estimate's error instead.
+
+### NTS-1 mkII: the oscillator and effects share one budget (2026-10-06)
+
+- `cpuCeiling.ts --osc-load n`: a burn effect swept while a burn oscillator holds n. The first
+  try showed nothing -- the effect replaced the whole output with its tones, so an oscillator
+  breaking up couldn't be heard (an oscillator at 8000, past its supposed 7350 ceiling, read
+  "clean"). The load oscillator now sends its own tones (300 Hz, 9 kHz + c/4, 12 kHz + ...) and
+  the effect passes its input through; its reading confirmed the load (8001).
+- Oscillator 3000 -> effect clean to 6800; oscillator 6000 -> effect clean to 3800: the two share
+  ~9800 cycles per sample (effects off). The oscillator alone ran clean to 10000 (dropouts from
+  10050) in two runs, against 7350/7400 measured that morning on the byte-identical program and
+  code -- not explained; the busy case (chorus + stereo + hall) reproduced at 6650/6700.
+- The gauges can't see the other slots' units, so the NTS-1 mkII tooltips give the shared figure
+  and say to add the estimates; the oscillator's "effects off" zone now ends at 10000.

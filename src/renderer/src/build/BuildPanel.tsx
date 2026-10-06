@@ -31,6 +31,7 @@ import {
   estimateOscCpuCost,
   NTS1MKII_OSC_DROPOUT_CYCLES,
   NTS1MKII_OSC_SOLO_CYCLES,
+  NTS1MKII_SHARED_CYCLES,
   oscRealCycles,
   XD_OSC_HANG_CYCLES
 } from '@logue-codegen/estimateOscCpuCost'
@@ -594,8 +595,9 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                   'Measured on a real NTS-1 mkII: an effect drops out past ' +
                   `~${NTS1MKII_FX_DROPOUT_CYCLES} cycles per sample with the factory chorus and ` +
                   `stereo delay running, past ~${NTS1MKII_FX_SOLO_CYCLES} with the other effect ` +
-                  'slots off (of ~11,450 in all). Heavier effects in the other slots or a heavy ' +
-                  'oscillator leave less.'
+                  'slots off and a factory oscillator (of ~11,450 in all). The oscillator and ' +
+                  'all three effects share one processor: your own oscillator and effects get ' +
+                  `~${NTS1MKII_SHARED_CYCLES} together, so add up their estimates.`
               const knobsMatter =
                 maxCyclesPerSample > cyclesPerSample &&
                 shortVerdictOf(max.zone, maxCyclesPerSample) !==
@@ -685,7 +687,9 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                   '\n\nMeasured on a real NTS-1 mkII (~11,450 cycles per sample in all): the ' +
                   `oscillator breaks up past ~${NTS1MKII_OSC_DROPOUT_CYCLES} with the factory ` +
                   `chorus, delay and reverb on, past ~${NTS1MKII_OSC_SOLO_CYCLES} with the ` +
-                  'effects off.'
+                  'effects off. The oscillator and all three effects share one processor: your ' +
+                  `own oscillator and effects get ~${NTS1MKII_SHARED_CYCLES} together, so add ` +
+                  'up their estimates.'
               return (
                 <UsageGauge
                   label="CPU"

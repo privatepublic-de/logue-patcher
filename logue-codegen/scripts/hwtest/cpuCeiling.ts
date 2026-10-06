@@ -18,6 +18,8 @@
  *   sweep stops at the FIRST step that shows dropouts or late calls -- an overloaded xd hangs and
  *   needs a power cycle, so there is no fine pass, no check at burn 0 and no restore after it
  *   (the next run's snapshot finds the test unit in the slot and restores from an earlier one).
+ *   --osc-load n (NTS-1 mkII, effect sweep): a burn oscillator in the OSC slot, its BURN held at
+ *   n cycles per sample, so the effect's ceiling shows what the oscillator leaves it.
  *   --notes n (xd oscillator): hold n notes (voices) instead of one.
  * Leaves the device as it was (slot 1s and the program restored).
  */
@@ -49,6 +51,7 @@ import {
   withNts1OscTelemetry,
   withXdFxTelemetry,
   withXdOscTelemetry,
+  LOAD_TONES,
   XD_TELEMETRY
 } from './telemetry'
 
@@ -70,6 +73,7 @@ const SLOT = OSC ? ('osc' as const) : DELAY_SLOT ? ('delfx' as const) : ('revfx'
 const OTHERS = process.argv.includes('--others')
 /** xd oscillator: notes held (one voice each; every voice runs its own burn). */
 const NOTES = arg('--notes', 1)
+const OSC_LOAD = !XD && !OSC ? arg('--osc-load', -1) : -1
 const FROM = arg('--from', XD_OSC ? 800 : XD ? 2000 : 6000)
 const TO = arg('--to', XD_OSC ? 1900 : XD ? 3700 : 11200)
 const COARSE = arg('--step', XD_OSC ? 50 : XD ? 100 : 250)
@@ -126,6 +130,8 @@ interface Step {
   fx: number
   tot: number
   dropouts: number
+  /** --osc-load: what the load oscillator measured itself (its own render, its own total). */
+  osc?: { fx: number; tot: number }
 }
 
 async function main(): Promise<void> {
@@ -136,8 +142,14 @@ async function main(): Promise<void> {
           withNts1OscTelemetry(f, { burnRow: 2 })
         )
       : buildNts1Unit(PASS, 'lp-hwtest-burn-rev', 'HT Burn', 2, new Map(), (f) =>
-          withFxTelemetry(f, { burnRow: 3 })
+          withFxTelemetry(f, { burnRow: 3, passInput: OSC_LOAD >= 0 })
         )
+  const loadUnit =
+    OSC_LOAD >= 0
+      ? buildNts1Unit(OSC_SINE, 'lp-hwtest-burn-osc', 'HT Load', 3, new Map(), (f) =>
+          withNts1OscTelemetry(f, { burnRow: 2, loadTones: true })
+        )
+      : undefined
   const xdUnit = XD_OSC
     ? buildXdUnit(OSC_SINE, 'lp-hwtest-xd-burn-osc', 'HT Burn', new Map(), (f) =>
         withXdOscTelemetry(f, { burnMax: XD_BURN_MAX })
@@ -152,17 +164,25 @@ async function main(): Promise<void> {
   const steps: Step[] = []
   let hung = false
   try {
-    snapshot = await takeSnapshot(rig, [SLOT])
+    snapshot = await takeSnapshot(rig, loadUnit ? [SLOT, 'osc'] : [SLOT])
     await rig.upload(SLOT, 0, unit ? unit.bytes : xdUnit!.body)
+    if (loadUnit) await rig.upload('osc', 0, loadUnit.bytes)
     // On the xd only a program load makes a slot run newly uploaded code.
     if (XD) await rig.writeProgram(snapshot.program)
     const program = programFrom(snapshot)
+    // The load oscillator's tones must reach the effect unclipped (neutralVoice turns the effects
+    // off; the selections below put them back).
+    if (loadUnit) neutralVoice(program)
     if (unit) {
       if (OSC) {
         neutralVoice(program)
         select(program, 'osc', unit, 'HT Burn')
         if (OTHERS) select(program, 'revfx', factory(1), 'HALL')
       } else select(program, 'revfx', unit, 'HT Burn')
+      if (loadUnit) {
+        select(program, 'osc', loadUnit, 'HT Load')
+        setParam(program, 'osc', 1, OSC_LOAD)
+      }
       select(program, 'modfx', OTHERS ? factory(1) : factory(0), OTHERS ? 'CHORUS' : 'OFF')
       select(program, 'delfx', OTHERS ? factory(1) : factory(0), OTHERS ? 'STEREO' : 'OFF')
     } else if (XD_OSC) {
@@ -234,13 +254,44 @@ async function main(): Promise<void> {
         SAMPLE_RATE,
         ...(XD_OSC ? XD_OSC_BANDS.tot : XD ? XD_TELEMETRY.totBand : TOT_TONE_BAND)
       ).hz
-      const scan = scanGlitches(r.left, SAMPLE_RATE, [det, fxHz, totHz], { floor: cleanFloor })
+      const load = loadUnit
+        ? {
+            det: peakFrequency(
+              r.left,
+              SAMPLE_RATE,
+              LOAD_TONES.detector - 20,
+              LOAD_TONES.detector + 20
+            ).hz,
+            fx: peakFrequency(r.left, SAMPLE_RATE, LOAD_TONES.fxBase - 20, LOAD_TONES.fxBase + 3000)
+              .hz,
+            tot: peakFrequency(
+              r.left,
+              SAMPLE_RATE,
+              LOAD_TONES.totBase + 250,
+              LOAD_TONES.totBase + 1000
+            ).hz
+          }
+        : undefined
+      const scan = scanGlitches(
+        r.left,
+        SAMPLE_RATE,
+        [det, fxHz, totHz, ...(load ? [load.det, load.fx, load.tot] : [])],
+        { floor: cleanFloor }
+      )
       if (burn === 0 && scan.times.length === 0) cleanFloor = Math.min(cleanFloor, scan.floor)
       const step: Step = {
         burn,
         fx: cyclesFromFxTone(fxHz / clock),
         tot: XD ? cyclesFromXdTotTone(totHz / clock) : cyclesFromTotTone(totHz / clock),
-        dropouts: scan.times.length
+        dropouts: scan.times.length,
+        ...(load
+          ? {
+              osc: {
+                fx: (load.fx / clock - LOAD_TONES.fxBase) * 4,
+                tot: (load.tot / clock - LOAD_TONES.totBase) * 4 + 10000
+              }
+            }
+          : {})
       }
       const late = Math.abs(step.tot / budget - 1) > 0.01
       if (late && step.dropouts === 0) step.dropouts = -1
@@ -266,6 +317,9 @@ async function main(): Promise<void> {
             : step.dropouts < 0
               ? 'LATE CALLS'
               : `dropout windows ${step.dropouts}`) +
+          (step.osc
+            ? `  osc ${step.osc.fx.toFixed(0).padStart(5)} tot ${step.osc.tot.toFixed(0).padStart(5)}`
+            : '') +
           (scan.times.length ? `  (first at ${scan.times[0].toFixed(3)} s)` : '') +
           `  worst ${(20 * Math.log10(scan.worst + 1e-12)).toFixed(0)} dB`
       )
@@ -285,7 +339,8 @@ async function main(): Promise<void> {
               ? `MOD CHORUS + REVERB (type cc ${XD_REVERB}, dry) on`
               : OSC
                 ? 'MOD CHORUS + DELAY STEREO + REVERB HALL on'
-                : 'MOD CHORUS + DELAY STEREO on')
+                : 'MOD CHORUS + DELAY STEREO on') +
+        (loadUnit ? `, an oscillator burning ${OSC_LOAD}` : '')
     )
     // Let the unit switch in (the first recording after the CCs caught it), then take the clean
     // floor and budget at burn 0.

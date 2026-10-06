@@ -48,12 +48,19 @@ export const XD_OSC_CLEAN_CYCLES = 808
 
 /**
  * NTS-1 mkII, a sine burning an exact load (`cpuCeiling.ts --osc`, 2026-10-06): with factory
- * CHORUS, STEREO delay and HALL reverb on, clean to 6700 cycles per sample, dropouts from 6750;
- * with the effects off, clean to 7350. "Fine" ends where an estimate 37 % low (the fit's worst)
- * still clears 6700. Of ~11,457 in all.
+ * CHORUS, STEREO delay and HALL reverb on, clean to 6650 cycles per sample, dropouts from 6700
+ * (twice); with the effects off, clean to 10000, dropouts from 10050 (a first run read 7350,
+ * which two later ones didn't reproduce). "Fine" ends where an estimate 37 % low (the fit's
+ * worst) still clears 6700. Of ~11,457 in all.
  */
 export const NTS1MKII_OSC_DROPOUT_CYCLES = 6700
-export const NTS1MKII_OSC_SOLO_CYCLES = 7350
+export const NTS1MKII_OSC_SOLO_CYCLES = 10000
+/**
+ * The oscillator and the three effect slots share the M7 (`cpuCeiling.ts --osc-load`, 2026-10-06):
+ * a burn oscillator at 3000 left a burn effect 6800, one at 6000 left it 3800 -- the two together
+ * get ~9800 cycles per sample with the factory effects off. Each gauge sees only its own unit.
+ */
+export const NTS1MKII_SHARED_CYCLES = 9800
 export const NTS1MKII_OSC_CLEAN_CYCLES = 4200
 /** ~549 MHz / 48 kHz, measured on the device: everything it does per sample. */
 export const NTS1MKII_CYCLES_PER_SAMPLE = 11457
