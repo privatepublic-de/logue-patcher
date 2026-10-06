@@ -1830,6 +1830,26 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   their "HT "/"FN " names. **The xd keeps running a slot's previous code after a re-upload until
   a program load** -- three mod units in a row all read the first one's cost, whatever CCs came
   between -- so the scripts write the saved program back after every upload.
+- `oscChecks.ts` (`--xd`; 2026-10-06): the OSCILLATOR path, which `functional.ts` can't reach --
+  the firmware's note and sine tables, note tracking, the voice. Each case is an osc unit in OSC
+  slot 1, every setting baked in, ending in a VCA at -20 dB (the NTS-1 mkII's voice section
+  soft-clips a full-scale oscillator), played at one or more notes and compared with a host render
+  of the same generated code against the SDK's OWN osc headers (`renderNts1OscOnHost`/
+  `renderXdOscOnHost`: osc_api.h's inline `osc_w0f_for_note`/`osc_sinf` over formula-filled
+  firmware tables -- equal temperament from 440 Hz clamped at note 138, a 129-point half sine;
+  the xd's CMSIS intrinsics are stubs in harness/minilogue-xd-osc/ that abort if reached). Cases:
+  pitch tracking over notes 24..120 (cents re equal temperament after the median), sine/saw/
+  square/pulse/triangle/sync/phase-dist harmonics re h1 (a tonal case's fundamental is the note
+  times the measured clock offset, never searched for: sync at an octave has almost nothing at
+  its own fundamental), a tracked svf and comb in third octaves (noise cases record 6 s: 3 s
+  scattered the lowest bands +-2 dB). Results: all 10 pass on both devices; pitch within 0.6 ct
+  (both devices show the same -0.56/+0.30 at notes 24/36: the analysis, not the devices),
+  harmonics mostly within 0.3 dB. The voice is made neutral first: NTS-1 mkII `neutralVoice` in
+  the program dump; xd by CC after the program write (`XD_VOICE`). **On the xd LFO INT and EG INT
+  are bipolar, centre 64** (LFO INT 0 = -100 % threw the pitch around every 100 ms), and CCs sent
+  right after a program write were partly lost (the first case was silent): wait a second, space
+  them 20 ms. The xd's osc path is flat to ~3 kHz, -6.3 dB at 16 kHz (analog filter/output),
+  ~16 dB under the digital level; the NTS-1 mkII's within +-0.6 dB.
 - Gotcha: a slot re-uploaded with the SAME unit id while selected keeps playing the old code;
   every test unit gets its own id and the module is deselected before an upload.
 - Gotcha: the device has refused one of many quick uploads with USER INTERNAL ERROR (2F);

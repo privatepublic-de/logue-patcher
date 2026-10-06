@@ -2880,3 +2880,18 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   +2.0 dB at full level, +9.4 dB reproducibly at -6 dB, clean at -12 and -24 dB. Not monotonic
   in level, so not plain clipping; the same code renders the same at every level on the host. The
   xd's cases now end in a -12 dB VCA; all 22 pass.
+
+### Oscillator-path checks on both devices (2026-10-06)
+
+- NTS-1 mkII first run: sync at 12 st (an octave) "failed" -- the output is a saw an octave up,
+  so the fundamental search found leakage at 119 Hz on device and host alike; the case is now
+  SYNC 7 and the fundamental comes from the note. svf-tracked at note 69 scattered -1.5..-1.9 dB
+  in its lowest bands with 3 s of noise; 6 s fixed it.
+- xd first runs: every note's pitch jumped every 100 ms (26 Hz-4 kHz, factory VPM too): the
+  voice setup sent LFO INT 0, which is -100 % (centre 64, like EG INT). Then the white-noise
+  chain case was silent (its RMS = the floor), so every correction was fitted to the floor:
+  CCs straight after the program write were partly lost.
+- At the start of the day's first run the NTS-1 mkII's current program selected a test unit,
+  though every run the night before had restored and verified it; the snapshot fell back to the
+  previous night's (byte-identical to the original). Since then the program as found is kept as
+  `program-as-found.bin`.

@@ -86,8 +86,11 @@ export async function takeSnapshot(rig: LogueRig, modules: LogueUnitModule[]): P
   mkdirSync(dir, { recursive: true })
   let program = await rig.readProgram()
   // The xd selects units by slot, so its program never names a test unit.
-  if (rig.platform === 'nts1mkii' && selectsTestUnit(program))
+  if (rig.platform === 'nts1mkii' && selectsTestUnit(program)) {
+    // Kept for a look: what the device held, which the run won't restore.
+    writeFileSync(join(dir, 'program-as-found.bin'), program)
     program = fromEarlier(dir, 'the program', PROGRAM_FILE)!
+  }
   writeFileSync(join(dir, PROGRAM_FILE), program)
   const slots: Snapshot['slots'] = {}
   for (const m of modules) {
@@ -167,4 +170,19 @@ export function setParam(
     value & 0xffff,
     true
   )
+}
+
+/**
+ * NTS-1 mkII: the program's voice section set out of the way of an oscillator test -- filter
+ * through (6), EG open (4), no tremolo, the OSC LFO at its centre (512, no modulation; 0 is full
+ * negative depth), the three effects off. TABLE 2 offsets, little-endian words.
+ */
+export function neutralVoice(program: Uint8Array): void {
+  const v = new DataView(program.buffer, program.byteOffset)
+  v.setUint16(66, 512, true)
+  program[88] = 4
+  v.setUint16(96, 0, true)
+  program[100] = 6
+  v.setUint16(108, 512, true)
+  for (const m of ['modfx', 'delfx', 'revfx'] as const) select(program, m, factory(0), 'OFF')
 }
