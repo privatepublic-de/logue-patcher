@@ -138,5 +138,12 @@
     "cycles": 190,
     "maxCycles": 193,
     "estimate": 216
+  },
+  {
+    "name": "formant",
+    "date": "2026-10-06",
+    "cycles": 192,
+    "maxCycles": 193,
+    "estimate": 263
   }
 ]
