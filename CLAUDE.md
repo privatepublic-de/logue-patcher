@@ -412,7 +412,7 @@ measured with constants only and understated a moving source (adsr's 38 below it
 Audio inputs (`base`) come from the noise too.
 **The gauge is in REAL cycles** (2026-10-06, `oscRealCycles`, `cpuZone` converts): measured
 through audio telemetry (see "Hardware test harness"), xd real = 17 + 1.54 x the estimate per
-voice (17 distinct patches, -30..+30 %), NTS-1 mkII 0.77 x (18, -29..+28 %): the fits with the
+voice (18 distinct patches, -30..+30 %), NTS-1 mkII 0.77 x (18, -29..+28 %): the fits with the
 smallest worst error (`calibrateOsc.ts --refit`, no device: recomputes the stored readings'
 estimates with the current table). With the constants-only table they were 164 + 1.40x (+-31 %
 at best) and 44 + 0.83x (+-42 % at best). Per-instance costs stay on the emulator's scale (the
@@ -996,8 +996,10 @@ Current rules only. The round-by-round reports, measurements and reversals behin
     formants follow a moving input up to 16 samples late. xd emulator: 495 -> 102 base, 533 ->
     210 `control`, 534 -> 103 `control-still`; the user's patch (whole unit) 622 -> 202; xd fx
     614 -> 103 first. Code (xd osc): 1114 B for the first instance (was 1476 with the old
-    `formant_step` helper), +624 per extra (was +232). State 40 -> 88 B (= the bss). No
-    hardware pass yet.
+    `formant_step` helper), +624 per extra (was +232). State 40 -> 88 B (= the bss). On a real
+    xd (`calibrateOsc.ts --xd formant`, 2026-10-06) the user's patch measured 513 real cycles a
+    voice (was ~1700 and hung), estimate 263 -> 422 converted (-18 %); no listening pass, no
+    NTS-1 mkII reading.
 - **`osc/additive`**: `TIMBRE` (additive inlet, depth 100) crossfades 6 baked wavetable frames (12312 B,
   ~37.5% of the xd's RAM), with a runtime Nyquist clamp. The 6-frame version builds to 13.6 KB on the xd (17.5 KB on
   NTS-1 mkII) and plays on both devices (user, 2026-09-30).
@@ -1899,7 +1901,7 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   `OSC_CYCLE`). `calibrateOsc.ts` (`--xd`) measures the user's oscillator patches with every device
   control stripped (so each param is at its authored value on device and in the estimate):
   NTS-1 mkII real ~= 0.77 x `estimateOscCpuCost` (-29..+28 %, 18 distinct patches; the formant reading was dropped 2026-10-06), xd real ~=
-  17 + 1.54 x it (-30..+30 %, 17; per voice), since the table re-measure with moving sources
+  17 + 1.54 x it (-30..+30 %, 18 incl. formant since its per-block coefficients; per voice), since the table re-measure with moving sources
   (`--refit`). **Each xd voice has its own ~1728 cycles per
   sample**: with 1-4 notes held, cpiano read ~915 per voice and the budget 1729 every time -- the
   voices don't share one budget (so the "~1750 per sample in total" in the hang triage is per
@@ -2009,11 +2011,10 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   `EXCITER_STRIKE_GAIN_RATIO`) are ear-tune starting points, not measured — no real hardware/
   harness pass through the actual `string` primitive has confirmed them yet (see that primitive's
   own gotcha entry above).
-- `filter/formant`'s per-block coefficients (2026-10-06) are harness-, link- and emulator-checked
-  only: no hardware pass. The user's formant patch is the one that hung an xd before; it now
-  estimates ~200 emulator cycles, so `calibrateOsc.ts --xd`'s hang guard lets it through -- the
-  right check, with the user there (a hang needs a power cycle). Its old NTS-1 mkII calibration
-  reading (753 cycles) was dropped from `nts1OscCpuReadings.json`: that code is gone. Staged:
+- `filter/formant`'s per-block coefficients (2026-10-06): the user's patch that hung an xd now
+  plays there at 513 real cycles a voice (`calibrateOsc.ts --xd formant`); no listening pass of
+  the control-rate path, and no NTS-1 mkII reading -- its old one (753 cycles) was dropped from
+  `nts1OscCpuReadings.json` since that code is gone (`calibrateOsc.ts formant` re-measures it). Staged:
   `lp-xd-fmt-*`/`lp-nts1-fmt-*` (`scripts/stageFormant.ts`). `~/.logue-emu`
   exists on this machine (set up 2026-09-28), so `measureCpuCosts.ts` runs directly.
 - Knob bindings/slot followers (see "Graph resolution") work on a real minilogue xd and a real

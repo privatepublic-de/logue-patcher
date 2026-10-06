@@ -2986,5 +2986,8 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
 - The NTS-1 mkII calibration had a formant reading (753 cycles at estimate 694); dropped, since a
   `--refit` would pair it with the new code's estimate. The refit without it: 4 + 0.76x,
   -28..+28 % over 18 patches, so the 0.77x constant stays.
+- On a real xd (`calibrateOsc.ts --xd formant`): 513 real cycles a voice, one note held, no
+  hang (before: ~1700, hung). Estimate 263 -> 422 converted, -18 %; added to the xd readings,
+  the refit unchanged (17 + 1.54x, -30..+30 %, 18 patches).
 - Effect table (xd delfx): first 614 -> 103. Code size (xd osc): first instance 1114 B incl. the
   `formant_g` leaf (was 1476 incl. `formant_step`), each extra +624 (was +232).
