@@ -137,6 +137,25 @@ function zeroArcPath(fromDeg: number, toDeg: number): string | undefined {
   return `M ${dialPoint(fromDeg, r)} A ${r} ${r} 0 ${largeArc} ${sweep} ${dialPoint(toDeg, r)}`
 }
 
+/** Dials with more positions than this get no ticks: they'd merge into a solid ring at 18px. */
+const MAX_DIAL_TICKS = 16
+
+/** The dial angles of a discrete param's positions (a select's choices, or every `step` of a
+ *  stepped param), or none for a continuous one or one with too many positions to mark. */
+function discreteTickAngles(spec: PrimitiveParamSpec): number[] {
+  const span = spec.max - spec.min
+  if (span <= 0) return []
+  const count = spec.select
+    ? spec.select.count
+    : spec.step
+      ? Math.floor(span / spec.step + 1e-9) + 1
+      : 0
+  if (count < 2 || count > MAX_DIAL_TICKS) return []
+  // A select spreads its choices over the whole range (mux2's two sit at 0 and 100).
+  const stepSize = spec.select ? span / (count - 1) : spec.step!
+  return Array.from({ length: count }, (_, i) => -135 + ((i * stepSize) / span) * 270)
+}
+
 function formatValue(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(2)
 }
@@ -311,6 +330,7 @@ function ParamDial({
   const signed = spec.min < 0 && spec.max > 0
   const zeroDeg = -135 + ((0 - spec.min) / (spec.max - spec.min)) * 270
   const arcPath = signed ? zeroArcPath(zeroDeg, deg) : undefined
+  const tickAngles = discreteTickAngles(spec)
 
   // Two independent sources can make this dial's own raw value not the whole story --
   // `trackGate` (a SIBLING param's own state, e.g. comb/svf's TRACK) always wins over
@@ -413,12 +433,22 @@ function ParamDial({
       }
     >
       <div className="param-widget__knob-dial" style={knobDialStyle}>
-        {signed && (
+        {(signed || tickAngles.length > 0) && (
           <svg className="param-widget__knob-arc" viewBox="0 0 20 20" aria-hidden="true">
-            <path
-              className="param-widget__knob-arc-zero"
-              d={`M ${dialPoint(zeroDeg, 10)} L ${dialPoint(zeroDeg, 7)}`}
-            />
+            {tickAngles.length > 0 && (
+              <path
+                className="param-widget__knob-tick"
+                d={tickAngles
+                  .map((a) => `M ${dialPoint(a, 10)} L ${dialPoint(a, 7.5)}`)
+                  .join(' ')}
+              />
+            )}
+            {signed && (
+              <path
+                className="param-widget__knob-arc-zero"
+                d={`M ${dialPoint(zeroDeg, 10)} L ${dialPoint(zeroDeg, 7)}`}
+              />
+            )}
             {arcPath && <path className="param-widget__knob-arc-value" d={arcPath} />}
           </svg>
         )}

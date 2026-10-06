@@ -1270,6 +1270,13 @@ button.patch-node__control-badge:disabled {
   opacity: 0.6;
 }
 
+/* A discrete param's positions (ParamDial.tsx's `discreteTickAngles`): a select's choices or a
+   short stepped range. */
+.param-widget__knob-tick {
+  stroke: var(--ev-c-gray-1);
+  stroke-width: 1;
+}
+
 .param-widget__knob-arc-zero {
   stroke: var(--ev-c-gray-1);
   stroke-width: 1.5;
