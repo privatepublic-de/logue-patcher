@@ -1,7 +1,8 @@
 /**
  * Measures every primitive's minilogue xd CPU cost on the emulator and writes
  * `src/cpuCostTable.ts`. A primitive's cost is its WORST variant -- alone, with every inlet wired
- * (one util/constant each), with each checkbox flipped, and for granular (two) and the multistage
+ * (from white noise, a gate from a square LFO: `cpuVariants.ts`' `oscUnit`, their own cost taken
+ * off), with each checkbox flipped, and for granular (two) and the multistage
  * envelope (one) their documented costliest settings -- minus a unit that's just one constant (the fixed per-unit overhead,
  * stored as the baseline). Each entry records a hash of the primitive's xd codegen snapshot, so
  * `logue-cpuCostTable.spec.ts` fails once the generated code changes without a re-measure.
@@ -15,7 +16,9 @@ import { dirname, join } from 'path'
 import { findLoguePrimitive, recognizedLoguePrimitiveIds } from '../src/primitives'
 import { CPU_COST_TABLE, CPU_COST_BASELINE_CYCLES } from '../src/cpuCostTable'
 import { measure as measureJob, type MeasureJob, type MeasureResult } from './measureXdCycles'
-import { oscUnit as unit, snapshotHash, variants } from './cpuVariants'
+import { GATE_SOURCE, MOVING_SOURCE, oscUnit as unit, snapshotHash, variants } from './cpuVariants'
+import { LOGUE_AUDIO_OUT_TYPE } from '../src/oscInstances'
+import type { PatchDocument } from '../../src/shared/domain/patch'
 
 const here = dirname(new URL(import.meta.url).pathname)
 
@@ -28,6 +31,26 @@ const baseline = measure({
   doc: unit('logue/util/constant', [], 'none')
 }).cyclesPerSample
 console.log(`baseline ${baseline.toFixed(0)}`)
+/** A source alone into the output, above the baseline: what `unit` adds only to measure. */
+const sourceCost = (type: string): number => {
+  const doc: PatchDocument = {
+    nodes: [
+      { kind: 'obj', type, name: 's', x: 0, y: 0, params: [] },
+      { kind: 'obj', type: LOGUE_AUDIO_OUT_TYPE, name: 'out', x: 0, y: 0, params: [] }
+    ],
+    nets: [{ sources: [{ obj: 's', outlet: 'out' }], dests: [{ obj: 'out', inlet: 'in' }] }],
+    settings: {},
+    notes: ''
+  }
+  return measure({ name: `source-${type.replace(/\W/g, '_')}`, doc }).cyclesPerSample - baseline
+}
+const sources: Record<string, number> = {
+  [MOVING_SOURCE]: sourceCost('logue/osc/noise'),
+  [GATE_SOURCE]: sourceCost('logue/lfo/square-lfo')
+}
+console.log(`sources ${JSON.stringify(sources)}`)
+const overhead = (doc: PatchDocument): number =>
+  doc.nodes.reduce((sum, n) => sum + (sources[n.name ?? ''] ?? 0), 0)
 type Entry = { variants: Record<string, number>; worst: number; snapshotHash: string }
 const table: Record<string, Entry> = only.length ? { ...CPU_COST_TABLE } : {}
 const failures: string[] = []
@@ -37,9 +60,12 @@ for (const id of recognizedLoguePrimitiveIds()) {
   if (p.platforms && !p.platforms.includes('minilogue-xd')) continue
   if (p.modules && !p.modules.includes('osc')) continue
   const measured: Record<string, number> = {}
-  for (const job of variants(id, unit)) {
+  for (const job of variants(id, unit, { still: true })) {
     try {
-      measured[job.key] = Math.max(0, Math.round(measure(job).cyclesPerSample - baseline))
+      measured[job.key] = Math.max(
+        0,
+        Math.round(measure(job).cyclesPerSample - baseline - overhead(job.doc))
+      )
     } catch (err) {
       const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? String(err)
       const why = /undefined reference to `(\w+)'/.exec(stderr)?.[1]
@@ -77,7 +103,9 @@ export const CPU_COST_BASELINE_CYCLES = ${base}
 
 /**
  * Cycles per voice-sample above the baseline, per primitive (xd only), per measured variant:
- * \`base\` (audio inputs wired, control inputs free), \`control\` (every inlet wired), \`<CHECKBOX>\`
+ * \`base\` (audio inputs wired, control inputs free), \`control\` (every inlet wired; inputs from
+ * a moving source, so per-sample paths are measured), \`control-still\` (control inputs from
+ * per-block values instead: a knob, knob-only math), \`<CHECKBOX>\`
  * and \`<CHECKBOX>+control\` (that checkbox flipped); \`heavy-*\` are extra worst-case settings.
  * \`worst\` is the largest of them.
  */

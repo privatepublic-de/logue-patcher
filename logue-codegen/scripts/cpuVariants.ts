@@ -19,11 +19,12 @@ const here = dirname(new URL(import.meta.url).pathname)
 const repo = join(here, '..', '..')
 
 /** A one-primitive unit around node `n`: `audio` wires only its audio-role inlets, `all` every
- *  inlet, `none` nothing. */
+ *  inlet, `none` nothing; `still` (oscillators only) like `all`, but its control inlets from
+ *  constants -- per-block values, as a knob or knob-only math feeds them. */
 export type UnitBuilder = (
   id: string,
   params: Array<{ name: string; value: string }>,
-  wire: 'none' | 'audio' | 'all'
+  wire: 'none' | 'audio' | 'all' | 'still'
 ) => PatchDocument
 
 export function snapshotHash(id: string): string {
@@ -62,11 +63,22 @@ export function sample(kind: 'granular' | 'plain' | 'wavetable'): ObjNode['sampl
   }
 }
 
+/**
+ * The sources `oscUnit` wires inlets from, named so `measureCpuCosts.ts` can take their own cost
+ * off: white noise for every inlet (a value that moves every sample -- a util/constant is
+ * per-block, so the reader's hoisted path would be measured instead of the per-sample one an LFO
+ * or envelope takes), a square LFO for a gate (`trig`/`gate`: noise would retrigger at random,
+ * every few samples).
+ */
+export const MOVING_SOURCE = 'mv'
+export const GATE_SOURCE = 'clk'
+const GATE_INLETS = new Set(['trig', 'gate'])
+
 /** `audio`: wire only the audio-role inlets (a filter's input); `all`: every inlet. */
 export function oscUnit(
   id: string,
   params: Array<{ name: string; value: string }>,
-  wire: 'none' | 'audio' | 'all'
+  wire: 'none' | 'audio' | 'all' | 'still'
 ): PatchDocument {
   const p = findLoguePrimitive(id)!
   const node: ObjNode = { kind: 'obj', type: id, name: 'n', x: 0, y: 0, params }
@@ -84,16 +96,30 @@ export function oscUnit(
   if (wire !== 'none') {
     for (const inlet of p.inlets ?? []) {
       if (wire === 'audio' && inlet.role !== 'audio') continue
-      constants.push({
-        kind: 'obj',
-        type: 'logue/util/constant',
-        name: `c_${inlet.name}`,
-        x: 0,
-        y: 0,
-        params: [{ name: 'VALUE', value: '37' }]
-      })
+      if (wire === 'still' && inlet.role !== 'audio') {
+        const name = `c_${inlet.name}`
+        constants.push({
+          kind: 'obj',
+          type: 'logue/util/constant',
+          name,
+          x: 0,
+          y: 0,
+          params: [{ name: 'VALUE', value: '37' }]
+        })
+        nets.push({
+          sources: [{ obj: name, outlet: 'out' }],
+          dests: [{ obj: 'n', inlet: inlet.name }]
+        })
+        continue
+      }
+      const [name, type] = GATE_INLETS.has(inlet.name)
+        ? [GATE_SOURCE, 'logue/lfo/square-lfo']
+        : [MOVING_SOURCE, 'logue/osc/noise']
+      if (!constants.some((c) => c.name === name)) {
+        constants.push({ kind: 'obj', type, name, x: 0, y: 0, params: [] })
+      }
       nets.push({
-        sources: [{ obj: `c_${inlet.name}`, outlet: 'out' }],
+        sources: [{ obj: name, outlet: 'out' }],
         dests: [{ obj: 'n', inlet: inlet.name }]
       })
     }
@@ -112,11 +138,15 @@ export function oscUnit(
 
 /**
  * The variants the estimator picks between (keyed `base`, `control`, `<CHECKBOX>`,
- * `<CHECKBOX>+control`): audio inputs always wired, control inputs free or wired, each checkbox
+ * `<CHECKBOX>+control`, and with `still` also `control-still`/`<CHECKBOX>+control-still`): audio inputs always wired, control inputs free or wired, each checkbox
  * at its default or flipped. `heavy-*` variants (granular's two documented costliest settings)
  * only feed the worst case.
  */
-export function variants(id: string, unit: UnitBuilder): Array<MeasureJob & { key: string }> {
+export function variants(
+  id: string,
+  unit: UnitBuilder,
+  { still = false } = {}
+): Array<MeasureJob & { key: string }> {
   const p = findLoguePrimitive(id)!
   const tag = id.replace(/\W/g, '_')
   const hasControl = (p.inlets ?? []).some((i) => i.role === 'control')
@@ -124,6 +154,9 @@ export function variants(id: string, unit: UnitBuilder): Array<MeasureJob & { ke
     { key: 'base', name: `${tag}-base`, doc: unit(id, [], 'audio') }
   ]
   if (hasControl) jobs.push({ key: 'control', name: `${tag}-control`, doc: unit(id, [], 'all') })
+  if (hasControl && still) {
+    jobs.push({ key: 'control-still', name: `${tag}-control-still`, doc: unit(id, [], 'still') })
+  }
   for (const spec of p.params ?? []) {
     if (!findBooleanWidget(id, spec.name)) continue
     const flipped = [{ name: spec.name, value: spec.default >= 50 ? '0' : '100' }]
@@ -134,6 +167,13 @@ export function variants(id: string, unit: UnitBuilder): Array<MeasureJob & { ke
         name: `${tag}-${spec.name}-control`,
         doc: unit(id, flipped, 'all')
       })
+      if (still) {
+        jobs.push({
+          key: `${spec.name}+control-still`,
+          name: `${tag}-${spec.name}-control-still`,
+          doc: unit(id, flipped, 'still')
+        })
+      }
     }
   }
   if (id === 'logue/util/quantize') {

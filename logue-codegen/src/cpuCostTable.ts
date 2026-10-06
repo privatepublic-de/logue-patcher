@@ -7,7 +7,9 @@ export const CPU_COST_BASELINE_CYCLES = 19
 
 /**
  * Cycles per voice-sample above the baseline, per primitive (xd only), per measured variant:
- * `base` (audio inputs wired, control inputs free), `control` (every inlet wired), `<CHECKBOX>`
+ * `base` (audio inputs wired, control inputs free), `control` (every inlet wired; inputs from
+ * a moving source, so per-sample paths are measured), `control-still` (control inputs from
+ * per-block values instead: a knob, knob-only math), `<CHECKBOX>`
  * and `<CHECKBOX>+control` (that checkbox flipped); `heavy-*` are extra worst-case settings.
  * `worst` is the largest of them.
  */
@@ -16,279 +18,320 @@ export const CPU_COST_TABLE: Record<
   { variants: Record<string, number>; worst: number; snapshotHash: string }
 > = {
   'logue/env/ad': {
-    variants: { base: 37, control: 39, EXP: 35, 'EXP+control': 37 },
-    worst: 39,
+    variants: {
+      base: 37,
+      control: 88,
+      'control-still': 39,
+      EXP: 35,
+      'EXP+control': 88,
+      'EXP+control-still': 37
+    },
+    worst: 88,
     snapshotHash: 'c384655566b26ffc'
   },
   'logue/env/adsr': {
-    variants: { base: 46, control: 38 },
+    variants: { base: 46, control: 45, 'control-still': 38 },
     worst: 46,
     snapshotHash: 'abd7e5820bec87bc'
   },
   'logue/env/ahd': {
-    variants: { base: 24, control: 26 },
-    worst: 26,
+    variants: { base: 24, control: 67, 'control-still': 26 },
+    worst: 67,
     snapshotHash: 'e0f896dd954801b1'
   },
-  'logue/env/follower': { variants: { base: 20 }, worst: 20, snapshotHash: 'f7893e7c4cfddfe4' },
+  'logue/env/follower': { variants: { base: 28 }, worst: 28, snapshotHash: 'f7893e7c4cfddfe4' },
   'logue/env/multistage': {
-    variants: { base: 110, control: 42, 'heavy-cycle': 100 },
-    worst: 110,
+    variants: { base: 110, control: 147, 'control-still': 42, 'heavy-cycle': 135 },
+    worst: 147,
     snapshotHash: '13bbe27c71cd6bc6'
   },
   'logue/env/one-knob-adsr': {
-    variants: { base: 51, control: 42, 'heavy-moving-shape': 131 },
+    variants: { base: 51, control: 97, 'control-still': 42, 'heavy-moving-shape': 131 },
     worst: 131,
     snapshotHash: 'a39fd0de0ef1ae2a'
   },
   'logue/filter/comb': {
-    variants: { base: 58, control: 59, TRACK: 59, 'TRACK+control': 59 },
-    worst: 59,
+    variants: {
+      base: 63,
+      control: 151,
+      'control-still': 63,
+      TRACK: 64,
+      'TRACK+control': 215,
+      'TRACK+control-still': 64
+    },
+    worst: 215,
     snapshotHash: '1fd2dcd5f18abf0e'
   },
   'logue/filter/eq-band': {
-    variants: { base: 51, control: 51 },
-    worst: 51,
+    variants: { base: 53, control: 136, 'control-still': 54 },
+    worst: 136,
     snapshotHash: '51754dcc3757ff3f'
   },
   'logue/filter/formant': {
-    variants: { base: 491, control: 543 },
-    worst: 543,
+    variants: { base: 495, control: 533, 'control-still': 534 },
+    worst: 534,
     snapshotHash: '3064386816179abd'
   },
   'logue/filter/highpass-cheap': {
-    variants: { base: 7, control: 7 },
-    worst: 7,
+    variants: { base: 8, control: 24, 'control-still': 8 },
+    worst: 24,
     snapshotHash: '5918f33ffc84533f'
   },
-  'logue/filter/hilbert': { variants: { base: 103 }, worst: 103, snapshotHash: 'f56fb7646016882f' },
+  'logue/filter/hilbert': { variants: { base: 113 }, worst: 113, snapshotHash: 'f56fb7646016882f' },
   'logue/filter/ladder': {
     variants: {
-      base: 118,
-      control: 119,
-      TRACK: 118,
-      'TRACK+control': 119,
+      base: 121,
+      control: 247,
+      'control-still': 120,
+      TRACK: 121,
+      'TRACK+control': 247,
+      'TRACK+control-still': 120,
       'heavy-moving-cutoff': 244
     },
-    worst: 244,
+    worst: 247,
     snapshotHash: '14f53da66bd476e6'
   },
   'logue/filter/lowpass-cheap': {
-    variants: { base: 6, control: 6 },
-    worst: 6,
+    variants: { base: 8, control: 21, 'control-still': 8 },
+    worst: 21,
     snapshotHash: '9498d8e54c739257'
   },
   'logue/filter/string': {
-    variants: { base: 367, control: 392 },
-    worst: 392,
+    variants: { base: 362, control: 526, 'control-still': 378 },
+    worst: 526,
     snapshotHash: 'd2fb4b7548c8393b'
   },
   'logue/filter/svf': {
-    variants: { base: 40, control: 40, TRACK: 42, 'TRACK+control': 42 },
-    worst: 42,
+    variants: {
+      base: 43,
+      control: 115,
+      'control-still': 43,
+      TRACK: 44,
+      'TRACK+control': 212,
+      'TRACK+control-still': 44
+    },
+    worst: 212,
     snapshotHash: '71e157475bbe46c8'
   },
   'logue/filter/tilt': {
-    variants: { base: 18, control: 18 },
-    worst: 18,
+    variants: { base: 18, control: 82, 'control-still': 19 },
+    worst: 82,
     snapshotHash: '99712da0bbd917df'
   },
   'logue/gain/vca': {
-    variants: { base: 0, control: 0 },
-    worst: 0,
+    variants: { base: 3, control: 1, 'control-still': 1 },
+    worst: 3,
     snapshotHash: '71e7c2874a2780a1'
   },
   'logue/lfo/fast-square': {
-    variants: { base: 11, control: 28, TRACK: 11, 'TRACK+control': 28 },
-    worst: 28,
+    variants: {
+      base: 11,
+      control: 82,
+      'control-still': 28,
+      TRACK: 11,
+      'TRACK+control': 117,
+      'TRACK+control-still': 28
+    },
+    worst: 117,
     snapshotHash: '9023a42eadc26048'
   },
   'logue/lfo/ramp-down': {
-    variants: { base: 15, control: 22 },
-    worst: 22,
+    variants: { base: 15, control: 64, 'control-still': 22 },
+    worst: 64,
     snapshotHash: '93415749054fe77d'
   },
   'logue/lfo/ramp-up': {
-    variants: { base: 15, control: 22 },
-    worst: 22,
+    variants: { base: 15, control: 64, 'control-still': 22 },
+    worst: 64,
     snapshotHash: '657d45b8a4249ea5'
   },
   'logue/lfo/random-steps': {
-    variants: { base: 8, control: 17 },
-    worst: 17,
+    variants: { base: 8, control: 54, 'control-still': 15 },
+    worst: 54,
     snapshotHash: '001bad58241c33a2'
   },
   'logue/lfo/sine-lfo': {
-    variants: { base: 36, control: 42 },
-    worst: 42,
+    variants: { base: 36, control: 85, 'control-still': 42 },
+    worst: 85,
     snapshotHash: 'f091daaf62b2b62e'
   },
   'logue/lfo/square-lfo': {
-    variants: { base: 9, control: 16 },
-    worst: 16,
+    variants: { base: 9, control: 57, 'control-still': 16 },
+    worst: 57,
     snapshotHash: '5bf8d1d088df38b0'
   },
   'logue/lfo/triangle-lfo': {
-    variants: { base: 16, control: 23 },
-    worst: 23,
+    variants: { base: 16, control: 65, 'control-still': 23 },
+    worst: 65,
     snapshotHash: '63720761f9fb074b'
   },
   'logue/logic/and': {
-    variants: { base: 0, control: 0 },
+    variants: { base: 0, control: 0, 'control-still': 0 },
     worst: 0,
     snapshotHash: 'f80de56b91f2e236'
   },
   'logue/logic/chance': {
-    variants: { base: 10, control: 22 },
-    worst: 22,
+    variants: { base: 10, control: 41, 'control-still': 22 },
+    worst: 41,
     snapshotHash: 'efecc236e2563837'
   },
   'logue/logic/edge': {
-    variants: { base: 0, control: 0 },
-    worst: 0,
+    variants: { base: 0, control: 6, 'control-still': 0 },
+    worst: 6,
     snapshotHash: 'c26efc0252e90a1d'
   },
   'logue/logic/equal': {
-    variants: { base: 0, control: 0 },
-    worst: 0,
+    variants: { base: 0, control: 7, 'control-still': 0 },
+    worst: 7,
     snapshotHash: 'f164a8c5070849fd'
   },
   'logue/logic/greater-than': {
-    variants: { base: 0, control: 0 },
-    worst: 0,
+    variants: { base: 0, control: 1, 'control-still': 0 },
+    worst: 1,
     snapshotHash: 'c1bb3de72d4ece0e'
   },
   'logue/logic/less-than': {
-    variants: { base: 0, control: 0 },
-    worst: 0,
+    variants: { base: 0, control: 1, 'control-still': 0 },
+    worst: 1,
     snapshotHash: '4357ab282a1ca032'
   },
   'logue/logic/or': {
-    variants: { base: 0, control: 0 },
+    variants: { base: 0, control: 0, 'control-still': 0 },
     worst: 0,
     snapshotHash: '07e57403fbf2d1de'
   },
   'logue/logic/round-robin': {
-    variants: { base: 0, control: 13 },
-    worst: 13,
+    variants: { base: 0, control: 18, 'control-still': 13 },
+    worst: 18,
     snapshotHash: '7338eb6e334fed60'
   },
   'logue/logic/schmitt': {
-    variants: { base: 15, control: 8 },
-    worst: 15,
+    variants: { base: 15, control: 18, 'control-still': 8 },
+    worst: 18,
     snapshotHash: '5affa568710e10ce'
   },
   'logue/logic/xor': {
-    variants: { base: 0, control: 0 },
+    variants: { base: 0, control: 0, 'control-still': 0 },
     worst: 0,
     snapshotHash: 'c9d3d1a8aab33c41'
   },
-  'logue/math/abs': { variants: { base: 0 }, worst: 0, snapshotHash: '6b592c1cff9c6d33' },
-  'logue/math/add': { variants: { base: 0 }, worst: 0, snapshotHash: '1c1ccaf32ecaf295' },
-  'logue/math/clamp': { variants: { base: 0 }, worst: 0, snapshotHash: '0cdd97825f4434d9' },
+  'logue/math/abs': { variants: { base: 1 }, worst: 1, snapshotHash: '6b592c1cff9c6d33' },
+  'logue/math/add': { variants: { base: 1 }, worst: 1, snapshotHash: '1c1ccaf32ecaf295' },
+  'logue/math/clamp': { variants: { base: 12 }, worst: 12, snapshotHash: '0cdd97825f4434d9' },
   'logue/math/curve': {
-    variants: { base: 1, control: 1 },
-    worst: 1,
+    variants: { base: 44, control: 59, 'control-still': 55 },
+    worst: 59,
     snapshotHash: 'a6bc9c67c8ed7f33'
   },
   'logue/math/max': { variants: { base: 0 }, worst: 0, snapshotHash: 'df0bd7fdbe016146' },
   'logue/math/min': { variants: { base: 0 }, worst: 0, snapshotHash: '7ad50beda32b6968' },
-  'logue/math/multiply': { variants: { base: 0 }, worst: 0, snapshotHash: '422c16a247da8ec8' },
+  'logue/math/multiply': { variants: { base: 1 }, worst: 1, snapshotHash: '422c16a247da8ec8' },
   'logue/math/negate': { variants: { base: 0 }, worst: 0, snapshotHash: '80764f40f75f22b5' },
-  'logue/math/one-minus': { variants: { base: 0 }, worst: 0, snapshotHash: 'f4a6e757bc9dd221' },
-  'logue/math/scale': { variants: { base: 0 }, worst: 0, snapshotHash: '33fcee3c312305e9' },
-  'logue/math/subtract': { variants: { base: 0 }, worst: 0, snapshotHash: 'd9827f1376cc7742' },
+  'logue/math/one-minus': { variants: { base: 5 }, worst: 5, snapshotHash: 'f4a6e757bc9dd221' },
+  'logue/math/scale': { variants: { base: 3 }, worst: 3, snapshotHash: '33fcee3c312305e9' },
+  'logue/math/subtract': { variants: { base: 1 }, worst: 1, snapshotHash: 'd9827f1376cc7742' },
   'logue/mix/bus-receive': { variants: { base: 0 }, worst: 0, snapshotHash: 'fb1b473a0c1edfc3' },
   'logue/mix/bus-receive-stereo': {
     variants: { base: 0 },
     worst: 0,
     snapshotHash: '97a974b3ae145ea1'
   },
-  'logue/mix/bus-send': { variants: { base: 0 }, worst: 0, snapshotHash: '574efcb254356628' },
+  'logue/mix/bus-send': { variants: { base: 5 }, worst: 5, snapshotHash: '574efcb254356628' },
   'logue/mix/bus-send-stereo': {
-    variants: { base: 0 },
-    worst: 0,
+    variants: { base: 5 },
+    worst: 5,
     snapshotHash: 'ce0f1ba491fc3493'
   },
   'logue/mix/crossfader': {
-    variants: { base: 16, control: 16 },
-    worst: 16,
+    variants: { base: 21, control: 63, 'control-still': 21 },
+    worst: 63,
     snapshotHash: 'ff48b03b50520cf3'
   },
-  'logue/mix/mix2': { variants: { base: 0 }, worst: 0, snapshotHash: 'bcf10c53a2411c0f' },
+  'logue/mix/mix2': { variants: { base: 12 }, worst: 12, snapshotHash: 'bcf10c53a2411c0f' },
   'logue/mix/pan': {
-    variants: { base: 4, control: 4 },
-    worst: 4,
+    variants: { base: 4, control: 30, 'control-still': 4 },
+    worst: 30,
     snapshotHash: 'd139dc1b3b1c3b34'
   },
   'logue/mix/pan-mix2': {
-    variants: { base: 7, control: 7 },
-    worst: 7,
+    variants: { base: 9, control: 66, 'control-still': 9 },
+    worst: 66,
     snapshotHash: '012908465f425a50'
   },
   'logue/mix/stereo-crossfader': {
-    variants: { base: 15, control: 15 },
-    worst: 15,
+    variants: { base: 18, control: 63, 'control-still': 18 },
+    worst: 63,
     snapshotHash: '779c8ef1206c74bd'
   },
-  'logue/mix/stereo-mix2': { variants: { base: 0 }, worst: 0, snapshotHash: '73842bd820468e9f' },
+  'logue/mix/stereo-mix2': { variants: { base: 12 }, worst: 12, snapshotHash: '73842bd820468e9f' },
   'logue/mix/width': {
-    variants: { base: 6, control: 17 },
-    worst: 17,
+    variants: { base: 11, control: 22, 'control-still': 22 },
+    worst: 22,
     snapshotHash: 'e3d3cef19609c42b'
   },
   'logue/mux/demux2': {
-    variants: { base: 0, control: 0 },
-    worst: 0,
+    variants: { base: 6, control: 9, 'control-still': 5 },
+    worst: 9,
     snapshotHash: 'e60fc2ba0786e999'
   },
   'logue/mux/mux2': {
-    variants: { base: 0, control: 0 },
+    variants: { base: 0, control: 0, 'control-still': 0 },
     worst: 0,
     snapshotHash: '43132007849f2d5e'
   },
   'logue/mux/mux4': {
-    variants: { base: 15, control: 29 },
-    worst: 29,
+    variants: { base: 0, control: 0, 'control-still': 0 },
+    worst: 0,
     snapshotHash: 'e7cd1ca8a0645ebe'
   },
   'logue/osc/additive': {
-    variants: { base: 178, control: 176 },
-    worst: 178,
+    variants: { base: 178, control: 278, 'control-still': 176 },
+    worst: 278,
     snapshotHash: '8ad6107dc41ce335'
   },
   'logue/osc/bass-support': {
-    variants: { base: 265, control: 392, RETRIG: 265, 'RETRIG+control': 392 },
-    worst: 392,
+    variants: {
+      base: 265,
+      control: 467,
+      'control-still': 392,
+      RETRIG: 265,
+      'RETRIG+control': 467,
+      'RETRIG+control-still': 392
+    },
+    worst: 467,
     snapshotHash: 'da5adbf9ea4c7a45'
   },
   'logue/osc/exciter': {
-    variants: { base: 192, control: 196 },
-    worst: 196,
+    variants: { base: 192, control: 205, 'control-still': 196 },
+    worst: 205,
     snapshotHash: '718efdc3d5a3a5fc'
   },
   'logue/osc/granular': {
     variants: {
       base: 244,
-      control: 335,
+      control: 289,
+      'control-still': 335,
       SYNC: 234,
-      'SYNC+control': 317,
-      'heavy-size-window-100': 474,
-      'heavy-sync-off-density-100': 343
+      'SYNC+control': 254,
+      'SYNC+control-still': 317,
+      'heavy-size-window-100': 361,
+      'heavy-sync-off-density-100': 365
     },
-    worst: 474,
+    worst: 365,
     snapshotHash: '287537a0ffee7fe9'
   },
   'logue/osc/lfsr': {
     variants: {
       base: 30,
-      control: 31,
+      control: 114,
+      'control-still': 31,
       TRACK: 28,
-      'TRACK+control': 30,
+      'TRACK+control': 82,
+      'TRACK+control-still': 30,
       'heavy-short': 18,
-      'heavy-short-control': 18
+      'heavy-short-control': 104
     },
-    worst: 31,
+    worst: 114,
     snapshotHash: '7fbe59bdb96624a8'
   },
   'logue/osc/noise': {
@@ -298,61 +341,72 @@ export const CPU_COST_TABLE: Record<
   },
   'logue/osc/phase-dist': {
     variants: {
-      base: 85,
-      control: 99,
-      'heavy-reso': 97,
-      'heavy-wave2': 101,
-      'heavy-moving-dcw': 285
+      base: 87,
+      control: 277,
+      'control-still': 106,
+      'heavy-reso': 99,
+      'heavy-wave2': 103,
+      'heavy-moving-dcw': 284
     },
-    worst: 285,
+    worst: 284,
     snapshotHash: '447d0e2b472a3a55'
   },
   'logue/osc/pulse': {
-    variants: { base: 97, control: 124 },
-    worst: 124,
+    variants: { base: 107, control: 232, 'control-still': 135 },
+    worst: 232,
     snapshotHash: '773b9bbd527f1576'
   },
   'logue/osc/sample': {
     variants: {
       base: 88,
-      control: 95,
+      control: 141,
+      'control-still': 95,
       REVERSE: 95,
-      'REVERSE+control': 102,
+      'REVERSE+control': 149,
+      'REVERSE+control-still': 102,
       TRACK: 88,
-      'TRACK+control': 95,
-      'heavy-pingpong-reverse': 100
+      'TRACK+control': 141,
+      'TRACK+control-still': 95,
+      'heavy-pingpong-reverse': 148
     },
-    worst: 102,
+    worst: 149,
     snapshotHash: '7cb41406b040b044'
   },
   'logue/osc/saw': {
-    variants: { base: 86, control: 99, TZFM: 76, 'TZFM+control': 94 },
-    worst: 99,
+    variants: {
+      base: 91,
+      control: 227,
+      'control-still': 101,
+      TZFM: 81,
+      'TZFM+control': 220,
+      'TZFM+control-still': 97
+    },
+    worst: 227,
     snapshotHash: '689d43e99e06ce9c'
   },
   'logue/osc/sine': {
-    variants: { base: 50, control: 61 },
-    worst: 61,
+    variants: { base: 55, control: 171, 'control-still': 67 },
+    worst: 171,
     snapshotHash: 'b34b1284af3c9ca7'
   },
   'logue/osc/square': {
-    variants: { base: 100, control: 114 },
-    worst: 114,
+    variants: { base: 105, control: 220, 'control-still': 120 },
+    worst: 220,
     snapshotHash: '9a189b5fd7ef929c'
   },
   'logue/osc/sync': {
-    variants: { base: 108, control: 112 },
-    worst: 112,
+    variants: { base: 108, control: 271, 'control-still': 112 },
+    worst: 271,
     snapshotHash: 'de6812a7e1beb6e4'
   },
   'logue/osc/triangle': {
-    variants: { base: 29, control: 43 },
-    worst: 43,
+    variants: { base: 35, control: 151, 'control-still': 46 },
+    worst: 151,
     snapshotHash: 'c19162f9574d3fe7'
   },
   'logue/osc/wavetable': {
-    variants: { base: 146, control: 149, 'heavy-moving-position': 208 },
-    worst: 208,
+    variants: { base: 146, control: 298, 'control-still': 149, 'heavy-moving-position': 208 },
+    worst: 298,
     snapshotHash: 'f92185a8a2498df5'
   },
   'logue/sense/control': { variants: { base: 0 }, worst: 0, snapshotHash: '550ef812bd56decd' },
@@ -364,60 +418,60 @@ export const CPU_COST_TABLE: Record<
   'logue/sense/shape': { variants: { base: 0 }, worst: 0, snapshotHash: '325e380beee3bc55' },
   'logue/sense/shape-2': { variants: { base: 0 }, worst: 0, snapshotHash: '0a03598e05e5c340' },
   'logue/shape/drive': {
-    variants: { base: 26, control: 27 },
-    worst: 27,
+    variants: { base: 30, control: 131, 'control-still': 30 },
+    worst: 131,
     snapshotHash: 'fd99dae03aa4746d'
   },
   'logue/shape/soft-clip': {
-    variants: { base: 20, control: 30 },
-    worst: 30,
+    variants: { base: 24, control: 35, 'control-still': 33 },
+    worst: 35,
     snapshotHash: '94bd46054709e8a4'
   },
   'logue/shape/wavefolder': {
-    variants: { base: 12, control: 23 },
-    worst: 23,
+    variants: { base: 15, control: 32, 'control-still': 33 },
+    worst: 33,
     snapshotHash: '6597b9a61c6b5800'
   },
   'logue/util/bipolar-to-unipolar': {
-    variants: { base: 0 },
-    worst: 0,
+    variants: { base: 9 },
+    worst: 9,
     snapshotHash: '123ed572e3392a1a'
   },
   'logue/util/constant': { variants: { base: 0 }, worst: 0, snapshotHash: 'f3edec1a842e0630' },
   'logue/util/delay': {
-    variants: { base: 154, control: 185 },
-    worst: 185,
+    variants: { base: 157, control: 177, 'control-still': 178 },
+    worst: 178,
     snapshotHash: 'da512c286cda27d0'
   },
   'logue/util/freq-shift': {
-    variants: { base: 284, control: 296 },
-    worst: 296,
+    variants: { base: 288, control: 316, 'control-still': 298 },
+    worst: 316,
     snapshotHash: 'e1b3aaea0b6b5dba'
   },
-  'logue/util/glide': { variants: { base: 37 }, worst: 37, snapshotHash: '006a80d815345ce6' },
+  'logue/util/glide': { variants: { base: 44 }, worst: 44, snapshotHash: '006a80d815345ce6' },
   'logue/util/quantize': {
-    variants: { base: 63, 'heavy-moving-input': 184 },
-    worst: 184,
+    variants: { base: 180, 'heavy-moving-input': 190 },
+    worst: 190,
     snapshotHash: 'a721587239315819'
   },
   'logue/util/sample-delay': {
-    variants: { base: 10 },
-    worst: 10,
+    variants: { base: 15 },
+    worst: 15,
     snapshotHash: '90730202bac723c0'
   },
   'logue/util/sample-hold': {
-    variants: { base: 0, control: 9 },
-    worst: 9,
+    variants: { base: 0, control: 19, 'control-still': 8 },
+    worst: 19,
     snapshotHash: 'a29dc3d4ed9dc21e'
   },
   'logue/util/slew': {
-    variants: { base: 25, control: 19 },
-    worst: 25,
+    variants: { base: 22, control: 56, 'control-still': 22 },
+    worst: 56,
     snapshotHash: 'e3861ecccecfc253'
   },
   'logue/util/unipolar-to-bipolar': {
-    variants: { base: 0 },
-    worst: 0,
+    variants: { base: 15 },
+    worst: 15,
     snapshotHash: '7a44146c55ce7e26'
   }
 }

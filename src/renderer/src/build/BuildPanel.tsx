@@ -677,13 +677,13 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                 maxCyclesPerVoice > cyclesPerVoice &&
                 shortVerdictOf(max.zone, realMax) !== shortVerdictOf(zone, real)
               const scale = xd
-                ? ". The xd emulator's costs, converted to real cycles by 19 patches measured " +
-                  'on the synth (each within -34..+35 % of its reading).\n\n' +
+                ? ". The xd emulator's costs, converted to real cycles by 17 patches measured " +
+                  'on the synth (each within -30..+30 % of its reading).\n\n' +
                   'Measured on a real minilogue xd (each voice has 1728 cycles per sample of its ' +
                   `own): with 4 notes held a voice breaks up past ~${XD_OSC_HANG_CYCLES}, and an ` +
                   'overloaded one can hang the synth until it is switched off.'
                 : ". The minilogue xd emulator's costs stand in, converted to NTS-1 mkII cycles " +
-                  'by 21 patches measured on the synth (each within -37..+54 % of its reading).' +
+                  'by 19 patches measured on the synth (each within -29..+28 % of its reading).' +
                   '\n\nMeasured on a real NTS-1 mkII (~11,450 cycles per sample in all): the ' +
                   `oscillator breaks up past ~${NTS1MKII_OSC_DROPOUT_CYCLES} with the factory ` +
                   `chorus, delay and reverb on, past ~${NTS1MKII_OSC_SOLO_CYCLES} with the ` +

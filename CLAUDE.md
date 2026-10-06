@@ -402,19 +402,28 @@ matching its switches and wiring (not its worst case: that read cpiano 27% high)
 what the device knobs can reach: an xd-exposed checkbox in either position, and a primitive with
 `heavy-*` variants (granular) at those once an exposed param or a wired control input can move
 its settings. Emulator scale, not hardware; checked against measuring whole patches: -7%..+16%.
-The `control` variants wire constants, which knob-only hoisting (2026-10-01) makes per-block, so
-they mostly measure the cheap path and understate a moving source (open; adsr's `control` 38 sits
-below its `base` 46). The effect table below wires a moving source instead.
+**Wired inputs are measured twice** (2026-10-06): `control` from white noise (a gate inlet,
+`trig`/`gate`, from a square LFO; both sources' own cost measured and taken off), so a per-sample
+path is what's counted -- svf 43 -> 115, TRACK 212, sine-lfo 36 -> 85; and `control-still` from
+constants, which knob-only hoisting makes per-block: most readers then take their unwired path
+(svf 43), some don't (bass-support 392 against 265 unwired). The estimator picks per instance:
+a hoisted instance costs 0, a reader whose control inputs all come from hoisted ones counts
+`control-still`, anything moving `control` (`estimateOscCpuCost.ts`). Before, `control` was
+measured with constants only and understated a moving source (adsr's 38 below its base 46).
+Audio inputs (`base`) come from the noise too.
 **The gauge is in REAL cycles** (2026-10-06, `oscRealCycles`, `cpuZone` converts): measured
-through audio telemetry (see "Hardware test harness"), xd real = 164 + 1.40 x the estimate per
-voice (19 readings, -34..+35 %), NTS-1 mkII 44 + 0.83 x (21, -37..+54 %); an affine fit, so
-per-instance costs stay on the emulator's scale (the tooltip says so). xd anchors
+through audio telemetry (see "Hardware test harness"), xd real = 17 + 1.54 x the estimate per
+voice (17 distinct patches, -30..+30 %), NTS-1 mkII 0.77 x (19, -29..+28 %): the fits with the
+smallest worst error (`calibrateOsc.ts --refit`, no device: recomputes the stored readings'
+estimates with the current table). With the constants-only table they were 164 + 1.40x (+-31 %
+at best) and 44 + 0.83x (+-42 % at best). Per-instance costs stay on the emulator's scale (the
+tooltip says so). xd anchors
 (`cpuCeiling.ts --xd --osc`, a sine burning an exact load): with 4 notes held a voice is clean at
 1225 and breaks up from 1250 (`XD_OSC_HANG_CYCLES` 1225, red); one voice ran to 1290 and FROZE at
-1300 (kept sounding, MIDI dead: the hang signature). Green to 808 (`XD_OSC_CLEAN_CYCLES`, where a
-34 % under-read still clears), amber "tight" between. Old reports agree: cpiano (estimate 381,
-~700 converted, 921 measured) plays chords fine; formant (682 -> ~1120, ~1700 measured) and a
-granular patch (~795 -> ~1280) hung it -- `logue-cpuCostTable.spec.ts` pins those and that every
+1300 (kept sounding, MIDI dead: the hang signature). Green to 858 (`XD_OSC_CLEAN_CYCLES`, where a
+30 % under-read still clears), amber "tight" between. Old reports agree: cpiano (estimate 404,
+~640 converted, 921 measured) plays chords fine; formant (655 -> ~1030, ~1700 measured) and a
+granular patch (~795 on the old table -> ~1240) hung it -- `logue-cpuCostTable.spec.ts` pins those and that every
 calibrated patch stays below red. The Build panel's gauge: a solid fill for the saved settings,
 a faint extension up to the knob maximum, and one line ("fine" / "tight" / "may hang", plus the
 knob-reachable zone when it differs); numbers and the biggest costs are in the tooltip. `logue-cpuCostTable.spec.ts`
@@ -431,7 +440,7 @@ code path, `estimateOscCpuCost(doc, defs, 'nts1mkii')`, `CPU_GAUGE`): the xd tab
 per-primitive costs (no M7 emulator), converted as above, a helper-less primitive with no xd
 measurement (`sense/velocity`) counts as free, knob exposure is read per platform. Red at 6700
 (`NTS1MKII_OSC_DROPOUT_CYCLES`: factory chorus, stereo delay and hall reverb on), "effects off"
-up to 10000 (`NTS1MKII_OSC_SOLO_CYCLES`), green to 4200 (0.63 x 6700). **The oscillator and
+up to 10000 (`NTS1MKII_OSC_SOLO_CYCLES`), green to 4750 (0.71 x 6700). **The oscillator and
 the three effect slots share the M7**: a user oscillator and user effects get ~9800 cycles per
 sample together with the factory effects off (`NTS1MKII_SHARED_CYCLES`; burn osc 3000 + burn
 effect 6800, 6000 + 3800), and the three factory effects (chorus, stereo, hall) take ~3350. Each
@@ -919,8 +928,8 @@ Current rules only. The round-by-round reports, measurements and reversals behin
     (before FB_DRIVE); control-rate, with FB_DRIVE, 324 (estimate 270..395). The four stages and
     the ramp are unrolled (115 -> 87 base before FB_DRIVE; 284 -> 244 moving). Now 118 base,
     `heavy-moving-cutoff` (an LFO into `cutoff`, LFO included) 244, which counts toward the knob
-    maximum once a control input is wired. The `control` variants are hoisted constants (119),
-    the known gap. xd fx: 116 still, ~250 moving (`fastpow2f` stand-in).
+    maximum once a control input is wired. `control` (noise into every input, 2026-10-06) 247,
+    `control-still` 120. xd fx: 116 still, ~250 moving (`fastpow2f` stand-in).
   - Harness (`scripts/runLadderHarness.ts`, xd, ASan/UBSan, noise response vs input):
     -0.04 dB at 50 Hz, -12.03 dB at the cutoff, -25.8 dB/oct an octave up. A full-scale saw at
     DRIVE 100 reaches the output's clip, and a fuzz with every inlet moving at notes 0-127 is
@@ -946,8 +955,8 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   a Q 8 notch's note only drops ~-49 dB: `note_w0` truncates the fraction to 1/255 st (~0.4 ct).
   Builds (`scripts/stageEq.ts`: `lp-xd-eq`/`-eq-lfo`/`-notch`, `lp-nts1-*`): only leaf calls
   below the xd's `process`, RAM estimate = bss (72 B an instance). CPU: xd osc 51 base (an LFO
-  into freq and gain measured ~120 above the LFO, but the `control` variant is the known
-  hoisted-constant gap, see "CPU"; no `heavy-*` variant, since the estimators count those for a
+  into freq and gain measured ~120 above the LFO, the table's `control` (noise into every input) reads
+  83 above base, see "CPU"; no `heavy-*` variant, since the estimators count those for a
   knob binding, which always takes the still path); xd fx 52 still, 137 with moving control
   inputs. As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`filter/tilt`** (2026-10-05): a first-order tilt EQ, TILT +-9 dB per side around CENTER
@@ -956,7 +965,7 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   0 dB in the digital filter too. Deliberately not `shape/drive`'s TONE (fixed corner, weights
   only: not 0 dB at its pivot). TILT 0 is bit-exact. Additive `tilt` (depth 100) and `center`
   (100); moving, `tilt_ctl` every 16 samples, ramped. Harness: within 0.007 dB of the prototype,
-  pivot within 0.002 dB, plateaus as set. CPU: xd osc 18 base (~68 above an LFO moving TILT, unrecorded for the same reason); xd fx 21
+  pivot within 0.002 dB, plateaus as set. CPU: xd osc 18 base (~68 above an LFO moving TILT; the table's `control` measures it); xd fx 21
   still, 80 moving. 40 B
   state. As an effect unit on a real NTS-1 mkII and a real xd, the output matches the host render (`hwtest/functional.ts`, 2026-10-06); not checked inside an oscillator, no listening pass.
 - **`filter/formant`**: 3 ZDF bandpasses on Peterson & Barney formants, `VOWEL` order
@@ -1767,7 +1776,7 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   call overhead, though the formant bisect ruled out polyphony (one held voice crashed).
   **Triage when it recurs**: first ask whether it depends on settings (the costliest ones) and on
   voice count, and count cycles per voice-sample in the staged build against ~1728 per sample
-  PER VOICE (measured 2026-10-06: each voice has its own budget; real cycles ~= 164 + 1.4x the
+  PER VOICE (measured 2026-10-06: each voice has its own budget; real cycles ~= 17 + 1.54x the
   emulator's), of which a voice gets ~1225-1300 before the xd breaks up or hangs; only then suspect call shape/`-Os` (the formant playbook). A fuzz
   under ASan/UBSan rules out bad reads/math cheaply first.
 - **Verifying a new primitive's actual DSP correctness** — lessons from real false starts:
@@ -1867,8 +1876,9 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   an oscillator's PARAM n is row n+1, after Shape/Alt) and `withXdOscTelemetry` (wraps
   `OSC_CYCLE`). `calibrateOsc.ts` (`--xd`) measures the user's oscillator patches with every device
   control stripped (so each param is at its authored value on device and in the estimate):
-  NTS-1 mkII real ~= 44 + 0.83 x `estimateOscCpuCost` (-37..+53 %, 19 patches), xd real ~= 164 +
-  1.40 x it (-34..+35 %, 15 patches; per voice). **Each xd voice has its own ~1728 cycles per
+  NTS-1 mkII real ~= 0.77 x `estimateOscCpuCost` (-29..+28 %, 19 distinct patches), xd real ~=
+  17 + 1.54 x it (-30..+30 %, 17; per voice), since the table re-measure with moving sources
+  (`--refit`). **Each xd voice has its own ~1728 cycles per
   sample**: with 1-4 notes held, cpiano read ~915 per voice and the budget 1729 every time -- the
   voices don't share one budget (so the "~1750 per sample in total" in the hang triage is per
   voice). formant at its authored settings costs ~1700 for ONE voice and hung the xd during the

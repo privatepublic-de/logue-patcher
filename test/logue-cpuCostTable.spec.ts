@@ -148,16 +148,17 @@ const oscReadings = (file: string): OscReading[] =>
 
 describe('cpuZone (real cycles, measured anchors)', () => {
   it('converts an estimate to real cycles before placing it', () => {
-    expect(oscRealCycles(0, 'minilogue-xd')).toBe(164)
-    expect(oscRealCycles(100, 'nts1mkii')).toBe(127)
+    expect(oscRealCycles(0, 'minilogue-xd')).toBe(17)
+    expect(oscRealCycles(100, 'nts1mkii')).toBe(77)
     expect(cpuZone(5000).between).toBe(1)
   })
 
   it('agrees with what the xd did on hardware', () => {
-    // cpiano (estimate 381 now, 921 measured per voice) plays 4-note chords fine.
-    expect(cpuZone(381).zone).toBe('fine')
-    // formant at its authored settings (682) hung the xd; a granular patch at ~795 hung it.
-    expect(cpuZone(682).zone).not.toBe('fine')
+    // cpiano (estimate 404, 921 measured per voice) plays 4-note chords fine.
+    expect(cpuZone(404).zone).toBe('fine')
+    // formant at its authored settings (655) hung the xd; a granular patch at ~795 (on the
+    // table of 2026-09-26) hung it.
+    expect(cpuZone(655).zone).not.toBe('fine')
     expect(cpuZone(795).zone).not.toBe('fine')
     // Every patch measured cleanly sits below red, by estimate and by its own reading.
     for (const r of oscReadings('xdOscCpuReadings.json')) {
@@ -168,8 +169,8 @@ describe('cpuZone (real cycles, measured anchors)', () => {
 
   it('has fits that match the readings they came from', () => {
     for (const [file, platform, lo, hi] of [
-      ['xdOscCpuReadings.json', 'minilogue-xd', -0.35, 0.36],
-      ['nts1OscCpuReadings.json', 'nts1mkii', -0.38, 0.54]
+      ['xdOscCpuReadings.json', 'minilogue-xd', -0.31, 0.31],
+      ['nts1OscCpuReadings.json', 'nts1mkii', -0.3, 0.3]
     ] as const) {
       for (const r of oscReadings(file)) {
         const err = oscRealCycles(r.estimate, platform) / r.cycles - 1
@@ -180,8 +181,8 @@ describe('cpuZone (real cycles, measured anchors)', () => {
   })
 
   it('ends "fine" where the fit\'s worst under-read still clears the ceiling', () => {
-    expect(CPU_GAUGE['minilogue-xd'].fineUpTo / XD_OSC_HANG_CYCLES).toBeCloseTo(0.66, 2)
-    expect(CPU_GAUGE.nts1mkii.fineUpTo / NTS1MKII_OSC_DROPOUT_CYCLES).toBeCloseTo(0.63, 2)
+    expect(CPU_GAUGE['minilogue-xd'].fineUpTo / XD_OSC_HANG_CYCLES).toBeCloseTo(0.7, 2)
+    expect(CPU_GAUGE.nts1mkii.fineUpTo / NTS1MKII_OSC_DROPOUT_CYCLES).toBeCloseTo(0.71, 2)
   })
 })
 
@@ -229,7 +230,7 @@ describe('estimateOscCpuCost with params on device knobs', () => {
 
 describe('NTS-1 mkII CPU estimate', () => {
   it('is over once the converted estimate reaches the measured busy ceiling', () => {
-    const at = (real: number): number => (real - 44) / 0.83
+    const at = (real: number): number => real / 0.77
     expect(cpuZone(at(4000), 'nts1mkii').zone).toBe('fine')
     expect(cpuZone(at(5500), 'nts1mkii').zone).toBe('between')
     expect(cpuZone(at(NTS1MKII_OSC_DROPOUT_CYCLES), 'nts1mkii').zone).toBe('over')
