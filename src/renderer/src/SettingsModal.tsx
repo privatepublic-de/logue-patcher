@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import type { ArmToolchainInfo, PathSettingKey } from '@shared/ipc/contract'
 import { abbreviateHome } from './util/paths'
 import { useDraggableModal } from './useDraggableModal'
+import { usePathSettingsStore } from './state/pathSettingsStore'
 
 /**
  * A path setting can come back as `''` rather than `undefined` (Clear writes `''`), so both
@@ -49,6 +50,7 @@ function usePathSetting(key: PathSettingKey): {
   clear: () => Promise<void>
 } {
   const [path, setPath] = useState<string | undefined>(undefined)
+  const changed = usePathSettingsStore((s) => s.changed)
   useEffect(() => {
     window.axoloti.settings.getPath(key).then((value) => setPath(value || undefined))
   }, [key])
@@ -57,10 +59,12 @@ function usePathSetting(key: PathSettingKey): {
     if (!picked) return
     await window.axoloti.settings.setPath(key, picked)
     setPath(picked)
+    changed()
   }
   const clear = async (): Promise<void> => {
     await window.axoloti.settings.setPath(key, '')
     setPath(undefined)
+    changed()
   }
   return { path, browse, clear }
 }

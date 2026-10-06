@@ -8,6 +8,7 @@ import {
   SquareArrowRightEnter
 } from 'lucide-react'
 import { useTargetPlatformStore } from '../state/targetPlatformStore'
+import { usePathSettingsStore } from '../state/pathSettingsStore'
 import type { ArmToolchainInfo } from '@shared/ipc/contract'
 import type { LogueEffectModule, PatchDocument } from '@shared/domain/patch'
 
@@ -108,19 +109,22 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
     undefined
   )
 
+  // Re-read whenever Settings writes a path (the toolchain override, the output folder).
+  const pathSettingsVersion = usePathSettingsStore((s) => s.version)
+
   useEffect(() => {
     window.axoloti.logueBuild.detectLocalArmToolchain().then(setArmToolchainInfo)
-  }, [])
+  }, [pathSettingsVersion])
 
-  // Read-only here (SettingsModal.tsx owns the Browse/Clear controls) -- fetched once per mount,
-  // same "not live-synced with Settings while both are open" tradeoff `armToolchainInfo` above
-  // already accepts; the actual write always re-reads the live setting in the main process
-  // regardless, so this is a display-only staleness window, not a correctness one.
+  // Read-only here (SettingsModal.tsx owns the Browse/Clear controls); re-read when Settings
+  // writes a path. '' (cleared) reads as unset.
   const [buildOutputFolder, setBuildOutputFolder] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    window.axoloti.settings.getPath('buildOutputFolder').then(setBuildOutputFolder)
-  }, [])
+    window.axoloti.settings
+      .getPath('buildOutputFolder')
+      .then((value) => setBuildOutputFolder(value || undefined))
+  }, [pathSettingsVersion])
 
   const buildResults = useBuildResultsStore((s) => s.results)
   const uploads = useBuildResultsStore((s) => s.uploads)

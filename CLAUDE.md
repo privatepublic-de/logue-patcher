@@ -1753,8 +1753,9 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
 - **Build output folder**: no per-click save dialog; Export and Build write straight into
   `AppSettings.buildOutputFolder`
   (configured once in `SettingsModal.tsx`, displayed read-only in `BuildPanel.tsx` with a
-  "Change…" link — the display is fetched once per `BuildPanel` mount, so it can go stale if you
-  change the setting without switching tabs; the actual write always reads the live value) —
+  "Change…" link; it and the toolchain line re-read whenever Settings writes a path,
+  `pathSettingsStore.ts`, 2026-10-06 -- before, they went stale until a tab switch; the actual
+  write always reads the live value) —
   Export into a `<UnitName>-<platform>` subfolder, Build into a `<UnitName>.<ext>` file
   (`main/config/buildResultNaming.ts`). A pre-existing file/folder at the exact destination is
   renamed aside first (`main/config/buildOutputFolder.ts`'s `makeRoomForDestination`) with a
