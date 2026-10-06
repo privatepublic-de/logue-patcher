@@ -3,7 +3,9 @@ import {
   generateOscUnit,
   UnsupportedLogueNodeError,
   InvalidLogueUnitNameError,
-  InvalidLogueParamError
+  InvalidLogueParamError,
+  LOGUE_PATCHER_DEV_ID,
+  unitIdFromName
 } from '../logue-codegen/src/nts1mkii/generateOscUnit'
 import { LOGUE_AUDIO_OUT_TYPE } from '../logue-codegen/src/oscInstances'
 import type { PatchDocument, ObjNode, CommentNode } from '../src/shared/domain/patch'
@@ -1522,5 +1524,30 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
         'float y_lfo1 = sample_hold_step(&phase_lfo1, blkLfoRate_lfo1, &held_lfo1, noise_step(&seed_lfo1));'
       )
     })
+  })
+})
+
+describe('NTS-1 mkII unit ids', () => {
+  const saw: ObjNode = { kind: 'obj', type: 'logue/osc/saw', name: 'saw', x: 0, y: 0, params: [] }
+
+  it("are 'LPAT' and a hash of the unit name, the same every build", () => {
+    const header = (name: string): string => generateOscUnit(docWith([saw]), { name }).headerC
+    expect(LOGUE_PATCHER_DEV_ID).toBe(0x4c504154)
+    expect(header('harmonics')).toContain(`.dev_id = ${LOGUE_PATCHER_DEV_ID}U,`)
+    expect(header('harmonics')).toContain(`.unit_id = ${unitIdFromName('harmonics')}U,`)
+    expect(header('harmonics')).toBe(header('harmonics'))
+    expect(unitIdFromName('harmonics')).not.toBe(unitIdFromName('harmonic'))
+  })
+
+  it('hash with 32-bit FNV-1a (published vectors), never 0', () => {
+    expect(unitIdFromName('a')).toBe(0xe40c292c)
+    expect(unitIdFromName('foobar')).toBe(0xbf9cf968)
+    expect(unitIdFromName('')).toBe(0x811c9dc5)
+  })
+
+  it('take explicit ids over the defaults (the hardware tests pass their own)', () => {
+    const h = generateOscUnit(docWith([saw]), { name: 'x', devId: 7, unitId: 9 }).headerC
+    expect(h).toContain('.dev_id = 7U,')
+    expect(h).toContain('.unit_id = 9U,')
   })
 })

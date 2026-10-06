@@ -25,9 +25,29 @@ import { isEffectModule, requireUnitKind, type UnitKind } from '../unitKinds'
 export interface LogueOscUnitMeta {
   /** unit_header.name -- displayed on-device. */
   name: string
-  /** Local-test placeholder unless a real developer_ids.md registration exists. */
+  /** Default `LOGUE_PATCHER_DEV_ID`; the hardware tests pass their own. */
   devId?: number
+  /** Default `unitIdFromName(name)`. */
   unitId?: number
+}
+
+/**
+ * 'LPAT', every app-built NTS-1 mkII unit's developer id (not a registered Korg one). A program
+ * selects a user unit by developer id, unit id and version, not by slot, so with every unit at
+ * 0/0 (as before 2026-10-06) two app units in different slots were the same unit to a program.
+ */
+export const LOGUE_PATCHER_DEV_ID = 0x4c504154
+
+/**
+ * A unit's id from its name (32-bit FNV-1a over the UTF-8 bytes, never 0): the same unit keeps
+ * its id across rebuilds, so a program saved with it finds it again after a re-upload. Renaming
+ * the unit gives it a new id, and two patches with one unit name share it -- as they share the
+ * name on the device (user's choice over an id stored in the patch, 2026-10-06).
+ */
+export function unitIdFromName(name: string): number {
+  let h = 0x811c9dc5
+  for (const byte of new TextEncoder().encode(name)) h = Math.imul(h ^ byte, 0x01000193) >>> 0
+  return h === 0 ? 1 : h
 }
 
 export interface LogueOscUnitSource {
@@ -205,8 +225,8 @@ export function generateHeaderC(
   exposedParams: Map<number, ExposedParamBinding>,
   kind: UnitKind = NTS1MKII_OSC
 ): string {
-  const devId = meta.devId ?? 0
-  const unitId = meta.unitId ?? 0
+  const devId = meta.devId ?? LOGUE_PATCHER_DEV_ID
+  const unitId = meta.unitId ?? unitIdFromName(meta.name)
 
   // `num_params` = one past the highest exposed slot -- every slot below it must still be a
   // real, present row (the SDK's own `k_unit_param_type_none` sentinel for a gap), matching

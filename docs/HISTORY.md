@@ -3040,3 +3040,15 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   `withPaths` (the estimators' "incomplete" reasons) replace every quoted flattened name with it:
   `"f1/lp"`, nested `"o1/inner/lp"`. The paths are recomputed only once something has failed.
   Mutating the message keeps the error's class, which the "incomplete graph" handlers test.
+
+### NTS-1 mkII unit ids from the unit name (2026-10-06)
+
+- Every app-built unit had developer id, unit id (and on the xd prg_id) 0. An NTS-1 mkII program
+  stores its oscillator/effect as developer id + unit id + version (the hardware harness selects
+  units that way), so two app units in different slots couldn't both be told apart by a program.
+- Options put to the user: a hash of the unit name, a random id stored in the patch (survives
+  renames, but Save As copies it), or a hardware check first. Chosen: the name hash, NTS-1 mkII
+  only (the xd selects by slot as far as anything here shows; its upload header stays
+  byte-identical). Developer id 'LPAT'.
+- Every NTS-1 mkII golden file changed in its two id lines only; the code-size table was
+  re-measured for its hashes (sizes unchanged).

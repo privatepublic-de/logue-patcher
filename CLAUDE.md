@@ -608,8 +608,15 @@ Gotchas:
   user, 2026-09-30): the previous unit's Param 3 value arrived as the new unit's Param 3, so the
   unit's own defaults (header `init` / manifest) don't apply after an upload. Harmless for a real
   patch, confusing in a test pass: set the params by hand after each upload.
-- Every generated unit has `dev_id`/`prg_id`/`unit_id` = 0, which probably makes all
-  logue-patcher units indistinguishable to a device (see `PROTOCOL-nts1mkii.md`).
+- **Unit ids** (2026-10-06, user's choice): an NTS-1 mkII program selects a user unit by
+  developer id, unit id and version, not by slot, so app units used to be indistinguishable to a
+  program (all 0/0). Now every NTS-1 mkII unit has developer id `'LPAT'` (`LOGUE_PATCHER_DEV_ID`,
+  not a registered Korg id) and unit id = FNV-1a of the unit name (`unitIdFromName`): stable
+  across rebuilds, new on a rename (a program using the old name loses it), shared by two
+  patches with one unit name. A program saved with an app unit before this needs that unit
+  reselected once after its next upload. The xd keeps `dev_id`/`prg_id` 0 (it picks user units
+  by slot; its upload bytes are unchanged). The hardware harness passes its own `LPHT` ids, which
+  shows the device takes such ids; the 0/0 confusion itself was never demonstrated on a device.
 
 ### Per-primitive gotchas worth knowing before touching one
 

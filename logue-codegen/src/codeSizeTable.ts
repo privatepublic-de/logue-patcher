@@ -1413,140 +1413,140 @@ export const CODE_SIZE_TABLE: Record<
       extra: 338,
       helpers: [],
       unwired: { first: 431, extra: 226, helpers: [] },
-      snapshotHash: 'd07a2e163e11d947'
+      snapshotHash: '9d62a35321ca9ea1'
     },
     'logue/osc/saw': {
       first: 785,
       extra: 435,
       helpers: [],
       unwired: { first: 453, extra: 287, helpers: [] },
-      snapshotHash: '3a9ffe3e3d2124b3'
+      snapshotHash: 'c45abafd27ac2b00'
     },
     'logue/osc/square': {
       first: 673,
       extra: 346,
       helpers: ['Osc::polyblep(float, float)'],
       unwired: { first: 433, extra: 254, helpers: ['Osc::polyblep(float, float)'] },
-      snapshotHash: '4eac9e98563c8536'
+      snapshotHash: '2052bf3853427931'
     },
     'logue/osc/pulse': {
       first: 737,
       extra: 398,
       helpers: ['Osc::polyblep(float, float)'],
       unwired: { first: 453, extra: 274, helpers: ['Osc::polyblep(float, float)'] },
-      snapshotHash: '90d83d49292969b8'
+      snapshotHash: '89a5a76831726b8a'
     },
     'logue/osc/triangle': {
       first: 549,
       extra: 266,
       helpers: [],
       unwired: { first: 313, extra: 158, helpers: [] },
-      snapshotHash: '84542d8e80e4b65c'
+      snapshotHash: '5d87996ccd566443'
     },
     'logue/osc/additive': {
       first: 626,
       extra: 210,
       helpers: ['Osc::additive_step(float, float, float)'],
       unwired: { first: 462, extra: 158, helpers: ['Osc::additive_step(float, float, float)'] },
-      snapshotHash: '4663861446fc5f05'
+      snapshotHash: '710237512735685f'
     },
     'logue/osc/granular': {
       first: 2102,
       extra: 1528,
       helpers: ['Osc::note_w0(float)', 'memset'],
       unwired: { first: 1866, extra: 1276, helpers: ['Osc::note_w0(float)', 'memset'] },
-      snapshotHash: '36a3f52804303136'
+      snapshotHash: '0f2f2bc413fac628'
     },
     'logue/osc/sample': {
       first: 963,
       extra: 644,
       helpers: ['Osc::note_w0(float)'],
       unwired: { first: 879, extra: 540, helpers: ['Osc::note_w0(float)'] },
-      snapshotHash: '8b8c9ba689f8af40'
+      snapshotHash: '81e131cf2b133467'
     },
     'logue/osc/wavetable': {
       first: 1190,
       extra: 842,
       helpers: [],
       unwired: { first: 1018, extra: 778, helpers: [] },
-      snapshotHash: '7b26d43d1b740a72'
+      snapshotHash: '7f74088dc46dc84b'
     },
     'logue/mix/mix2': {
       first: 28,
       extra: 24,
       helpers: [],
       unwired: { first: 16, extra: 0, helpers: [] },
-      snapshotHash: '8e8b5cde406a03bb'
+      snapshotHash: 'd4c2671f67112925'
     },
     'logue/math/multiply': {
       first: 0,
       extra: 4,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '0b26d1b6c51171af'
+      snapshotHash: 'c12a420eb6898aca'
     },
     'logue/mix/crossfader': {
       first: 343,
       extra: 216,
       helpers: ['Osc::xfade_settle(float*, float, float)'],
       unwired: { first: 271, extra: 128, helpers: ['Osc::xfade_settle(float*, float, float)'] },
-      snapshotHash: '089b0063484764a0'
+      snapshotHash: '32d9f5523a44c519'
     },
     'logue/mix/stereo-mix2': {
       first: 28,
       extra: 24,
       helpers: [],
       unwired: { first: 16, extra: 0, helpers: [] },
-      snapshotHash: 'fe884c9e4788e768'
+      snapshotHash: '78a5e7cc5a700097'
     },
     'logue/mix/stereo-crossfader': {
       first: 331,
       extra: 204,
       helpers: ['Osc::xfade_settle(float*, float, float)'],
       unwired: { first: 259, extra: 116, helpers: ['Osc::xfade_settle(float*, float, float)'] },
-      snapshotHash: '691c2bffa3b82a56'
+      snapshotHash: '34dede0f2fe425f0'
     },
     'logue/filter/lowpass-cheap': {
       first: 76,
       extra: 68,
       helpers: [],
       unwired: { first: 76, extra: 52, helpers: [] },
-      snapshotHash: 'edf1f99e801aad2d'
+      snapshotHash: '8a67cbbd4bc2706c'
     },
     'logue/filter/highpass-cheap': {
       first: 76,
       extra: 72,
       helpers: [],
       unwired: { first: 76, extra: 56, helpers: [] },
-      snapshotHash: '05e3024fbce56936'
+      snapshotHash: 'de2ed94b1b0020ae'
     },
     'logue/gain/vca': {
       first: 8,
       extra: 0,
       helpers: [],
       unwired: { first: 20, extra: 0, helpers: [] },
-      snapshotHash: '03c6cd9004bde762'
+      snapshotHash: '55bdc9341ea63a73'
     },
     'logue/env/ad': {
       first: 425,
       extra: 300,
       helpers: ['Osc::env_rate_from_percent(float)'],
       unwired: { first: 301, extra: 148, helpers: ['Osc::env_rate_from_percent(float)'] },
-      snapshotHash: 'ea61b20e11d84ffe'
+      snapshotHash: 'df5f1d238dc76490'
     },
     'logue/env/ahd': {
       first: 437,
       extra: 293,
       helpers: ['Osc::env_rate_from_percent(float)'],
       unwired: { first: 313, extra: 128, helpers: ['Osc::env_rate_from_percent(float)'] },
-      snapshotHash: '96dceec900792551'
+      snapshotHash: '1eb1aac5889707f1'
     },
     'logue/env/adsr': {
       first: 405,
       extra: 291,
       helpers: ['Osc::adsr_rate(float, float)'],
       unwired: { first: 413, extra: 263, helpers: ['Osc::adsr_rate(float, float)'] },
-      snapshotHash: '62fe233b7fc67d5c'
+      snapshotHash: 'e473b1d5c4aa2297'
     },
     'logue/env/one-knob-adsr': {
       first: 701,
@@ -1557,104 +1557,104 @@ export const CODE_SIZE_TABLE: Record<
         extra: 404,
         helpers: ['Osc::adsr_rate(float, float)', 'Osc::knob_env_value(float, int)']
       },
-      snapshotHash: '9c5705d6ac6db998'
+      snapshotHash: 'a2b6a4d0621efcb3'
     },
     'logue/env/multistage': {
       first: 716,
       extra: 647,
       helpers: [],
       unwired: { first: 640, extra: 507, helpers: [] },
-      snapshotHash: '5ed6a1849c3b6d5f'
+      snapshotHash: 'fa7f172c3c231698'
     },
     'logue/lfo/sine-lfo': {
       first: 350,
       extra: 208,
       helpers: [],
       unwired: { first: 250, extra: 124, helpers: [] },
-      snapshotHash: 'd9221d9bc61e3c32'
+      snapshotHash: 'b511f7a2cfbd7424'
     },
     'logue/lfo/triangle-lfo': {
       first: 228,
       extra: 156,
       helpers: [],
       unwired: { first: 132, extra: 72, helpers: [] },
-      snapshotHash: 'c6429d93a678c350'
+      snapshotHash: '231e2330cae54204'
     },
     'logue/lfo/square-lfo': {
       first: 216,
       extra: 148,
       helpers: [],
       unwired: { first: 116, extra: 68, helpers: [] },
-      snapshotHash: 'f8cf468759e87de9'
+      snapshotHash: '7b163c27b233dd26'
     },
     'logue/lfo/ramp-up': {
       first: 208,
       extra: 140,
       helpers: [],
       unwired: { first: 108, extra: 56, helpers: [] },
-      snapshotHash: 'ced3469dbc75f86b'
+      snapshotHash: '6d409d19fec135d7'
     },
     'logue/lfo/ramp-down': {
       first: 208,
       extra: 140,
       helpers: [],
       unwired: { first: 108, extra: 56, helpers: [] },
-      snapshotHash: '785b4d8a503639cd'
+      snapshotHash: '720ad1f96c104bad'
     },
     'logue/lfo/fast-square': {
       first: 553,
       extra: 346,
       helpers: [],
       unwired: { first: 401, extra: 230, helpers: [] },
-      snapshotHash: '802700d4e0a165bb'
+      snapshotHash: '8b0639df5cf67dd1'
     },
     'logue/lfo/random-steps': {
       first: 216,
       extra: 148,
       helpers: [],
       unwired: { first: 160, extra: 92, helpers: [] },
-      snapshotHash: '54ebeef1bdb03998'
+      snapshotHash: '067f77b20c4869f8'
     },
     'logue/osc/noise': {
       first: 439,
       extra: 330,
       helpers: ['memset'],
-      snapshotHash: '7de83902830d40d1'
+      snapshotHash: 'e881cd39c2a173f2'
     },
     'logue/osc/lfsr': {
       first: 748,
       extra: 552,
       helpers: [],
       unwired: { first: 700, extra: 484, helpers: [] },
-      snapshotHash: '77efd6de7c58ca1a'
+      snapshotHash: 'bd987c099dd83217'
     },
     'logue/shape/wavefolder': {
       first: 124,
       extra: 100,
       helpers: [],
       unwired: { first: 32, extra: 0, helpers: [] },
-      snapshotHash: '3c64304026c12c68'
+      snapshotHash: '0c7456454ea4b737'
     },
     'logue/shape/soft-clip': {
       first: 92,
       extra: 68,
       helpers: [],
       unwired: { first: 44, extra: 16, helpers: [] },
-      snapshotHash: '216989a0fb3b382f'
+      snapshotHash: '27c2fc93b77d9b12'
     },
     'logue/shape/drive': {
       first: 526,
       extra: 360,
       helpers: ['Osc::exp_approx(float)'],
       unwired: { first: 370, extra: 204, helpers: ['Osc::exp_approx(float)'] },
-      snapshotHash: 'bd26f52b476704e9'
+      snapshotHash: '96074ea28992bb10'
     },
     'logue/filter/comb': {
       first: 996,
       extra: 736,
       helpers: ['memset'],
       unwired: { first: 904, extra: 560, helpers: ['memset'] },
-      snapshotHash: '57e9015d9f1c40fe'
+      snapshotHash: '6f2eb8a4e83b0dde'
     },
     'logue/filter/string': {
       first: 1085,
@@ -1673,14 +1673,14 @@ export const CODE_SIZE_TABLE: Record<
           'memset'
         ]
       },
-      snapshotHash: 'f88b0f3adf944f68'
+      snapshotHash: '5ad65e1041717e95'
     },
     'logue/osc/exciter': {
       first: 1101,
       extra: 415,
       helpers: [],
       unwired: { first: 1065, extra: 343, helpers: [] },
-      snapshotHash: '644ef3d8dff0b64d'
+      snapshotHash: '599828ab713214c9'
     },
     'logue/osc/sync': {
       first: 521,
@@ -1697,14 +1697,14 @@ export const CODE_SIZE_TABLE: Record<
           'Osc::sync_osc_step(float*, float*, float*, float, float, int, float)'
         ]
       },
-      snapshotHash: '1d1c1ce43766ec40'
+      snapshotHash: '9b6601f332d594a2'
     },
     'logue/osc/phase-dist': {
       first: 1567,
       extra: 1042,
       helpers: [],
       unwired: { first: 1783, extra: 910, helpers: [] },
-      snapshotHash: '7e367a90928dd9f0'
+      snapshotHash: 'eabca751e9792c98'
     },
     'logue/osc/bass-support': {
       first: 1157,
@@ -1722,35 +1722,35 @@ export const CODE_SIZE_TABLE: Record<
           'memset'
         ]
       },
-      snapshotHash: '257face24f38440f'
+      snapshotHash: 'ab5e9dc8f773c4de'
     },
     'logue/filter/svf': {
       first: 717,
       extra: 730,
       helpers: [],
       unwired: { first: 661, extra: 626, helpers: [] },
-      snapshotHash: '1498d73a0939393f'
+      snapshotHash: '5fb80e35691d10e1'
     },
     'logue/filter/ladder': {
       first: 1284,
       extra: 1030,
       helpers: ['memset'],
       unwired: { first: 1120, extra: 846, helpers: ['memset'] },
-      snapshotHash: 'cc8996b4ce647780'
+      snapshotHash: '34d91ea1fa70578d'
     },
     'logue/filter/eq-band': {
       first: 1066,
       extra: 840,
       helpers: ['Osc::exp_approx(float)', 'memset'],
       unwired: { first: 982, extra: 740, helpers: ['Osc::exp_approx(float)', 'memset'] },
-      snapshotHash: '4fda9a92a6c5bc4c'
+      snapshotHash: '5d834bd3a27dcfb3'
     },
     'logue/filter/tilt': {
       first: 657,
       extra: 488,
       helpers: [],
       unwired: { first: 601, extra: 420, helpers: [] },
-      snapshotHash: '68c43266f8ca9bcc'
+      snapshotHash: '0408df22f9d25f29'
     },
     'logue/filter/formant': {
       first: 906,
@@ -1761,203 +1761,203 @@ export const CODE_SIZE_TABLE: Record<
         extra: 502,
         helpers: ['Osc::formant_g(float, float, float, int)', 'memset']
       },
-      snapshotHash: '4672f99f1056f6ff'
+      snapshotHash: '76834d8b5114c96a'
     },
-    'logue/sense/pitch': { first: 0, extra: 0, helpers: [], snapshotHash: 'e86f9bdb5b25a186' },
-    'logue/sense/control': { first: 12, extra: 0, helpers: [], snapshotHash: '0601f991f0cabfe7' },
-    'logue/sense/shape': { first: 0, extra: 0, helpers: [], snapshotHash: '46e0474dc7468567' },
-    'logue/sense/shape-2': { first: 0, extra: 0, helpers: [], snapshotHash: '64c0d75b574e1d04' },
-    'logue/sense/gate': { first: 40, extra: 0, helpers: [], snapshotHash: '5b7aafa89eacc7f4' },
-    'logue/sense/velocity': { first: 64, extra: 0, helpers: [], snapshotHash: '48e367520b125ed7' },
-    'logue/util/constant': { first: 8, extra: 0, helpers: [], snapshotHash: '2f68421838833402' },
+    'logue/sense/pitch': { first: 0, extra: 0, helpers: [], snapshotHash: 'd643a2204ebf8c31' },
+    'logue/sense/control': { first: 12, extra: 0, helpers: [], snapshotHash: 'c73a9c82a4d426eb' },
+    'logue/sense/shape': { first: 0, extra: 0, helpers: [], snapshotHash: '190902c76999cf2a' },
+    'logue/sense/shape-2': { first: 0, extra: 0, helpers: [], snapshotHash: '62a192485c1e02da' },
+    'logue/sense/gate': { first: 40, extra: 0, helpers: [], snapshotHash: '84073775b7e33a40' },
+    'logue/sense/velocity': { first: 64, extra: 0, helpers: [], snapshotHash: 'd6e37758828b253d' },
+    'logue/util/constant': { first: 8, extra: 0, helpers: [], snapshotHash: '3330059ff140d8d0' },
     'logue/util/unipolar-to-bipolar': {
       first: 52,
       extra: 0,
       helpers: [],
       unwired: { first: 0, extra: 0, helpers: [] },
-      snapshotHash: 'f2494343837c201f'
+      snapshotHash: 'b3c33aeb61a986e5'
     },
     'logue/util/bipolar-to-unipolar': {
       first: 44,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: 'bb1738541e78eeeb'
+      snapshotHash: 'a4ddf45ded321d40'
     },
     'logue/math/negate': {
       first: 0,
       extra: 4,
       helpers: [],
       unwired: { first: 0, extra: 0, helpers: [] },
-      snapshotHash: 'da3d23ef4dc8bd10'
+      snapshotHash: 'b3572537a4eb872a'
     },
     'logue/math/one-minus': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 0, extra: 0, helpers: [] },
-      snapshotHash: 'b2ff1f5356954df7'
+      snapshotHash: 'f6edd23d384d50bf'
     },
     'logue/math/curve': {
       first: 188,
       extra: 181,
       helpers: [],
       unwired: { first: 96, extra: 137, helpers: [] },
-      snapshotHash: 'ed3494b8b9f73650'
+      snapshotHash: '25af7509bf6e4d3d'
     },
     'logue/math/add': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: 'd6383a2bddff31c9'
+      snapshotHash: 'fe563350ef515c84'
     },
     'logue/math/subtract': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '918fbb911cef34bb'
+      snapshotHash: '5d7c3d8c9a6b92e6'
     },
     'logue/math/scale': {
       first: 20,
       extra: 16,
       helpers: [],
       unwired: { first: 28, extra: 4, helpers: [] },
-      snapshotHash: '7f1622cf03e56cc4'
+      snapshotHash: 'c70f86a68a8f7f59'
     },
     'logue/math/min': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '19ea78a55e2ace19'
+      snapshotHash: '2cdad2b6d986b91f'
     },
     'logue/math/max': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '120d7299e59c6493'
+      snapshotHash: '34d04ce8b0aeed32'
     },
     'logue/math/clamp': {
       first: 48,
       extra: 36,
       helpers: [],
       unwired: { first: 56, extra: 24, helpers: [] },
-      snapshotHash: '4d5747eb038a6557'
+      snapshotHash: 'd276a7683aa4e906'
     },
     'logue/math/abs': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '311386b00707e5f3'
+      snapshotHash: '5fe455fe592d0fab'
     },
     'logue/logic/greater-than': {
       first: 36,
       extra: 24,
       helpers: [],
       unwired: { first: 32, extra: 8, helpers: [] },
-      snapshotHash: '8781970f0743cd8c'
+      snapshotHash: '2425ce5b17c9e9af'
     },
     'logue/logic/less-than': {
       first: 36,
       extra: 24,
       helpers: [],
       unwired: { first: 32, extra: 8, helpers: [] },
-      snapshotHash: 'c6fa8901ca039b63'
+      snapshotHash: 'a2138d4be323435a'
     },
     'logue/logic/equal': {
       first: 56,
       extra: 40,
       helpers: [],
       unwired: { first: 52, extra: 24, helpers: [] },
-      snapshotHash: '82393989846b664c'
+      snapshotHash: '70f3c81c4f62fce3'
     },
     'logue/logic/and': {
       first: 28,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '49482c0a15580834'
+      snapshotHash: '95af1d6cebd18869'
     },
     'logue/logic/or': {
       first: 28,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '7b83921269f92ec4'
+      snapshotHash: '0522842afeda8238'
     },
     'logue/logic/xor': {
       first: 8,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: 'aab77423e726dbff'
+      snapshotHash: 'a43dfe2dba6c4ada'
     },
     'logue/mux/mux2': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: 'a690e18ea8e50652'
+      snapshotHash: 'f4afe5aa62ccb8ed'
     },
     'logue/mux/mux4': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '54c9d70a1f71bf2f'
+      snapshotHash: 'f87b33d5fd416602'
     },
     'logue/mux/demux2': {
       first: 28,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '28008d86bbb48b0f'
+      snapshotHash: '1123200d547c0a35'
     },
     'logue/logic/schmitt': {
       first: 60,
       extra: 56,
       helpers: [],
       unwired: { first: 60, extra: 44, helpers: [] },
-      snapshotHash: 'c432dc8aa076ba4b'
+      snapshotHash: '139083adaa4c99e7'
     },
     'logue/logic/edge': {
       first: 56,
       extra: 28,
       helpers: [],
       unwired: { first: 36, extra: 12, helpers: [] },
-      snapshotHash: '34ab1d63a921d3f9'
+      snapshotHash: 'e7198e51022b71c3'
     },
     'logue/util/sample-hold': {
       first: 52,
       extra: 32,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: 'b950918e40dec78c'
+      snapshotHash: '0bbcd9f952c45116'
     },
     'logue/util/glide': {
       first: 124,
       extra: 167,
       helpers: [],
       unwired: { first: 132, extra: 155, helpers: [] },
-      snapshotHash: '7506a1ae4eb21ddf'
+      snapshotHash: 'c4c54bfe01cea0ae'
     },
     'logue/util/slew': {
       first: 344,
       extra: 377,
       helpers: [],
       unwired: { first: 256, extra: 281, helpers: [] },
-      snapshotHash: 'bbf766ecc1632195'
+      snapshotHash: '4d4575a0c936f266'
     },
     'logue/util/sample-delay': {
       first: 76,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: 'a625e1ea19059647'
+      snapshotHash: '4871fdd6f8101c12'
     },
     'logue/util/delay': {
       first: 424,
@@ -1968,7 +1968,7 @@ export const CODE_SIZE_TABLE: Record<
         extra: 80,
         helpers: ['Osc::delay_step(short*, int*, float, float, float, float)', 'memset']
       },
-      snapshotHash: 'd0aa0f54bfd774b8'
+      snapshotHash: '5a261f7f4b38f586'
     },
     'logue/util/quantize': {
       first: 319,
@@ -1979,21 +1979,21 @@ export const CODE_SIZE_TABLE: Record<
         extra: 168,
         helpers: ['Osc::quantize_step(float, int, float*, float*)']
       },
-      snapshotHash: 'ee2363ac72ce02b8'
+      snapshotHash: 'c14b68d30bfa3a3a'
     },
     'logue/env/follower': {
       first: 216,
       extra: 140,
       helpers: [],
       unwired: { first: 204, extra: 128, helpers: [] },
-      snapshotHash: 'eca79cd82627972c'
+      snapshotHash: 'd9321a1a2791842a'
     },
     'logue/filter/hilbert': {
       first: 391,
       extra: 272,
       helpers: ['memset'],
       unwired: { first: 399, extra: 260, helpers: ['memset'] },
-      snapshotHash: '3ffe84d6a2d98867'
+      snapshotHash: 'fd2f3aa1ec8fb4d1'
     },
     'logue/util/freq-shift': {
       first: 475,
@@ -2010,70 +2010,70 @@ export const CODE_SIZE_TABLE: Record<
           'memset'
         ]
       },
-      snapshotHash: 'af1f86022bd303b9'
+      snapshotHash: 'daf2604bb8c5df78'
     },
     'logue/mix/pan': {
       first: 116,
       extra: 88,
       helpers: [],
       unwired: { first: 96, extra: 56, helpers: [] },
-      snapshotHash: '62ccf9014c7ba69e'
+      snapshotHash: '85c3069b7deec2a4'
     },
     'logue/mix/pan-mix2': {
       first: 224,
       extra: 204,
       helpers: [],
       unwired: { first: 40, extra: 0, helpers: [] },
-      snapshotHash: 'e58f5dd040743146'
+      snapshotHash: '52a2d85076e67439'
     },
     'logue/mix/bus-send': {
       first: 20,
       extra: 8,
       helpers: [],
       unwired: { first: 16, extra: 0, helpers: [] },
-      snapshotHash: '8f80b153a30397f2'
+      snapshotHash: '68f1c0e5a1d6f3b9'
     },
     'logue/mix/bus-receive': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '185f8262303a613a'
+      snapshotHash: '0da35584e3057bd0'
     },
     'logue/mix/bus-send-stereo': {
       first: 20,
       extra: 8,
       helpers: [],
       unwired: { first: 16, extra: 0, helpers: [] },
-      snapshotHash: '8f5f2a91008b7c0c'
+      snapshotHash: '4a8fc721767aa382'
     },
     'logue/mix/bus-receive-stereo': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '898429f2f5cbf6fe'
+      snapshotHash: '69b1fb98a7af0a4a'
     },
     'logue/mix/width': {
       first: 96,
       extra: 60,
       helpers: [],
       unwired: { first: 36, extra: 8, helpers: [] },
-      snapshotHash: '2cffba2ea3591b93'
+      snapshotHash: '06015c35efef39ea'
     },
     'logue/logic/chance': {
       first: 196,
       extra: 128,
       helpers: [],
       unwired: { first: 120, extra: 76, helpers: [] },
-      snapshotHash: '2858ec9dd42d3f1d'
+      snapshotHash: 'acb6bf64b0ba217f'
     },
     'logue/logic/round-robin': {
       first: 112,
       extra: 76,
       helpers: [],
       unwired: { first: 60, extra: 0, helpers: [] },
-      snapshotHash: '6d2369b06f37d67d'
+      snapshotHash: 'd40597ea765b39b4'
     }
   },
   'nts1mkii:fx': {
@@ -2082,14 +2082,14 @@ export const CODE_SIZE_TABLE: Record<
       extra: 337,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 327, extra: 116, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: 'd07a2e163e11d947'
+      snapshotHash: '9d62a35321ca9ea1'
     },
     'logue/osc/saw': {
       first: 994,
       extra: 692,
       helpers: ['Fx::harmonic_ratio(float)', 'Fx::note_w0(float)'],
       unwired: { first: 345, extra: 184, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '3a9ffe3e3d2124b3'
+      snapshotHash: 'c45abafd27ac2b00'
     },
     'logue/osc/square': {
       first: 588,
@@ -2100,7 +2100,7 @@ export const CODE_SIZE_TABLE: Record<
         extra: 155,
         helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)']
       },
-      snapshotHash: '4eac9e98563c8536'
+      snapshotHash: '2052bf3853427931'
     },
     'logue/osc/pulse': {
       first: 652,
@@ -2111,14 +2111,14 @@ export const CODE_SIZE_TABLE: Record<
         extra: 171,
         helpers: ['Fx::note_w0(float)', 'Fx::polyblep(float, float)']
       },
-      snapshotHash: '90d83d49292969b8'
+      snapshotHash: '89a5a76831726b8a'
     },
     'logue/osc/triangle': {
       first: 417,
       extra: 285,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 185, extra: 72, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '84542d8e80e4b65c'
+      snapshotHash: '5d87996ccd566443'
     },
     'logue/osc/additive': {
       first: 540,
@@ -2129,84 +2129,84 @@ export const CODE_SIZE_TABLE: Record<
         extra: 64,
         helpers: ['Fx::additive_step(float, float, float)', 'Fx::note_w0(float)']
       },
-      snapshotHash: '4663861446fc5f05'
+      snapshotHash: '710237512735685f'
     },
     'logue/osc/granular': {
       first: 2181,
       extra: 1604,
       helpers: ['Fx::note_w0(float)', 'memset'],
       unwired: { first: 1953, extra: 1340, helpers: ['Fx::note_w0(float)', 'memset'] },
-      snapshotHash: '36a3f52804303136'
+      snapshotHash: '0f2f2bc413fac628'
     },
     'logue/mix/mix2': {
       first: 28,
       extra: 24,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '8e8b5cde406a03bb'
+      snapshotHash: 'd4c2671f67112925'
     },
     'logue/math/multiply': {
       first: 0,
       extra: 4,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '0b26d1b6c51171af'
+      snapshotHash: 'c12a420eb6898aca'
     },
     'logue/mix/crossfader': {
       first: 204,
       extra: 144,
       helpers: [],
       unwired: { first: 298, extra: 124, helpers: ['Fx::xfade_settle(float*, float, float)'] },
-      snapshotHash: '089b0063484764a0'
+      snapshotHash: '32d9f5523a44c519'
     },
     'logue/mix/stereo-mix2': {
       first: 28,
       extra: 24,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: 'fe884c9e4788e768'
+      snapshotHash: '78a5e7cc5a700097'
     },
     'logue/mix/stereo-crossfader': {
       first: 192,
       extra: 140,
       helpers: [],
       unwired: { first: 286, extra: 112, helpers: ['Fx::xfade_settle(float*, float, float)'] },
-      snapshotHash: '691c2bffa3b82a56'
+      snapshotHash: '34dede0f2fe425f0'
     },
     'logue/filter/lowpass-cheap': {
       first: 92,
       extra: 72,
       helpers: [],
       unwired: { first: 92, extra: 48, helpers: [] },
-      snapshotHash: 'edf1f99e801aad2d'
+      snapshotHash: '8a67cbbd4bc2706c'
     },
     'logue/filter/highpass-cheap': {
       first: 88,
       extra: 88,
       helpers: [],
       unwired: { first: 92, extra: 52, helpers: [] },
-      snapshotHash: '05e3024fbce56936'
+      snapshotHash: 'de2ed94b1b0020ae'
     },
     'logue/gain/vca': {
       first: 8,
       extra: 4,
       helpers: [],
       unwired: { first: 24, extra: 0, helpers: [] },
-      snapshotHash: '03c6cd9004bde762'
+      snapshotHash: '55bdc9341ea63a73'
     },
     'logue/env/ad': {
       first: 564,
       extra: 415,
       helpers: ['Fx::env_rate_from_percent(float)'],
       unwired: { first: 348, extra: 152, helpers: ['Fx::env_rate_from_percent(float)'] },
-      snapshotHash: 'ea61b20e11d84ffe'
+      snapshotHash: 'df5f1d238dc76490'
     },
     'logue/env/adsr': {
       first: 428,
       extra: 290,
       helpers: ['Fx::adsr_rate(float, float)'],
       unwired: { first: 432, extra: 250, helpers: ['Fx::adsr_rate(float, float)'] },
-      snapshotHash: '62fe233b7fc67d5c'
+      snapshotHash: 'e473b1d5c4aa2297'
     },
     'logue/env/one-knob-adsr': {
       first: 762,
@@ -2217,104 +2217,104 @@ export const CODE_SIZE_TABLE: Record<
         extra: 394,
         helpers: ['Fx::adsr_rate(float, float)', 'Fx::knob_env_value(float, int)']
       },
-      snapshotHash: '9c5705d6ac6db998'
+      snapshotHash: 'a2b6a4d0621efcb3'
     },
     'logue/env/multistage': {
       first: 756,
       extra: 690,
       helpers: [],
       unwired: { first: 668, extra: 506, helpers: [] },
-      snapshotHash: '5ed6a1849c3b6d5f'
+      snapshotHash: 'fa7f172c3c231698'
     },
     'logue/lfo/sine-lfo': {
       first: 366,
       extra: 216,
       helpers: [],
       unwired: { first: 270, extra: 128, helpers: [] },
-      snapshotHash: 'd9221d9bc61e3c32'
+      snapshotHash: 'b511f7a2cfbd7424'
     },
     'logue/lfo/triangle-lfo': {
       first: 244,
       extra: 172,
       helpers: [],
       unwired: { first: 148, extra: 80, helpers: [] },
-      snapshotHash: 'c6429d93a678c350'
+      snapshotHash: '231e2330cae54204'
     },
     'logue/lfo/square-lfo': {
       first: 228,
       extra: 160,
       helpers: [],
       unwired: { first: 132, extra: 76, helpers: [] },
-      snapshotHash: 'f8cf468759e87de9'
+      snapshotHash: '7b163c27b233dd26'
     },
     'logue/lfo/ramp-up': {
       first: 224,
       extra: 148,
       helpers: [],
       unwired: { first: 124, extra: 64, helpers: [] },
-      snapshotHash: 'ced3469dbc75f86b'
+      snapshotHash: '6d409d19fec135d7'
     },
     'logue/lfo/ramp-down': {
       first: 224,
       extra: 148,
       helpers: [],
       unwired: { first: 124, extra: 64, helpers: [] },
-      snapshotHash: '785b4d8a503639cd'
+      snapshotHash: '720ad1f96c104bad'
     },
     'logue/lfo/fast-square': {
       first: 445,
       extra: 264,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 301, extra: 128, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '802700d4e0a165bb'
+      snapshotHash: '8b0639df5cf67dd1'
     },
     'logue/lfo/random-steps': {
       first: 252,
       extra: 184,
       helpers: [],
       unwired: { first: 200, extra: 112, helpers: [] },
-      snapshotHash: '54ebeef1bdb03998'
+      snapshotHash: '067f77b20c4869f8'
     },
     'logue/osc/noise': {
       first: 499,
       extra: 373,
       helpers: ['memset'],
-      snapshotHash: '7de83902830d40d1'
+      snapshotHash: 'e881cd39c2a173f2'
     },
     'logue/osc/lfsr': {
       first: 675,
       extra: 437,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 631, extra: 361, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '77efd6de7c58ca1a'
+      snapshotHash: 'bd987c099dd83217'
     },
     'logue/shape/wavefolder': {
       first: 124,
       extra: 104,
       helpers: [],
       unwired: { first: 36, extra: 0, helpers: [] },
-      snapshotHash: '3c64304026c12c68'
+      snapshotHash: '0c7456454ea4b737'
     },
     'logue/shape/soft-clip': {
       first: 92,
       extra: 72,
       helpers: [],
       unwired: { first: 48, extra: 4, helpers: [] },
-      snapshotHash: '216989a0fb3b382f'
+      snapshotHash: '27c2fc93b77d9b12'
     },
     'logue/shape/drive': {
       first: 609,
       extra: 416,
       helpers: ['Fx::exp_approx(float)'],
       unwired: { first: 433, extra: 204, helpers: ['Fx::exp_approx(float)'] },
-      snapshotHash: 'bd26f52b476704e9'
+      snapshotHash: '96074ea28992bb10'
     },
     'logue/filter/comb': {
       first: 936,
       extra: 684,
       helpers: ['Fx::note_w0(float)', 'memset'],
       unwired: { first: 848, extra: 488, helpers: ['Fx::note_w0(float)', 'memset'] },
-      snapshotHash: '57e9015d9f1c40fe'
+      snapshotHash: '6f2eb8a4e83b0dde'
     },
     'logue/filter/string': {
       first: 838,
@@ -2333,14 +2333,14 @@ export const CODE_SIZE_TABLE: Record<
           'memset'
         ]
       },
-      snapshotHash: 'f88b0f3adf944f68'
+      snapshotHash: '5ad65e1041717e95'
     },
     'logue/osc/exciter': {
       first: 893,
       extra: 402,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 865, extra: 310, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '644ef3d8dff0b64d'
+      snapshotHash: '599828ab713214c9'
     },
     'logue/osc/sync': {
       first: 510,
@@ -2357,14 +2357,14 @@ export const CODE_SIZE_TABLE: Record<
           'Fx::sync_osc_step(float*, float*, float*, float, float, int, float)'
         ]
       },
-      snapshotHash: '1d1c1ce43766ec40'
+      snapshotHash: '9b6601f332d594a2'
     },
     'logue/osc/phase-dist': {
       first: 1675,
       extra: 1424,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 1503, extra: 1028, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '7e367a90928dd9f0'
+      snapshotHash: 'eabca751e9792c98'
     },
     'logue/osc/bass-support': {
       first: 1290,
@@ -2383,21 +2383,21 @@ export const CODE_SIZE_TABLE: Record<
           'memset'
         ]
       },
-      snapshotHash: '257face24f38440f'
+      snapshotHash: 'ab5e9dc8f773c4de'
     },
     'logue/filter/svf': {
       first: 665,
       extra: 630,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 601, extra: 526, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '1498d73a0939393f'
+      snapshotHash: '5fb80e35691d10e1'
     },
     'logue/filter/ladder': {
       first: 1472,
       extra: 1192,
       helpers: ['Fx::note_w0(float)', 'memset'],
       unwired: { first: 1068, extra: 792, helpers: ['Fx::note_w0(float)', 'memset'] },
-      snapshotHash: 'cc8996b4ce647780'
+      snapshotHash: '34d91ea1fa70578d'
     },
     'logue/filter/eq-band': {
       first: 1197,
@@ -2408,14 +2408,14 @@ export const CODE_SIZE_TABLE: Record<
         extra: 669,
         helpers: ['Fx::exp_approx(float)', 'Fx::note_w0(float)', 'memset']
       },
-      snapshotHash: '4fda9a92a6c5bc4c'
+      snapshotHash: '5d834bd3a27dcfb3'
     },
     'logue/filter/tilt': {
       first: 725,
       extra: 533,
       helpers: ['Fx::note_w0(float)'],
       unwired: { first: 533, extra: 329, helpers: ['Fx::note_w0(float)'] },
-      snapshotHash: '68c43266f8ca9bcc'
+      snapshotHash: '0408df22f9d25f29'
     },
     'logue/filter/formant': {
       first: 967,
@@ -2426,198 +2426,198 @@ export const CODE_SIZE_TABLE: Record<
         extra: 545,
         helpers: ['Fx::formant_g(float, float, float, int)', 'memset']
       },
-      snapshotHash: '4672f99f1056f6ff'
+      snapshotHash: '76834d8b5114c96a'
     },
-    'logue/sense/control': { first: 8, extra: 0, helpers: [], snapshotHash: '0601f991f0cabfe7' },
-    'logue/util/constant': { first: 8, extra: 0, helpers: [], snapshotHash: '2f68421838833402' },
+    'logue/sense/control': { first: 8, extra: 0, helpers: [], snapshotHash: 'c73a9c82a4d426eb' },
+    'logue/util/constant': { first: 8, extra: 0, helpers: [], snapshotHash: '3330059ff140d8d0' },
     'logue/util/unipolar-to-bipolar': {
       first: 48,
       extra: 0,
       helpers: [],
       unwired: { first: 0, extra: 0, helpers: [] },
-      snapshotHash: 'f2494343837c201f'
+      snapshotHash: 'b3c33aeb61a986e5'
     },
     'logue/util/bipolar-to-unipolar': {
       first: 36,
       extra: 0,
       helpers: [],
       unwired: { first: 0, extra: 0, helpers: [] },
-      snapshotHash: 'bb1738541e78eeeb'
+      snapshotHash: 'a4ddf45ded321d40'
     },
     'logue/math/negate': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 0, extra: 0, helpers: [] },
-      snapshotHash: 'da3d23ef4dc8bd10'
+      snapshotHash: 'b3572537a4eb872a'
     },
     'logue/math/one-minus': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 0, extra: 0, helpers: [] },
-      snapshotHash: 'b2ff1f5356954df7'
+      snapshotHash: 'f6edd23d384d50bf'
     },
     'logue/math/curve': {
       first: 188,
       extra: 176,
       helpers: [],
       unwired: { first: 100, extra: 124, helpers: [] },
-      snapshotHash: 'ed3494b8b9f73650'
+      snapshotHash: '25af7509bf6e4d3d'
     },
     'logue/math/add': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: 'd6383a2bddff31c9'
+      snapshotHash: 'fe563350ef515c84'
     },
     'logue/math/subtract': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '918fbb911cef34bb'
+      snapshotHash: '5d7c3d8c9a6b92e6'
     },
     'logue/math/scale': {
       first: 24,
       extra: 16,
       helpers: [],
       unwired: { first: 32, extra: 0, helpers: [] },
-      snapshotHash: '7f1622cf03e56cc4'
+      snapshotHash: 'c70f86a68a8f7f59'
     },
     'logue/math/min': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '19ea78a55e2ace19'
+      snapshotHash: '2cdad2b6d986b91f'
     },
     'logue/math/max': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '120d7299e59c6493'
+      snapshotHash: '34d04ce8b0aeed32'
     },
     'logue/math/clamp': {
       first: 48,
       extra: 36,
       helpers: [],
       unwired: { first: 56, extra: 16, helpers: [] },
-      snapshotHash: '4d5747eb038a6557'
+      snapshotHash: 'd276a7683aa4e906'
     },
     'logue/math/abs': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '311386b00707e5f3'
+      snapshotHash: '5fe455fe592d0fab'
     },
     'logue/logic/greater-than': {
       first: 36,
       extra: 28,
       helpers: [],
       unwired: { first: 36, extra: 0, helpers: [] },
-      snapshotHash: '8781970f0743cd8c'
+      snapshotHash: '2425ce5b17c9e9af'
     },
     'logue/logic/less-than': {
       first: 36,
       extra: 28,
       helpers: [],
       unwired: { first: 32, extra: 0, helpers: [] },
-      snapshotHash: 'c6fa8901ca039b63'
+      snapshotHash: 'a2138d4be323435a'
     },
     'logue/logic/equal': {
       first: 56,
       extra: 44,
       helpers: [],
       unwired: { first: 52, extra: 16, helpers: [] },
-      snapshotHash: '82393989846b664c'
+      snapshotHash: '70f3c81c4f62fce3'
     },
     'logue/logic/and': {
       first: 24,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '49482c0a15580834'
+      snapshotHash: '95af1d6cebd18869'
     },
     'logue/logic/or': {
       first: 24,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '7b83921269f92ec4'
+      snapshotHash: '0522842afeda8238'
     },
     'logue/logic/xor': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: 'aab77423e726dbff'
+      snapshotHash: 'a43dfe2dba6c4ada'
     },
     'logue/mux/mux2': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: 'a690e18ea8e50652'
+      snapshotHash: 'f4afe5aa62ccb8ed'
     },
     'logue/mux/mux4': {
       first: 4,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '54c9d70a1f71bf2f'
+      snapshotHash: 'f87b33d5fd416602'
     },
     'logue/mux/demux2': {
       first: 28,
       extra: 0,
       helpers: [],
       unwired: { first: 8, extra: 0, helpers: [] },
-      snapshotHash: '28008d86bbb48b0f'
+      snapshotHash: '1123200d547c0a35'
     },
     'logue/logic/schmitt': {
       first: 76,
       extra: 60,
       helpers: [],
       unwired: { first: 76, extra: 40, helpers: [] },
-      snapshotHash: 'c432dc8aa076ba4b'
+      snapshotHash: '139083adaa4c99e7'
     },
     'logue/logic/edge': {
       first: 72,
       extra: 28,
       helpers: [],
       unwired: { first: 48, extra: 12, helpers: [] },
-      snapshotHash: '34ab1d63a921d3f9'
+      snapshotHash: 'e7198e51022b71c3'
     },
     'logue/util/sample-hold': {
       first: 76,
       extra: 36,
       helpers: [],
       unwired: { first: 28, extra: 0, helpers: [] },
-      snapshotHash: 'b950918e40dec78c'
+      snapshotHash: '0bbcd9f952c45116'
     },
     'logue/util/glide': {
       first: 140,
       extra: 178,
       helpers: [],
       unwired: { first: 148, extra: 150, helpers: [] },
-      snapshotHash: '7506a1ae4eb21ddf'
+      snapshotHash: 'c4c54bfe01cea0ae'
     },
     'logue/util/slew': {
       first: 444,
       extra: 407,
       helpers: [],
       unwired: { first: 312, extra: 279, helpers: [] },
-      snapshotHash: 'bbf766ecc1632195'
+      snapshotHash: '4d4575a0c936f266'
     },
     'logue/util/sample-delay': {
       first: 88,
       extra: 12,
       helpers: [],
       unwired: { first: 24, extra: 0, helpers: [] },
-      snapshotHash: 'a625e1ea19059647'
+      snapshotHash: '4871fdd6f8101c12'
     },
     'logue/util/delay': {
       first: 479,
@@ -2628,14 +2628,14 @@ export const CODE_SIZE_TABLE: Record<
         extra: 92,
         helpers: ['Fx::delay_step(short*, int*, float, float, float, float)', 'memset']
       },
-      snapshotHash: 'd0aa0f54bfd774b8'
+      snapshotHash: '5a261f7f4b38f586'
     },
     'logue/util/long-delay': {
       first: 867,
       extra: 453,
       helpers: ['memset'],
       unwired: { first: 767, extra: 353, helpers: ['memset'] },
-      snapshotHash: '71982873d100822a'
+      snapshotHash: '0f339c0669d70b3c'
     },
     'logue/util/quantize': {
       first: 353,
@@ -2646,29 +2646,29 @@ export const CODE_SIZE_TABLE: Record<
         extra: 163,
         helpers: ['Fx::quantize_step(float, int, float*, float*)']
       },
-      snapshotHash: 'ee2363ac72ce02b8'
+      snapshotHash: 'c14b68d30bfa3a3a'
     },
     'logue/filter/allpass': {
       first: 455,
       extra: 269,
       helpers: ['memset'],
       unwired: { first: 391, extra: 176, helpers: ['memset'] },
-      snapshotHash: 'b519e3644b9984fd'
+      snapshotHash: '5d6e2a6002a2916f'
     },
     'logue/env/follower': {
       first: 236,
       extra: 136,
       helpers: [],
       unwired: { first: 220, extra: 124, helpers: [] },
-      snapshotHash: 'eca79cd82627972c'
+      snapshotHash: 'd9321a1a2791842a'
     },
-    'logue/sense/tempo': { first: 209, extra: 56, helpers: [], snapshotHash: 'e88ae0f82b4156d9' },
+    'logue/sense/tempo': { first: 209, extra: 56, helpers: [], snapshotHash: '64379ef9e400a346' },
     'logue/filter/hilbert': {
       first: 451,
       extra: 288,
       helpers: ['memset'],
       unwired: { first: 455, extra: 268, helpers: ['memset'] },
-      snapshotHash: '3ffe84d6a2d98867'
+      snapshotHash: 'fd2f3aa1ec8fb4d1'
     },
     'logue/util/freq-shift': {
       first: 550,
@@ -2685,98 +2685,98 @@ export const CODE_SIZE_TABLE: Record<
           'memset'
         ]
       },
-      snapshotHash: 'af1f86022bd303b9'
+      snapshotHash: 'daf2604bb8c5df78'
     },
     'logue/util/buffer': {
       first: 647,
       extra: 484,
       helpers: ['memset'],
       unwired: { first: 631, extra: 436, helpers: ['memset'] },
-      snapshotHash: '3872c18be0a5e7da'
+      snapshotHash: 'ff5fa08c27c0dd0b'
     },
     'logue/util/buffer-tap': {
       first: 691,
       extra: 516,
       helpers: ['memset'],
       unwired: { first: 12, extra: 0, helpers: [] },
-      snapshotHash: '0f912bec0e5e8559'
+      snapshotHash: 'a2775113d5091c02'
     },
     'logue/util/grain': {
       first: 1099,
       extra: 904,
       helpers: ['memset'],
       unwired: { first: 223, extra: 0, helpers: ['memset'] },
-      snapshotHash: '1e061b197f88e3c0'
+      snapshotHash: '56068fdec015b527'
     },
     'logue/util/reverse-tap': {
       first: 1087,
       extra: 932,
       helpers: ['memset'],
       unwired: { first: 179, extra: 12, helpers: ['memset'] },
-      snapshotHash: '8cabc0a2bc1490e9'
+      snapshotHash: '8889deaa4a87a71f'
     },
     'logue/mix/pan': {
       first: 240,
       extra: 164,
       helpers: [],
       unwired: { first: 152, extra: 60, helpers: [] },
-      snapshotHash: '62ccf9014c7ba69e'
+      snapshotHash: '85c3069b7deec2a4'
     },
     'logue/mix/pan-mix2': {
       first: 428,
       extra: 360,
       helpers: [],
       unwired: { first: 108, extra: 0, helpers: [] },
-      snapshotHash: 'e58f5dd040743146'
+      snapshotHash: '52a2d85076e67439'
     },
     'logue/mix/bus-send': {
       first: 24,
       extra: 8,
       helpers: [],
       unwired: { first: 12, extra: 0, helpers: [] },
-      snapshotHash: '8f80b153a30397f2'
+      snapshotHash: '68f1c0e5a1d6f3b9'
     },
     'logue/mix/bus-receive': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '185f8262303a613a'
+      snapshotHash: '0da35584e3057bd0'
     },
     'logue/mix/bus-send-stereo': {
       first: 24,
       extra: 8,
       helpers: [],
       unwired: { first: 12, extra: 0, helpers: [] },
-      snapshotHash: '8f5f2a91008b7c0c'
+      snapshotHash: '4a8fc721767aa382'
     },
     'logue/mix/bus-receive-stereo': {
       first: 0,
       extra: 0,
       helpers: [],
       unwired: { first: 4, extra: 0, helpers: [] },
-      snapshotHash: '898429f2f5cbf6fe'
+      snapshotHash: '69b1fb98a7af0a4a'
     },
     'logue/mix/width': {
       first: 92,
       extra: 64,
       helpers: [],
       unwired: { first: 40, extra: 0, helpers: [] },
-      snapshotHash: '2cffba2ea3591b93'
+      snapshotHash: '06015c35efef39ea'
     },
     'logue/logic/chance': {
       first: 224,
       extra: 168,
       helpers: [],
       unwired: { first: 152, extra: 100, helpers: [] },
-      snapshotHash: '2858ec9dd42d3f1d'
+      snapshotHash: 'acb6bf64b0ba217f'
     },
     'logue/logic/round-robin': {
       first: 136,
       extra: 84,
       helpers: [],
       unwired: { first: 88, extra: 0, helpers: [] },
-      snapshotHash: '6d2369b06f37d67d'
+      snapshotHash: 'd40597ea765b39b4'
     }
   }
 }
@@ -2785,8 +2785,8 @@ export const CODE_SIZE_TABLE: Record<
 export const CODE_SHELL_HASH: Record<CodeSizeContext, string> = {
   'minilogue-xd:osc': 'f3edec1a842e0630',
   'minilogue-xd:fx': 'a0991e3ab2775c69',
-  'nts1mkii:osc': '2f68421838833402',
-  'nts1mkii:fx': '22ce76fa5692236c'
+  'nts1mkii:osc': '3330059ff140d8d0',
+  'nts1mkii:fx': 'eff37e806744f307'
 }
 
 /** Bytes of each out-of-line function (demangled name) per context. */
