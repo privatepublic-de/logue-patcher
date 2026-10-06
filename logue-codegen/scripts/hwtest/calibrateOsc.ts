@@ -17,7 +17,7 @@ import { homedir } from 'os'
 import { dirname, join, relative } from 'path'
 import type { PatchDocument } from '../../../src/shared/domain/patch'
 import { parsePatchFile } from '../../../src/shared/json/patchCodec'
-import { estimateOscCpuCost } from '../../src/estimateOscCpuCost'
+import { estimateOscCpuCost, oscRealCycles, XD_OSC_HANG_CYCLES } from '../../src/estimateOscCpuCost'
 import { isEffectModule } from '../../src/unitKinds'
 import { peakFrequency, trackPeak } from './analysis'
 import { record, SAMPLE_RATE } from './audioCapture'
@@ -127,10 +127,10 @@ async function main(): Promise<void> {
         console.log(`${p.name.padEnd(22)} not estimated: ${est.reason}`)
         continue
       }
-      // formant (estimate 682, ~1700 real for ONE voice) hung the xd here: its main MCU has ~1728
-      // cycles per sample in all, and a hung xd needs a power cycle. Skip anything that could
-      // come near it (2.7x the estimate: about the highest ratio of the units measured cleanly).
-      if (XD && est.estimate.cyclesPerVoice * 2.7 > 0.8 * 1728) {
+      // formant (estimate 682, ~1700 real for ONE voice) hung the xd here, and a hung xd needs a
+      // power cycle. A voice hangs from ~1225-1300 real cycles (`XD_OSC_HANG_CYCLES`): skip a
+      // patch whose converted estimate, 34 % low (the fit's worst), could reach it.
+      if (XD && oscRealCycles(est.estimate.cyclesPerVoice, platform) / 0.66 > XD_OSC_HANG_CYCLES) {
         console.log(
           `${p.name.padEnd(22)} skipped: estimate ${est.estimate.cyclesPerVoice} could hang the xd`
         )

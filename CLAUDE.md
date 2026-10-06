@@ -405,12 +405,19 @@ its settings. Emulator scale, not hardware; checked against measuring whole patc
 The `control` variants wire constants, which knob-only hoisting (2026-10-01) makes per-block, so
 they mostly measure the cheap path and understate a moving source (open; adsr's `control` 38 sits
 below its `base` 46). The effect table below wires a moving source instead.
-Two hardware anchors, same scale: cpiano (granular + 2 LFOs + mux, 468 measured whole) plays
-4-note chords fine on a real xd (user, 2026-09-28); ~795 hung one. The Build panel shows a gauge
-(`cpuZone`): a solid fill for the saved settings, a faint extension up to the knob maximum, ticks
-at both anchors, green up to 468, amber to red toward 795, and one line ("likely fine" /
-"untested" / "likely to hang", plus the knob-reachable zone when it differs); numbers and the
-biggest costs are in the tooltip. `logue-cpuCostTable.spec.ts`
+**The gauge is in REAL cycles** (2026-10-06, `oscRealCycles`, `cpuZone` converts): measured
+through audio telemetry (see "Hardware test harness"), xd real = 164 + 1.40 x the estimate per
+voice (19 readings, -34..+35 %), NTS-1 mkII 44 + 0.83 x (21, -37..+54 %); an affine fit, so
+per-instance costs stay on the emulator's scale (the tooltip says so). xd anchors
+(`cpuCeiling.ts --xd --osc`, a sine burning an exact load): with 4 notes held a voice is clean at
+1225 and breaks up from 1250 (`XD_OSC_HANG_CYCLES` 1225, red); one voice ran to 1290 and FROZE at
+1300 (kept sounding, MIDI dead: the hang signature). Green to 808 (`XD_OSC_CLEAN_CYCLES`, where a
+34 % under-read still clears), amber "tight" between. Old reports agree: cpiano (estimate 381,
+~700 converted, 921 measured) plays chords fine; formant (682 -> ~1120, ~1700 measured) and a
+granular patch (~795 -> ~1280) hung it -- `logue-cpuCostTable.spec.ts` pins those and that every
+calibrated patch stays below red. The Build panel's gauge: a solid fill for the saved settings,
+a faint extension up to the knob maximum, and one line ("fine" / "tight" / "may hang", plus the
+knob-reachable zone when it differs); numbers and the biggest costs are in the tooltip. `logue-cpuCostTable.spec.ts`
 stores a hash of each primitive's xd snapshot and warns once codegen changes without a
 re-measure: once, `python3 -m venv ~/.logue-emu && ~/.logue-emu/bin/pip install unicorn capstone
 pyelftools`; then `EMU_PYTHON=~/.logue-emu/bin/python npx tsx
@@ -421,11 +428,11 @@ counts a missing primitive as 0 and names it in the tooltip. `CPU_COST_STRICT=1 
 test/logue-cpuCostTable.spec.ts` makes it fail, e.g. to confirm a re-measure. The CPU estimate also returns `incomplete` for a patch the xd can't build (same as
 the RAM line). **NTS-1 mkII gauge** (same
 code path, `estimateOscCpuCost(doc, defs, 'nts1mkii')`, `CPU_GAUGE`): the xd table stands in for
-per-primitive costs (no M7 emulator; the M7 usually needs fewer cycles), a helper-less primitive
-with no xd measurement (`sense/velocity`) counts as free, knob exposure is read per platform, and
-the scale is the ceiling measured below: "fine" up to half of it (so a 2x error in the stand-in
-still fits), "tight" toward it, "likely to break up" past it. **Measured on a real NTS-1 mkII
-(user, 2026-09-28)** with
+per-primitive costs (no M7 emulator), converted as above, a helper-less primitive with no xd
+measurement (`sense/velocity`) counts as free, knob exposure is read per platform. Red at 6700
+(`NTS1MKII_OSC_DROPOUT_CYCLES`: factory chorus, stereo delay and hall reverb on), "effects off"
+up to 7350 (`NTS1MKII_OSC_SOLO_CYCLES`), green to 4200 (0.63 x 6700). The first measurement
+(2026-09-28), with
 `scripts/stageNts1CpuProbe.ts`, a unit that times its own render with the M7's DWT cycle counter
 (a user unit may read it) and shows it as a strings-param value: the clock is ~549 MHz (the
 STM32H725's full rating), 11,457 cycles per sample in total, the probe's plain sine costs 53, and
@@ -1756,7 +1763,7 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   **Triage when it recurs**: first ask whether it depends on settings (the costliest ones) and on
   voice count, and count cycles per voice-sample in the staged build against ~1728 per sample
   PER VOICE (measured 2026-10-06: each voice has its own budget; real cycles ~= 164 + 1.4x the
-  emulator's); only then suspect call shape/`-Os` (the formant playbook). A fuzz
+  emulator's), of which a voice gets ~1225-1300 before the xd breaks up or hangs; only then suspect call shape/`-Os` (the formant playbook). A fuzz
   under ASan/UBSan rules out bad reads/math cheaply first.
 - **Verifying a new primitive's actual DSP correctness** — lessons from real false starts:
   zero-crossing counting is the wrong measurement for a harmonically-rich or continuously
@@ -1860,10 +1867,16 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   sample**: with 1-4 notes held, cpiano read ~915 per voice and the budget 1729 every time -- the
   voices don't share one budget (so the "~1750 per sample in total" in the hang triage is per
   voice). formant at its authored settings costs ~1700 for ONE voice and hung the xd during the
-  calibration (power cycle needed; `calibrateOsc.ts` now skips an xd patch whose estimate x 2.7 is
-  over 80 % of the budget). `cpuCeiling.ts --osc` (NTS-1 mkII): clean to 7350 with the effects
-  off, dropouts from 7400; with factory chorus + stereo delay + hall reverb clean to 6700,
-  dropouts from 6750. The xd oscillator ceiling isn't measured (a sweep would hang it).
+  calibration (power cycle needed; `calibrateOsc.ts` now skips an xd patch whose converted
+  estimate / 0.66 reaches `XD_OSC_HANG_CYCLES`). `cpuCeiling.ts --osc` (NTS-1 mkII): clean to
+  7350 with the effects off, dropouts from 7400; with factory chorus + stereo delay + hall reverb
+  clean to 6700, dropouts from 6750. `cpuCeiling.ts --xd --osc [--notes n]` (BURN on the multi
+  engine's Shape knob, CC 54 + LSB 63): one voice clean to 1290, FROZE at 1300; 4 notes clean at
+  1225, breaking up from 1250 (effects off). It stops at the first failure and doesn't restore
+  (each needs a power cycle; the next run's snapshot restores from an earlier one), and counts a
+  step whose reading stops rising with the burn as a failure: a hung voice keeps rendering its
+  last block while the recording looks whole and SysEx still works -- so a "verified" restore is
+  no health check; a burn-0 reading above 400 aborts.
 - Gotcha: a slot re-uploaded with the SAME unit id while selected keeps playing the old code;
   every test unit gets its own id and the module is deselected before an upload.
 - Gotcha: the device has refused one of many quick uploads with USER INTERNAL ERROR (2F);

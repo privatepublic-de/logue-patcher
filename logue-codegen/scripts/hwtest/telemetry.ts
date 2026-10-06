@@ -342,10 +342,14 @@ export function withNts1OscTelemetry(
 /**
  * minilogue xd oscillator: wraps `OSC_CYCLE` (called once per voice; every voice runs its own
  * copy, so each reads its own render and the time between its own calls -- the whole main-MCU
- * budget per sample, ~1750). The tones go out as Q31; decode the total with
- * `cyclesFromXdTotTone`.
+ * budget per sample, ~1728). The tones go out as Q31; decode the total with
+ * `cyclesFromXdTotTone`. With `burnMax`, the multi engine's Shape knob sets the burn (0..burnMax
+ * cycles per sample).
  */
-export function withXdOscTelemetry(files: Record<string, string>): Record<string, string> {
+export function withXdOscTelemetry(
+  files: Record<string, string>,
+  opts: { burnMax?: number } = {}
+): Record<string, string> {
   let oscCpp = files['osc.cpp']
   const replace = (from: string, to: string): void => {
     if (!oscCpp.includes(from)) throw new Error(`xd osc telemetry: "${from.trim()}" not found`)
@@ -365,5 +369,12 @@ export function withXdOscTelemetry(files: Record<string, string>): Record<string
     for (uint32_t i = 0; i < n; ++i) yn[done + i] = f32_to_q31(s_t_buf[i]);
   }`
   )
+  if (opts.burnMax !== undefined) {
+    replace(
+      '  if (index == k_user_osc_param_shape) {',
+      `  if (index == k_user_osc_param_shape) s_t_burn = (int32_t)(param_val_to_f32(value) * ${opts.burnMax}.f);
+  if (index == k_user_osc_param_shape) {`
+    )
+  }
   return { ...files, 'osc.cpp': oscCpp }
 }

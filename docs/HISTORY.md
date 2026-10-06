@@ -2901,3 +2901,23 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   it. The readings file is the clean readings before formant plus a rerun of the rest without
   formant and string. A 1-4 note test (cpiano, ~915 per voice, budget 1729 throughout) showed
   each xd voice has its own budget.
+
+### Oscillator CPU ceilings and both oscillator gauges on real cycles (2026-10-06)
+
+- xd burn sweeps (`cpuCeiling.ts --xd --osc`, a sine with BURN on the Shape knob, effects off).
+  One voice, steps of 50 from 800: the reading followed the burn to 1300, then read 1301 at every
+  step to 1900 while the recording stayed clean (-74 dB residual) and the restore at the end
+  verified. The next run (another knob scale) read 800 even at burn 0 with a -20 dB residual: the
+  voice had hung at 1300 and kept rendering its last block -- tones and all, so the dropout scan
+  saw nothing -- while SysEx kept working. Fine sweep after a power cycle: clean to 1290, frozen
+  from 1300 (one 10-cycle step). With 4 notes held: clean at 1225, audible dropouts at 1250
+  (reading 1270). So a voice gets ~1225-1300 of its 1728; the rest presumably is what the
+  control side needs. Three power cycles in all.
+- The script now fails a step whose reading doesn't rise with the burn and aborts when burn 0
+  reads above 400.
+- Both oscillator gauges moved to real cycles with the calibration fits (xd 164 + 1.40x, NTS-1
+  mkII 44 + 0.83x). Before: xd green to 468 / red at 795 on the emulator scale (cpiano and the
+  granular hang); NTS-1 mkII green to half of 7300 (the 2026-09-28 probe, Submarine reverb on).
+  The old xd anchors land where they should on the new scale: cpiano ~700 green, granular ~1280
+  red, formant ~1120 amber. The amber text first said "may hang with chords", but cpiano's knob
+  maximum (917) lands there and it plays chords fine; it now names the estimate's error instead.
