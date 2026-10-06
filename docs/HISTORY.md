@@ -2895,3 +2895,9 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   though every run the night before had restored and verified it; the snapshot fell back to the
   previous night's (byte-identical to the original). Since then the program as found is kept as
   `program-as-found.bin`.
+- Oscillator CPU calibration: the xd run hung at formant (~1700 real cycles for one voice, its
+  whole budget); every later unit then read ~1729 with the budget tone at 2677, and the xd
+  stayed that way after the restore (which still worked over MIDI) until the user power-cycled
+  it. The readings file is the clean readings before formant plus a rerun of the rest without
+  formant and string. A 1-4 note test (cpiano, ~915 per voice, budget 1729 throughout) showed
+  each xd voice has its own budget.

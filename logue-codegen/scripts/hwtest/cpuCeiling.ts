@@ -13,6 +13,7 @@
  *   factory CHORUS and a HALL reverb (dry/wet at 0, so the tones stay clean) run around it --
  *   the setup the xd gauge's first anchors were heard in (a delay unit, mod and reverb on).
  *   --reverb <cc value> picks another reverb type for that.
+ *   --osc (NTS-1 mkII): the burn unit is an oscillator instead (see OSC).
  * Leaves the device as it was (slot 1s and the program restored).
  */
 import { LOGUE_AUDIO_IN_TYPE, LOGUE_AUDIO_OUT_TYPE } from '../../src/oscInstances'
@@ -22,6 +23,7 @@ import { record, SAMPLE_RATE } from './audioCapture'
 import { buildNts1Unit, buildXdUnit } from './buildUnit'
 import {
   factory,
+  neutralVoice,
   programFrom,
   restore,
   takeSnapshot,
@@ -38,6 +40,7 @@ import {
   FX_TONE_BAND,
   TOT_TONE_BAND,
   withFxTelemetry,
+  withNts1OscTelemetry,
   withXdFxTelemetry,
   XD_TELEMETRY
 } from './telemetry'
@@ -51,7 +54,11 @@ const DELAY_SLOT = XD && process.argv.includes('--delay-slot')
 /** The factory reverb around a delay-slot burn unit, as its CC value (the xd's *5-14: HALL 3,
  *  SMOOTH 11, ARENA 18, PLATE 25, ROOM 32, ...). */
 const XD_REVERB = arg('--reverb', 3)
-const SLOT = DELAY_SLOT ? ('delfx' as const) : ('revfx' as const)
+/** NTS-1 mkII only: the burn unit is an oscillator (a sine) in the OSC slot, BURN its program
+ *  PARAM 1 (row 2, after Shape/Alt); with --others the factory CHORUS, STEREO delay and HALL
+ *  reverb all run. */
+const OSC = !XD && process.argv.includes('--osc')
+const SLOT = OSC ? ('osc' as const) : DELAY_SLOT ? ('delfx' as const) : ('revfx' as const)
 const OTHERS = process.argv.includes('--others')
 const FROM = arg('--from', XD ? 2000 : 6000)
 const TO = arg('--to', XD ? 3700 : 11200)
@@ -73,6 +80,16 @@ const XD_CC = {
   lsb: 63
 }
 
+const OSC_SINE: PatchDocument = {
+  nodes: [
+    { kind: 'obj', type: 'logue/osc/sine', name: 's', x: 0, y: 0, params: [] },
+    { kind: 'obj', type: LOGUE_AUDIO_OUT_TYPE, name: 'out', x: 0, y: 0, params: [] }
+  ],
+  nets: [{ sources: [{ obj: 's', outlet: 'out' }], dests: [{ obj: 'out', inlet: 'in' }] }],
+  settings: { logueTarget: { module: 'osc' } },
+  notes: ''
+}
+
 const PASS: PatchDocument = {
   nodes: [
     { kind: 'obj', type: LOGUE_AUDIO_IN_TYPE, name: 'in', x: 0, y: 0, params: [] },
@@ -82,7 +99,7 @@ const PASS: PatchDocument = {
     { sources: [{ obj: 'in', outlet: 'l' }], dests: [{ obj: 'out', inlet: 'l' }] },
     { sources: [{ obj: 'in', outlet: 'r' }], dests: [{ obj: 'out', inlet: 'r' }] }
   ],
-  settings: { logueTarget: { module: SLOT } },
+  settings: { logueTarget: { module: SLOT === 'osc' ? 'revfx' : SLOT } },
   notes: ''
 }
 
@@ -96,12 +113,16 @@ interface Step {
 async function main(): Promise<void> {
   const unit = XD
     ? undefined
-    : buildNts1Unit(PASS, 'lp-hwtest-burn-rev', 'HT Burn', 2, new Map(), (f) =>
-        withFxTelemetry(f, { burnRow: 3 })
-      )
+    : OSC
+      ? buildNts1Unit(OSC_SINE, 'lp-hwtest-burn-osc', 'HT Burn', 3, new Map(), (f) =>
+          withNts1OscTelemetry(f, { burnRow: 2 })
+        )
+      : buildNts1Unit(PASS, 'lp-hwtest-burn-rev', 'HT Burn', 2, new Map(), (f) =>
+          withFxTelemetry(f, { burnRow: 3 })
+        )
   const xdUnit = XD
     ? buildXdUnit(PASS, 'lp-hwtest-xd-burn', 'HT Burn', new Map(), (f) =>
-        withXdFxTelemetry(f, SLOT, { burnMax: XD_BURN_MAX })
+        withXdFxTelemetry(f, DELAY_SLOT ? 'delfx' : 'revfx', { burnMax: XD_BURN_MAX })
       )
     : undefined
   const rig = await LogueRig.connect(XD ? 'minilogue-xd' : 'nts1mkii')
@@ -114,7 +135,11 @@ async function main(): Promise<void> {
     if (XD) await rig.writeProgram(snapshot.program)
     const program = programFrom(snapshot)
     if (unit) {
-      select(program, 'revfx', unit, 'HT Burn')
+      if (OSC) {
+        neutralVoice(program)
+        select(program, 'osc', unit, 'HT Burn')
+        if (OTHERS) select(program, 'revfx', factory(1), 'HALL')
+      } else select(program, 'revfx', unit, 'HT Burn')
       select(program, 'modfx', OTHERS ? factory(1) : factory(0), OTHERS ? 'CHORUS' : 'OFF')
       select(program, 'delfx', OTHERS ? factory(1) : factory(0), OTHERS ? 'STEREO' : 'OFF')
     } else {
@@ -138,7 +163,7 @@ async function main(): Promise<void> {
     rig.noteOn(57)
     const setBurn = async (burn: number): Promise<void> => {
       if (unit) {
-        setParam(program, 'revfx', 1, burn)
+        setParam(program, SLOT, 1, burn)
         await rig.writeProgram(program)
         return
       }
@@ -148,9 +173,11 @@ async function main(): Promise<void> {
     }
 
     let cleanFloor = Infinity
-    // The budget between two calls at burn 0. Past the ceiling the calls stop arriving on time,
-    // which shows here even when the recording happens to look whole.
-    let budget: number | undefined
+    // Past the ceiling the calls stop arriving on time, which shows in the measured budget even
+    // when the recording happens to look whole. Each processor's budget is fixed and has read the same in every run (NTS-1 mkII 11458,
+    // the xd's effects MCU 3750); a reading taken at burn 0 once caught a unit still starting
+    // (12645) and made every later step look late.
+    const budget = XD ? 3750 : 11458
     const measure = async (burn: number): Promise<Step> => {
       await setBurn(burn)
       await sleep(1000)
@@ -176,8 +203,7 @@ async function main(): Promise<void> {
         tot: XD ? cyclesFromXdTotTone(totHz / clock) : cyclesFromTotTone(totHz / clock),
         dropouts: scan.times.length
       }
-      if (burn === 0 && step.dropouts === 0) budget ??= step.tot
-      const late = budget !== undefined && Math.abs(step.tot / budget - 1) > 0.01
+      const late = Math.abs(step.tot / budget - 1) > 0.01
       if (late && step.dropouts === 0) step.dropouts = -1
       steps.push(step)
       console.log(
@@ -195,7 +221,9 @@ async function main(): Promise<void> {
           ? 'other effects off'
           : DELAY_SLOT
             ? `MOD CHORUS + REVERB (type cc ${XD_REVERB}, dry) on`
-            : 'MOD CHORUS + DELAY STEREO on')
+            : OSC
+              ? 'MOD CHORUS + DELAY STEREO + REVERB HALL on'
+              : 'MOD CHORUS + DELAY STEREO on')
     )
     // Let the unit switch in (the first recording after the CCs caught it), then take the clean
     // floor and budget at burn 0.

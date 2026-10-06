@@ -186,3 +186,47 @@ export function neutralVoice(program: Uint8Array): void {
   v.setUint16(108, 512, true)
   for (const m of ['modfx', 'delfx', 'revfx'] as const) select(program, m, factory(0), 'OFF')
 }
+
+/**
+ * minilogue xd CCs (its MIDI implementation) that take the voice out of the way: the multi engine
+ * as USR / USER1, both VCOs silent, the filter open with no resonance, drive or keytrack, EG INT
+ * and LFO INT at their centres (64 = 0 %, note P10; LFO INT is bipolar too: 0 is -100 %, which
+ * threw the pitch around every 100 ms), no cross mod, ring or sync (127 = off),
+ * no portamento or voice-mode depth, the amp EG as a gate (instant attack, full sustain, no
+ * release), the three effects off.
+ */
+export const XD_VOICE: [number, number][] = [
+  [53, 127],
+  [103, 4],
+  [33, 127],
+  [39, 0],
+  [40, 0],
+  [43, 127],
+  [44, 0],
+  [84, 0],
+  [83, 0],
+  [22, 64],
+  [26, 64],
+  [41, 0],
+  [81, 127],
+  [80, 127],
+  [5, 0],
+  [27, 0],
+  [16, 0],
+  [17, 127],
+  [18, 127],
+  [19, 0],
+  [92, 0],
+  [93, 0],
+  [94, 0]
+]
+
+/** Sends `XD_VOICE` after a program write: CCs sent at once 300 ms after the write left the
+ *  first case silent; a second's wait and 20 ms between CCs didn't. */
+export async function neutralXdVoice(rig: LogueRig): Promise<void> {
+  await new Promise((r) => setTimeout(r, 1000))
+  for (const [cc, v] of XD_VOICE) {
+    rig.cc(cc, v)
+    await new Promise((r) => setTimeout(r, 20))
+  }
+}

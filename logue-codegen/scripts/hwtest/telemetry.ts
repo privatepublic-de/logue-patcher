@@ -231,3 +231,139 @@ static void telemetry_process(const float *in, float *out, uint32_t frames)
   }
   return { ...files, 'fx.cpp': fxCpp }
 }
+
+/** An oscillator's tones are quieter: the NTS-1 mkII's voice section soft-clips a loud one. */
+const OSC_TONE_AMPLITUDE = 0.08
+
+/** The C both oscillator wrappers share: the counter, three tones written into a mono float
+ *  buffer, and a burn (cycles per sample) set from outside. */
+const oscTelemetryDecls = `
+// Telemetry (logue-codegen/scripts/hwtest/telemetry.ts).
+#define DEMCR (*(volatile uint32_t *)0xE000EDFCu)
+#define DWT_CTRL (*(volatile uint32_t *)0xE0001000u)
+#define DWT_CYCCNT (*(volatile uint32_t *)0xE0001004u)
+#define DWT_LAR (*(volatile uint32_t *)0xE0001FB0u)
+static uint32_t s_t_prev = 0, s_t_have_prev = 0, s_t_fx = 0, s_t_tot = 0;
+static int32_t s_t_burn = 0;
+static float s_t_ph[3] = {0.f, 0.f, 0.f};
+static inline void telemetry_tone_mono(float *out, uint32_t frames, int k, float hz)
+{
+  const float inc = hz / 48000.f;
+  float ph = s_t_ph[k];
+  for (uint32_t i = 0; i < frames; ++i)
+  {
+    out[i] += ${OSC_TONE_AMPLITUDE}f * osc_sinf(ph);
+    ph += inc;
+    if (ph >= 1.f) ph -= 1.f;
+  }
+  s_t_ph[k] = ph;
+}
+static inline void telemetry_start(uint32_t *t0, uint32_t frames)
+{
+  if (!(DWT_CTRL & 1u)) { DEMCR |= (1u << 24); DWT_LAR = 0xC5ACCE55u; DWT_CTRL |= 1u; }
+  *t0 = DWT_CYCCNT;
+  if (s_t_have_prev && frames)
+  {
+    const uint32_t tot = ((*t0 - s_t_prev) << 4) / frames;
+    s_t_tot = s_t_tot ? s_t_tot + ((int32_t)(tot - s_t_tot) >> 4) : tot;
+  }
+  s_t_prev = *t0;
+  s_t_have_prev = 1;
+}
+static inline void telemetry_measure(uint32_t t0, uint32_t frames)
+{
+  if (s_t_burn > 0)
+  {
+    const uint32_t until = (uint32_t)s_t_burn * frames;
+    while (DWT_CYCCNT - t0 < until) {}
+  }
+  if (frames)
+  {
+    const uint32_t fxc = ((DWT_CYCCNT - t0) << 4) / frames;
+    s_t_fx = s_t_fx ? s_t_fx + ((int32_t)(fxc - s_t_fx) >> 4) : fxc;
+  }
+}
+static inline void telemetry_write(float *out, uint32_t frames, float totOffset)
+{
+  for (uint32_t i = 0; i < frames; ++i) out[i] = 0.f;
+  telemetry_tone_mono(out, frames, 0, ${DETECTOR_HZ}.f);
+  telemetry_tone_mono(out, frames, 1, ${FX_BASE_HZ}.f + (float)s_t_fx * ${1 / 16 / CYCLES_PER_HZ}f);
+  if (s_t_tot)
+    telemetry_tone_mono(out, frames, 2, ${TOT_BASE_HZ}.f + ((float)s_t_tot * ${1 / 16}f - totOffset) * ${1 / CYCLES_PER_HZ}f);
+}
+`
+
+/**
+ * NTS-1 mkII oscillator: wraps `unit_render`'s `process` (pitch and Shape LFO set as usual), the
+ * tones in place of the voice's output (same decoding as an effect's: `cyclesFromFxTone`,
+ * `cyclesFromTotTone`). With `burnRow`, a BURN menu param at that row (the first free one).
+ */
+export function withNts1OscTelemetry(
+  files: Record<string, string>,
+  opts: { burnRow?: number } = {}
+): Record<string, string> {
+  let headerC = files['header.c']
+  let unitCc = files['unit.cc']
+  const replace = (from: string, to: string): void => {
+    if (!unitCc.includes(from)) throw new Error(`osc telemetry: "${from.trim()}" not found`)
+    unitCc = unitCc.replace(from, to)
+  }
+  if (opts.burnRow !== undefined) {
+    const n = Number(/\.num_params = (\d+),/.exec(headerC)![1])
+    if (opts.burnRow !== n) throw new Error(`BURN must take the first free row (${n})`)
+    const rows = headerC.split('\n')
+    const first = rows.findIndex((l) => l.trim().startsWith('{') && l.includes('k_unit_param_type'))
+    if (!rows[first + n].includes(EMPTY_ROW)) throw new Error(`row ${n} is not free`)
+    rows[first + n] = rows[first + n].replace(
+      EMPTY_ROW,
+      '{0, 12000, 0, 0, k_unit_param_type_none, 0, 0, 0, {"BURN"}}'
+    )
+    headerC = rows.join('\n').replace(`.num_params = ${n},`, `.num_params = ${n + 1},`)
+    replace(
+      '  cached_values[id] = value;\n',
+      `  cached_values[id] = value;\n  if (id == ${opts.burnRow}) s_t_burn = value;\n`
+    )
+  }
+  replace(
+    'static const unit_runtime_osc_context_t *context;',
+    `static const unit_runtime_osc_context_t *context;\n${oscTelemetryDecls}`
+  )
+  replace(
+    '  s_osc_instance.process(in, out, frames);',
+    `  uint32_t t0;
+  telemetry_start(&t0, frames);
+  s_osc_instance.process(in, out, frames);
+  telemetry_measure(t0, frames);
+  telemetry_write(out, frames, ${TOT_OFFSET}.f);`
+  )
+  return { ...files, 'header.c': headerC, 'unit.cc': unitCc }
+}
+
+/**
+ * minilogue xd oscillator: wraps `OSC_CYCLE` (called once per voice; every voice runs its own
+ * copy, so each reads its own render and the time between its own calls -- the whole main-MCU
+ * budget per sample, ~1750). The tones go out as Q31; decode the total with
+ * `cyclesFromXdTotTone`.
+ */
+export function withXdOscTelemetry(files: Record<string, string>): Record<string, string> {
+  let oscCpp = files['osc.cpp']
+  const replace = (from: string, to: string): void => {
+    if (!oscCpp.includes(from)) throw new Error(`xd osc telemetry: "${from.trim()}" not found`)
+    oscCpp = oscCpp.replace(from, to)
+  }
+  replace('static Osc s_osc;', `static Osc s_osc;\n${oscTelemetryDecls}\nstatic float s_t_buf[64];`)
+  replace(
+    '  s_osc.process(yn, frames);',
+    `  uint32_t t0;
+  telemetry_start(&t0, frames);
+  s_osc.process(yn, frames);
+  telemetry_measure(t0, frames);
+  for (uint32_t done = 0; done < frames; done += 64)
+  {
+    const uint32_t n = frames - done < 64 ? frames - done : 64;
+    telemetry_write(s_t_buf, n, 0.f);
+    for (uint32_t i = 0; i < n; ++i) yn[done + i] = f32_to_q31(s_t_buf[i]);
+  }`
+  )
+  return { ...files, 'osc.cpp': oscCpp }
+}

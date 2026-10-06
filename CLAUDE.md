@@ -1754,8 +1754,9 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   one) went away with force-inlining instead -- also consistent with overload, since inlining cuts
   call overhead, though the formant bisect ruled out polyphony (one held voice crashed).
   **Triage when it recurs**: first ask whether it depends on settings (the costliest ones) and on
-  voice count, and count cycles per voice-sample in the staged build against ~1750 per sample in
-  total (84 MHz STM32F401); only then suspect call shape/`-Os` (the formant playbook). A fuzz
+  voice count, and count cycles per voice-sample in the staged build against ~1728 per sample
+  PER VOICE (measured 2026-10-06: each voice has its own budget; real cycles ~= 164 + 1.4x the
+  emulator's); only then suspect call shape/`-Os` (the formant playbook). A fuzz
   under ASan/UBSan rules out bad reads/math cheaply first.
 - **Verifying a new primitive's actual DSP correctness** — lessons from real false starts:
   zero-crossing counting is the wrong measurement for a harmonically-rich or continuously
@@ -1850,6 +1851,19 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   right after a program write were partly lost (the first case was silent): wait a second, space
   them 20 ms. The xd's osc path is flat to ~3 kHz, -6.3 dB at 16 kHz (analog filter/output),
   ~16 dB under the digital level; the NTS-1 mkII's within +-0.6 dB.
+- Oscillator CPU (2026-10-06): `withNts1OscTelemetry` (BURN = the program's osc PARAM 1, row 2:
+  an oscillator's PARAM n is row n+1, after Shape/Alt) and `withXdOscTelemetry` (wraps
+  `OSC_CYCLE`). `calibrateOsc.ts` (`--xd`) measures the user's oscillator patches with every device
+  control stripped (so each param is at its authored value on device and in the estimate):
+  NTS-1 mkII real ~= 44 + 0.83 x `estimateOscCpuCost` (-37..+53 %, 19 patches), xd real ~= 164 +
+  1.40 x it (-34..+35 %, 15 patches; per voice). **Each xd voice has its own ~1728 cycles per
+  sample**: with 1-4 notes held, cpiano read ~915 per voice and the budget 1729 every time -- the
+  voices don't share one budget (so the "~1750 per sample in total" in the hang triage is per
+  voice). formant at its authored settings costs ~1700 for ONE voice and hung the xd during the
+  calibration (power cycle needed; `calibrateOsc.ts` now skips an xd patch whose estimate x 2.7 is
+  over 80 % of the budget). `cpuCeiling.ts --osc` (NTS-1 mkII): clean to 7350 with the effects
+  off, dropouts from 7400; with factory chorus + stereo delay + hall reverb clean to 6700,
+  dropouts from 6750. The xd oscillator ceiling isn't measured (a sweep would hang it).
 - Gotcha: a slot re-uploaded with the SAME unit id while selected keeps playing the old code;
   every test unit gets its own id and the module is deselected before an upload.
 - Gotcha: the device has refused one of many quick uploads with USER INTERNAL ERROR (2F);

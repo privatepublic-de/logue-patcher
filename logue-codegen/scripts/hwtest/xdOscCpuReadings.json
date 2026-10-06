@@ -1,0 +1,135 @@
+[
+  {
+    "name": "additive",
+    "date": "2026-10-06",
+    "cycles": 464,
+    "maxCycles": 464,
+    "estimate": 195
+  },
+  {
+    "name": "all",
+    "date": "2026-10-06",
+    "cycles": 379,
+    "maxCycles": 379,
+    "estimate": 168
+  },
+  {
+    "name": "bass",
+    "date": "2026-10-06",
+    "cycles": 729,
+    "maxCycles": 729,
+    "estimate": 411
+  },
+  {
+    "name": "chrushd",
+    "date": "2026-10-06",
+    "cycles": 279,
+    "maxCycles": 279,
+    "estimate": 106
+  },
+  {
+    "name": "comb",
+    "date": "2026-10-06",
+    "cycles": 731,
+    "maxCycles": 731,
+    "estimate": 274
+  },
+  {
+    "name": "combnew",
+    "date": "2026-10-06",
+    "cycles": 541,
+    "maxCycles": 542,
+    "estimate": 201
+  },
+  {
+    "name": "combnts1",
+    "date": "2026-10-06",
+    "cycles": 598,
+    "maxCycles": 599,
+    "estimate": 165
+  },
+  {
+    "name": "cpiano",
+    "date": "2026-10-06",
+    "cycles": 921,
+    "maxCycles": 932,
+    "estimate": 381
+  },
+  {
+    "name": "cpiano-fixed",
+    "date": "2026-10-06",
+    "cycles": 493,
+    "maxCycles": 546,
+    "estimate": 358
+  },
+  {
+    "name": "einfach",
+    "date": "2026-10-06",
+    "cycles": 921,
+    "maxCycles": 932,
+    "estimate": 381
+  },
+  {
+    "name": "harmonics",
+    "date": "2026-10-06",
+    "cycles": 426,
+    "maxCycles": 426,
+    "estimate": 118
+  },
+  {
+    "name": "pd-simple",
+    "date": "2026-10-06",
+    "cycles": 462,
+    "maxCycles": 463,
+    "estimate": 154
+  },
+  {
+    "name": "rm",
+    "date": "2026-10-06",
+    "cycles": 509,
+    "maxCycles": 509,
+    "estimate": 182
+  },
+  {
+    "name": "sache",
+    "date": "2026-10-06",
+    "cycles": 639,
+    "maxCycles": 639,
+    "estimate": 354
+  },
+  {
+    "name": "smpstr",
+    "date": "2026-10-06",
+    "cycles": 922,
+    "maxCycles": 933,
+    "estimate": 381
+  },
+  {
+    "name": "test-lp24",
+    "date": "2026-10-06",
+    "cycles": 441,
+    "maxCycles": 441,
+    "estimate": 223
+  },
+  {
+    "name": "test-sample",
+    "date": "2026-10-06",
+    "cycles": 261,
+    "maxCycles": 261,
+    "estimate": 107
+  },
+  {
+    "name": "tzfm-test",
+    "date": "2026-10-06",
+    "cycles": 365,
+    "maxCycles": 365,
+    "estimate": 163
+  },
+  {
+    "name": "untitled",
+    "date": "2026-10-06",
+    "cycles": 335,
+    "maxCycles": 336,
+    "estimate": 153
+  }
+]
