@@ -2880,3 +2880,44 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   +2.0 dB at full level, +9.4 dB reproducibly at -6 dB, clean at -12 and -24 dB. Not monotonic
   in level, so not plain clipping; the same code renders the same at every level on the host. The
   xd's cases now end in a -12 dB VCA; all 22 pass.
+
+### Oscillator-path checks on both devices (2026-10-06)
+
+- NTS-1 mkII first run: sync at 12 st (an octave) "failed" -- the output is a saw an octave up,
+  so the fundamental search found leakage at 119 Hz on device and host alike; the case is now
+  SYNC 7 and the fundamental comes from the note. svf-tracked at note 69 scattered -1.5..-1.9 dB
+  in its lowest bands with 3 s of noise; 6 s fixed it.
+- xd first runs: every note's pitch jumped every 100 ms (26 Hz-4 kHz, factory VPM too): the
+  voice setup sent LFO INT 0, which is -100 % (centre 64, like EG INT). Then the white-noise
+  chain case was silent (its RMS = the floor), so every correction was fitted to the floor:
+  CCs straight after the program write were partly lost.
+- At the start of the day's first run the NTS-1 mkII's current program selected a test unit,
+  though every run the night before had restored and verified it; the snapshot fell back to the
+  previous night's (byte-identical to the original). Since then the program as found is kept as
+  `program-as-found.bin`.
+- Oscillator CPU calibration: the xd run hung at formant (~1700 real cycles for one voice, its
+  whole budget); every later unit then read ~1729 with the budget tone at 2677, and the xd
+  stayed that way after the restore (which still worked over MIDI) until the user power-cycled
+  it. The readings file is the clean readings before formant plus a rerun of the rest without
+  formant and string. A 1-4 note test (cpiano, ~915 per voice, budget 1729 throughout) showed
+  each xd voice has its own budget.
+
+### Oscillator CPU ceilings and both oscillator gauges on real cycles (2026-10-06)
+
+- xd burn sweeps (`cpuCeiling.ts --xd --osc`, a sine with BURN on the Shape knob, effects off).
+  One voice, steps of 50 from 800: the reading followed the burn to 1300, then read 1301 at every
+  step to 1900 while the recording stayed clean (-74 dB residual) and the restore at the end
+  verified. The next run (another knob scale) read 800 even at burn 0 with a -20 dB residual: the
+  voice had hung at 1300 and kept rendering its last block -- tones and all, so the dropout scan
+  saw nothing -- while SysEx kept working. Fine sweep after a power cycle: clean to 1290, frozen
+  from 1300 (one 10-cycle step). With 4 notes held: clean at 1225, audible dropouts at 1250
+  (reading 1270). So a voice gets ~1225-1300 of its 1728; the rest presumably is what the
+  control side needs. Three power cycles in all.
+- The script now fails a step whose reading doesn't rise with the burn and aborts when burn 0
+  reads above 400.
+- Both oscillator gauges moved to real cycles with the calibration fits (xd 164 + 1.40x, NTS-1
+  mkII 44 + 0.83x). Before: xd green to 468 / red at 795 on the emulator scale (cpiano and the
+  granular hang); NTS-1 mkII green to half of 7300 (the 2026-09-28 probe, Submarine reverb on).
+  The old xd anchors land where they should on the new scale: cpiano ~700 green, granular ~1280
+  red, formant ~1120 amber. The amber text first said "may hang with chords", but cpiano's knob
+  maximum (917) lands there and it plays chords fine; it now names the estimate's error instead.

@@ -16,44 +16,72 @@ import type { SubpatchDefinitions } from './subpatches'
  * (Counting granular at its SIZE/WINDOW-100 worst for any moved setting made a patch that plays
  * fine read 27% high.) The xd runs the oscillator once per voice.
  *
- * Two hardware anchors, both on the emulator's scale: cpiano (granular + 2 LFOs + mux, 468 when
- * measured whole) plays 4-note chords fine on a real xd; a granular patch at ~795 hung one with
- * chords held. `cpuZone` maps an estimate onto them -- between the two is simply untested.
+ * The gauge converts the estimate to REAL cycles per voice-sample, measured through audio
+ * telemetry on both devices (`scripts/hwtest/calibrateOsc.ts`, 2026-10-06: the user's
+ * oscillator patches with every device control stripped). An affine fit: each patch's unit
+ * shell and the voice's call cost the intercept, so per-instance costs stay on the emulator's
+ * scale (the tooltip says so).
  *
- * NTS-1 mkII: no emulator for its Cortex-M7, so the same xd table stands in (the M7 usually needs
- * fewer cycles for the same code). Its anchor is measured on a real device with
- * `scripts/stageNts1CpuProbe.ts`: ~549 MHz, and audio broke once the oscillator used ~7,750
- * cycles/sample, ~7,300 at the last good step, with the factory Submarine reverb running -- a
- * heavier effect leaves less. The osc is rendered once, not per voice. "Fine" stops at half the
- * ceiling, so a patch still fits if the stand-in is off by 2x.
+ * NTS-1 mkII: no emulator for its Cortex-M7, so the same xd table stands in; the fit does the
+ * rest. The osc is rendered once, not per voice.
  */
-export const XD_VOICES = 4
-/** 84 MHz / 48 kHz: everything the MCU does per output sample, all voices included. */
-export const XD_CYCLES_PER_SAMPLE = 1750
-/** Emulator estimate of the granular patch that hung a real xd with chords (2026-09-26). */
-export const XD_HUNG_REFERENCE_CYCLES = 795
-/** Emulator measurement of cpiano, which plays 4-note chords fine on a real xd (2026-09-28). */
-export const XD_CONFIRMED_WORKING_CYCLES = 468
+/** minilogue xd: real cycles per voice-sample = 164 + 1.40 * estimate (19 readings, -34..+35 %). */
+export const XD_OSC_REAL_BASE = 164
+export const XD_OSC_REAL_SCALE = 1.4
+/** NTS-1 mkII: real cycles per sample = 44 + 0.83 * estimate (21 readings, -37..+54 %). */
+export const NTS1MKII_OSC_REAL_BASE = 44
+export const NTS1MKII_OSC_REAL_SCALE = 0.83
 
-/** Oscillator cycles per sample at the last good BURN step on a real NTS-1 mkII (2026-09-28). */
-export const NTS1MKII_OSC_CEILING_CYCLES = 7300
+export const XD_VOICES = 4
+/** Each xd voice's own cycles per sample (measured with 1-4 notes held: the same for each). */
+export const XD_CYCLES_PER_SAMPLE = 1728
+/**
+ * Measured on a real xd with a sine burning an exact load (`cpuCeiling.ts --xd --osc`,
+ * 2026-10-06): with 4 notes held, clean at 1225 real cycles per voice-sample, breaking up from
+ * 1250; one voice alone ran to 1290 and froze at 1300 (it kept sounding, the panel and MIDI
+ * stopped: the hang signature). The rest of the 1728 is what the control side needs. Both
+ * recorded hangs (formant, ~1700 real; a granular patch, estimate ~795) sit past "fine".
+ */
+export const XD_OSC_HANG_CYCLES = 1225
+/** Where an estimate 34 % low (the fit's worst) still clears the ceiling: 0.66 * 1225. */
+export const XD_OSC_CLEAN_CYCLES = 808
+
+/**
+ * NTS-1 mkII, a sine burning an exact load (`cpuCeiling.ts --osc`, 2026-10-06): with factory
+ * CHORUS, STEREO delay and HALL reverb on, clean to 6700 cycles per sample, dropouts from 6750;
+ * with the effects off, clean to 7350. "Fine" ends where an estimate 37 % low (the fit's worst)
+ * still clears 6700. Of ~11,457 in all.
+ */
+export const NTS1MKII_OSC_DROPOUT_CYCLES = 6700
+export const NTS1MKII_OSC_SOLO_CYCLES = 7350
+export const NTS1MKII_OSC_CLEAN_CYCLES = 4200
 /** ~549 MHz / 48 kHz, measured on the device: everything it does per sample. */
 export const NTS1MKII_CYCLES_PER_SAMPLE = 11457
 
-/** Per platform: "fine" up to `fineUpTo`, "over" from `limit`, in cycles per voice-sample. */
+/** An estimate (emulator cycles per voice-sample) as real cycles on `platform`'s processor. */
+export function oscRealCycles(estimate: number, platform: LoguePlatform): number {
+  return Math.round(
+    platform === 'minilogue-xd'
+      ? XD_OSC_REAL_BASE + XD_OSC_REAL_SCALE * estimate
+      : NTS1MKII_OSC_REAL_BASE + NTS1MKII_OSC_REAL_SCALE * estimate
+  )
+}
+
+/** Per platform, in REAL cycles: "fine" up to `fineUpTo`, "over" from `limit`. */
 export const CPU_GAUGE: Record<LoguePlatform, { fineUpTo: number; limit: number }> = {
-  'minilogue-xd': { fineUpTo: XD_CONFIRMED_WORKING_CYCLES, limit: XD_HUNG_REFERENCE_CYCLES },
-  nts1mkii: { fineUpTo: NTS1MKII_OSC_CEILING_CYCLES / 2, limit: NTS1MKII_OSC_CEILING_CYCLES }
+  'minilogue-xd': { fineUpTo: XD_OSC_CLEAN_CYCLES, limit: XD_OSC_HANG_CYCLES },
+  nts1mkii: { fineUpTo: NTS1MKII_OSC_CLEAN_CYCLES, limit: NTS1MKII_OSC_DROPOUT_CYCLES }
 }
 
 export type CpuZone = 'fine' | 'between' | 'over'
 
-/** Where an estimate sits against a platform's anchors, plus 0..1 across the gap between them. */
+/** Where an estimate (emulator cycles) sits against a platform's measured anchors, as real
+ *  cycles, plus 0..1 across the gap between them. */
 export function cpuZone(
   cyclesPerVoice: number,
   platform: LoguePlatform = 'minilogue-xd'
 ): { zone: CpuZone; between: number } {
-  return zoneFor(cyclesPerVoice, CPU_GAUGE[platform])
+  return zoneFor(oscRealCycles(cyclesPerVoice, platform), CPU_GAUGE[platform])
 }
 
 /** `cpuZone` against any pair of anchors (the effect gauge's too). */

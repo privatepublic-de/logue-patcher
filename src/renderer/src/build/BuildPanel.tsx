@@ -29,9 +29,10 @@ import {
   CPU_GAUGE,
   cpuZone,
   estimateOscCpuCost,
-  NTS1MKII_OSC_CEILING_CYCLES,
-  XD_CONFIRMED_WORKING_CYCLES,
-  XD_HUNG_REFERENCE_CYCLES
+  NTS1MKII_OSC_DROPOUT_CYCLES,
+  NTS1MKII_OSC_SOLO_CYCLES,
+  oscRealCycles,
+  XD_OSC_HANG_CYCLES
 } from '@logue-codegen/estimateOscCpuCost'
 import {
   estimateFxCpuCost,
@@ -643,54 +644,68 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
               const { zone } = cpuZone(cyclesPerVoice, buildPlatform)
               const max = cpuZone(maxCyclesPerVoice, buildPlatform)
               const gauge = CPU_GAUGE[buildPlatform]
-              const verdictOf = (z: typeof zone): string =>
+              const real = oscRealCycles(cyclesPerVoice, buildPlatform)
+              const realMax = oscRealCycles(maxCyclesPerVoice, buildPlatform)
+              // Past the dropout anchor an NTS-1 mkII oscillator still runs with the effects off.
+              const solo = (cycles: number): boolean => !xd && cycles <= NTS1MKII_OSC_SOLO_CYCLES
+              const verdictOf = (z: typeof zone, cycles: number): string =>
                 z === 'fine'
                   ? 'likely fine'
-                  : z === 'over'
+                  : z === 'between'
                     ? xd
-                      ? 'likely to hang'
-                      : 'likely to break up'
+                      ? "tight: within the estimate's error of where a voice hangs"
+                      : "tight: within the estimate's error of where it breaks up with the effects on"
                     : xd
-                      ? 'untested'
-                      : 'tight'
+                      ? 'likely to hang with chords'
+                      : solo(cycles)
+                        ? 'likely to break up with the effects on; needs them off'
+                        : 'likely to break up, even alone'
               // The row's one word; `verdictOf` spells it out in the tooltip.
-              const shortVerdictOf = (z: typeof zone): string =>
+              const shortVerdictOf = (z: typeof zone, cycles: number): string =>
                 z === 'fine'
                   ? 'fine'
-                  : z === 'over'
-                    ? xd
-                      ? 'may hang'
-                      : 'overload'
+                  : z === 'between'
+                    ? 'tight'
                     : xd
-                      ? 'untested'
-                      : 'tight'
-              const knobsMatter = maxCyclesPerVoice > cyclesPerVoice && max.zone !== zone
-              const anchors = xd
-                ? `A patch at ~${XD_CONFIRMED_WORKING_CYCLES} plays 4-note chords fine on a real ` +
-                  `xd; one at ~${XD_HUNG_REFERENCE_CYCLES} hung.`
-                : `On a real NTS-1 mkII the oscillator stays clean up to ~${NTS1MKII_OSC_CEILING_CYCLES}` +
-                  ' (measured with the factory Submarine reverb on; a heavier effect leaves less). ' +
-                  "The costs are the minilogue xd emulator's, standing in: the NTS-1 mkII usually " +
-                  'needs fewer cycles.'
+                      ? 'may hang'
+                      : solo(cycles)
+                        ? 'effects off'
+                        : 'overload'
+              const knobsMatter =
+                maxCyclesPerVoice > cyclesPerVoice &&
+                shortVerdictOf(max.zone, realMax) !== shortVerdictOf(zone, real)
+              const scale = xd
+                ? ". The xd emulator's costs, converted to real cycles by 19 patches measured " +
+                  'on the synth (each within -34..+35 % of its reading).\n\n' +
+                  'Measured on a real minilogue xd (each voice has 1728 cycles per sample of its ' +
+                  `own): with 4 notes held a voice breaks up past ~${XD_OSC_HANG_CYCLES}, and an ` +
+                  'overloaded one can hang the synth until it is switched off.'
+                : ". The minilogue xd emulator's costs stand in, converted to NTS-1 mkII cycles " +
+                  'by 21 patches measured on the synth (each within -37..+54 % of its reading).' +
+                  '\n\nMeasured on a real NTS-1 mkII (~11,450 cycles per sample in all): the ' +
+                  `oscillator breaks up past ~${NTS1MKII_OSC_DROPOUT_CYCLES} with the factory ` +
+                  `chorus, delay and reverb on, past ~${NTS1MKII_OSC_SOLO_CYCLES} with the ` +
+                  'effects off.'
               return (
                 <UsageGauge
                   label="CPU"
-                  value={cyclesPerVoice}
+                  value={real}
                   fineUpTo={gauge.fineUpTo}
                   limit={gauge.limit}
-                  reach={maxCyclesPerVoice}
+                  reach={realMax}
                   markFine
                   tooltip={
-                    `CPU: ${verdictOf(zone)}` +
-                    (knobsMatter ? `; with the knobs turned up: ${verdictOf(max.zone)}` : '') +
-                    '.\n\n' +
-                    `Estimated ${cyclesPerVoice} cycles ${xd ? 'per voice' : 'per sample'} at the saved settings` +
-                    (maxCyclesPerVoice > cyclesPerVoice
-                      ? `, up to ${maxCyclesPerVoice} with the device knobs at their costliest`
+                    `CPU: ${verdictOf(zone, real)}` +
+                    (knobsMatter
+                      ? `; with the knobs turned up: ${verdictOf(max.zone, realMax)}`
                       : '') +
-                    ' (emulator, not measured on the synth).\n\n' +
-                    anchors +
-                    '\n\nBiggest costs:\n' +
+                    '.\n\n' +
+                    `Estimated ${real} cycles ${xd ? 'per voice' : 'per sample'} at the saved settings` +
+                    (realMax > real
+                      ? `, up to ${realMax} with the device knobs at their costliest`
+                      : '') +
+                    scale +
+                    '\n\nBiggest costs (emulator cycles):\n' +
                     [...perInstance]
                       .filter((i) => i.cycles > 0)
                       .sort((a, b) => b.cycles - a.cycles)
@@ -700,7 +715,8 @@ function BuildPanel({ onOpenSettings }: { onOpenSettings: () => void }): React.J
                     (unmeasured.length ? `\n\nNot measured: ${unmeasured.join(', ')}` : '')
                   }
                   text={
-                    shortVerdictOf(zone) + (knobsMatter ? ` → ${shortVerdictOf(max.zone)}` : '')
+                    shortVerdictOf(zone, real) +
+                    (knobsMatter ? ` → ${shortVerdictOf(max.zone, realMax)}` : '')
                   }
                 />
               )

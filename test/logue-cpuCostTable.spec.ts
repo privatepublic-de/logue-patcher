@@ -5,11 +5,12 @@ import { join } from 'node:path'
 import { findLoguePrimitive, recognizedLoguePrimitiveIds } from '../logue-codegen/src/primitives'
 import { CPU_COST_BASELINE_CYCLES, CPU_COST_TABLE } from '../logue-codegen/src/cpuCostTable'
 import {
+  CPU_GAUGE,
   cpuZone,
   estimateOscCpuCost,
-  NTS1MKII_OSC_CEILING_CYCLES,
-  XD_CONFIRMED_WORKING_CYCLES,
-  XD_HUNG_REFERENCE_CYCLES
+  NTS1MKII_OSC_DROPOUT_CYCLES,
+  oscRealCycles,
+  XD_OSC_HANG_CYCLES
 } from '../logue-codegen/src/estimateOscCpuCost'
 import { LOGUE_AUDIO_OUT_TYPE } from '../logue-codegen/src/oscInstances'
 import type { Net, ObjNode, PatchDocument } from '../src/shared/domain/patch'
@@ -139,14 +140,48 @@ describe('estimateOscCpuCost on a patch the xd cannot build', () => {
   })
 })
 
-describe('cpuZone', () => {
-  it('is fine up to the patch known to work, untested up to the one that hung, then hangs', () => {
-    expect(cpuZone(XD_CONFIRMED_WORKING_CYCLES)).toEqual({ zone: 'fine', between: 0 })
-    const mid = cpuZone((XD_CONFIRMED_WORKING_CYCLES + XD_HUNG_REFERENCE_CYCLES) / 2)
-    expect(mid.zone).toBe('between')
-    expect(mid.between).toBeCloseTo(0.5)
-    expect(cpuZone(XD_HUNG_REFERENCE_CYCLES)).toEqual({ zone: 'over', between: 1 })
+type OscReading = { name: string; cycles: number; estimate: number }
+const oscReadings = (file: string): OscReading[] =>
+  JSON.parse(
+    readFileSync(join(import.meta.dirname, '..', 'logue-codegen/scripts/hwtest', file), 'utf-8')
+  )
+
+describe('cpuZone (real cycles, measured anchors)', () => {
+  it('converts an estimate to real cycles before placing it', () => {
+    expect(oscRealCycles(0, 'minilogue-xd')).toBe(164)
+    expect(oscRealCycles(100, 'nts1mkii')).toBe(127)
     expect(cpuZone(5000).between).toBe(1)
+  })
+
+  it('agrees with what the xd did on hardware', () => {
+    // cpiano (estimate 381 now, 921 measured per voice) plays 4-note chords fine.
+    expect(cpuZone(381).zone).toBe('fine')
+    // formant at its authored settings (682) hung the xd; a granular patch at ~795 hung it.
+    expect(cpuZone(682).zone).not.toBe('fine')
+    expect(cpuZone(795).zone).not.toBe('fine')
+    // Every patch measured cleanly sits below red, by estimate and by its own reading.
+    for (const r of oscReadings('xdOscCpuReadings.json')) {
+      expect(cpuZone(r.estimate).zone, r.name).not.toBe('over')
+      expect(r.cycles, r.name).toBeLessThan(XD_OSC_HANG_CYCLES)
+    }
+  })
+
+  it('has fits that match the readings they came from', () => {
+    for (const [file, platform, lo, hi] of [
+      ['xdOscCpuReadings.json', 'minilogue-xd', -0.35, 0.36],
+      ['nts1OscCpuReadings.json', 'nts1mkii', -0.38, 0.54]
+    ] as const) {
+      for (const r of oscReadings(file)) {
+        const err = oscRealCycles(r.estimate, platform) / r.cycles - 1
+        expect(err, `${platform} ${r.name}`).toBeGreaterThanOrEqual(lo)
+        expect(err, `${platform} ${r.name}`).toBeLessThanOrEqual(hi)
+      }
+    }
+  })
+
+  it('ends "fine" where the fit\'s worst under-read still clears the ceiling', () => {
+    expect(CPU_GAUGE['minilogue-xd'].fineUpTo / XD_OSC_HANG_CYCLES).toBeCloseTo(0.66, 2)
+    expect(CPU_GAUGE.nts1mkii.fineUpTo / NTS1MKII_OSC_DROPOUT_CYCLES).toBeCloseTo(0.63, 2)
   })
 })
 
@@ -193,10 +228,11 @@ describe('estimateOscCpuCost with params on device knobs', () => {
 })
 
 describe('NTS-1 mkII CPU estimate', () => {
-  it('is fine up to half the measured ceiling and over at the ceiling', () => {
-    expect(cpuZone(NTS1MKII_OSC_CEILING_CYCLES / 2, 'nts1mkii').zone).toBe('fine')
-    expect(cpuZone(NTS1MKII_OSC_CEILING_CYCLES * 0.75, 'nts1mkii').zone).toBe('between')
-    expect(cpuZone(NTS1MKII_OSC_CEILING_CYCLES, 'nts1mkii').zone).toBe('over')
+  it('is over once the converted estimate reaches the measured busy ceiling', () => {
+    const at = (real: number): number => (real - 44) / 0.83
+    expect(cpuZone(at(4000), 'nts1mkii').zone).toBe('fine')
+    expect(cpuZone(at(5500), 'nts1mkii').zone).toBe('between')
+    expect(cpuZone(at(NTS1MKII_OSC_DROPOUT_CYCLES), 'nts1mkii').zone).toBe('over')
   })
 
   it('estimates an NTS-1 mkII-only patch, counting helper-less sense/velocity as free', () => {
