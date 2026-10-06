@@ -5,7 +5,7 @@ import { hoistedSuffixes } from './oscBody'
 import { resolvePlatformGraph } from './resolveUnit'
 import { findLoguePrimitive } from './primitives'
 import { isEffectModule } from './unitKinds'
-import type { SubpatchDefinitions } from './subpatches'
+import { withPaths, type SubpatchDefinitions } from './subpatches'
 
 /**
  * A minilogue xd CPU estimate: the emulator-measured cost of each active instance
@@ -244,7 +244,7 @@ export function estimateOscCpuCost(
     }
   } catch (err) {
     if (err instanceof UnsupportedLogueNodeError)
-      return { status: 'incomplete', reason: err.message }
+      return { status: 'incomplete', reason: withPaths(err.message, doc, subpatches) }
     throw err
   }
 }

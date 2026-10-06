@@ -2,11 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { generateOscUnit } from '../logue-codegen/src/nts1mkii/generateOscUnit'
 import { generateOldGenOscUnit } from '../logue-codegen/src/minilogue-xd/generateOscUnit'
 import { estimateOscStateCost } from '../logue-codegen/src/estimateOscStateCost'
+import { estimateOscCpuCost } from '../logue-codegen/src/estimateOscCpuCost'
+import { generateMinilogueXdProject } from '../logue-codegen/src/minilogue-xd/projectFiles'
+import { generateNts1MkiiProject } from '../logue-codegen/src/nts1mkii/projectFiles'
 import { LOGUE_AUDIO_OUT_TYPE } from '../logue-codegen/src/oscInstances'
 import {
   flattenSubpatches,
   createSubpatchAwareResolver,
   SubpatchResolutionError,
+  withPaths,
   LOGUE_SUBPATCH_INLET_TYPE,
   LOGUE_SUBPATCH_OUTLET_TYPE,
   type SubpatchDefinitions
@@ -456,5 +460,88 @@ describe('synthesizeSubpatchPrimitive (via createSubpatchAwareResolver)', () => 
     const selfRef = doc([obj('sub/loop', 'again')], [], true)
     const resolve = createSubpatchAwareResolver(new Map([['sub/loop', selfRef]]))
     expect(resolve('sub/loop')).toBeDefined()
+  })
+})
+
+describe('errors after flattening name the instance path', () => {
+  // f1's output reaches nothing, but its promoted Cutoff sits on a device slot: the exposure
+  // check fails after flattening, on the copied node ("f1_lp" to codegen).
+  const unwired: ParamValue = {
+    name: 'Cutoff',
+    value: '50',
+    label: 'Cutoff',
+    logueParamIndex: { 'minilogue-xd': 0, nts1mkii: 2 }
+  }
+  const root = doc(
+    [
+      obj('logue/osc/saw', 'osc'),
+      obj('sub/filt', 'f1', [unwired]),
+      obj(LOGUE_AUDIO_OUT_TYPE, 'audio')
+    ],
+    [wire('osc', 'out', 'f1', 'in'), wire('osc', 'out', 'audio', 'in')]
+  )
+
+  it('in Export/Build (both platforms)', () => {
+    for (const generate of [
+      () => generateMinilogueXdProject(root, 'u', DEFS),
+      () => generateNts1MkiiProject(root, 'u', DEFS)
+    ]) {
+      expect(generate).toThrow(/node "f1\/lp"/)
+      expect(generate).not.toThrow(/f1_lp/)
+    }
+  })
+
+  it('in the estimators\' "incomplete" reason', () => {
+    // sense/velocity is NTS-1 mkII-only: on the xd the platform check fails after flattening.
+    const velDef = doc(
+      [obj('logue/sense/velocity', 'vel'), obj(LOGUE_SUBPATCH_OUTLET_TYPE, 'out')],
+      [wire('vel', 'unipolar', 'out', 'in')],
+      true
+    )
+    const defs: SubpatchDefinitions = new Map([['sub/vel', velDef]])
+    const velRoot = doc(
+      [obj('sub/vel', 'v1'), obj(LOGUE_AUDIO_OUT_TYPE, 'audio')],
+      [wire('v1', 'out', 'audio', 'in')]
+    )
+    for (const r of [
+      estimateOscStateCost(velRoot, 'minilogue-xd', defs),
+      estimateOscCpuCost(velRoot, defs, 'minilogue-xd')
+    ]) {
+      expect(r.status).toBe('incomplete')
+      if (r.status === 'incomplete') {
+        expect(r.reason).toContain('"v1/vel"')
+        expect(r.reason).not.toContain('v1_vel')
+      }
+    }
+  })
+
+  it('through nested instances', () => {
+    const outer = doc(
+      [
+        obj(LOGUE_SUBPATCH_INLET_TYPE, 'in'),
+        obj('sub/filt', 'inner', [
+          { name: 'Cutoff', value: '50', subpatchExpose: { outerName: 'Cutoff' } }
+        ]),
+        obj(LOGUE_SUBPATCH_OUTLET_TYPE, 'out')
+      ],
+      [wire('in', 'out', 'inner', 'in'), wire('inner', 'out', 'out', 'in')],
+      true
+    )
+    const defs: SubpatchDefinitions = new Map([...DEFS, ['sub/outer', outer]])
+    const nested = doc(
+      [
+        obj('logue/osc/saw', 'osc'),
+        obj('sub/outer', 'o1', [unwired]),
+        obj(LOGUE_AUDIO_OUT_TYPE, 'audio')
+      ],
+      [wire('osc', 'out', 'o1', 'in'), wire('osc', 'out', 'audio', 'in')]
+    )
+    expect(() => generateMinilogueXdProject(nested, 'u', defs)).toThrow(/node "o1\/inner\/lp"/)
+  })
+
+  it('leaves a message alone where nothing matches', () => {
+    const msg = 'Param "X" on node "osc" is broken; "f1_lpx" is someone else'
+    expect(withPaths(msg, root, DEFS)).toBe(msg)
+    expect(withPaths('node "f1_lp"', rootWith([]), DEFS)).toBe('node "f1/lp"')
   })
 })

@@ -1,6 +1,6 @@
 import type { LogueModule, PatchDocument } from '../../../src/shared/domain/patch'
 import { isEffectModule } from '../unitKinds'
-import type { SubpatchDefinitions } from '../subpatches'
+import { withSubpatchPaths, type SubpatchDefinitions } from '../subpatches'
 import { generateOscUnit } from './generateOscUnit'
 import { generateFxUnit } from './generateFxUnit'
 
@@ -22,14 +22,18 @@ export function generateNts1MkiiProject(
 ): Nts1MkiiProject {
   const module = doc.settings.logueTarget?.module ?? 'osc'
   if (isEffectModule(module)) {
-    const fx = generateFxUnit(doc, { name: unitName, ...ids }, subpatches)
+    const fx = withSubpatchPaths(doc, subpatches, () =>
+      generateFxUnit(doc, { name: unitName, ...ids }, subpatches)
+    )
     return {
       module,
       files: { 'header.c': fx.headerC, 'fx.h': fx.fxH, 'unit.cc': fx.unitCc },
       project: 'fx'
     }
   }
-  const osc = generateOscUnit(doc, { name: unitName, ...ids }, subpatches)
+  const osc = withSubpatchPaths(doc, subpatches, () =>
+    generateOscUnit(doc, { name: unitName, ...ids }, subpatches)
+  )
   return {
     module,
     files: { 'header.c': osc.headerC, 'osc.h': osc.oscH, 'unit.cc': osc.unitCc },

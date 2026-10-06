@@ -3031,3 +3031,12 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
 - A measuring slip worth not repeating: stashing the source to render a "before" reference while
   a table re-measure ran in the background let part of that run measure the old code. The run was
   stopped, the tables reset and measured again; render references before starting a re-measure.
+
+### Subpatch errors name the instance path (2026-10-06)
+
+- An error raised after flattening (graph resolution, a platform check, param exposure) named the
+  copied node as codegen sees it, `"f1_lp"`. The flattener now records each copy's instance path,
+  and `withSubpatchPaths` (around both platforms' project builders, so Export and Build) /
+  `withPaths` (the estimators' "incomplete" reasons) replace every quoted flattened name with it:
+  `"f1/lp"`, nested `"o1/inner/lp"`. The paths are recomputed only once something has failed.
+  Mutating the message keeps the error's class, which the "incomplete graph" handlers test.

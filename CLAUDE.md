@@ -1569,8 +1569,10 @@ Mechanics (`logue-codegen/src/subpatches.ts`, dependency-free, definitions alway
 - A promoted param's DEFAULTED device label (its outer name) is cut to the platform's name limit
   (`flattenSubpatches`' `maxLabelLength`, NTS-1 mkII's 21); a label typed on the instance is never
   cut and still fails Export when too long. Errors raised after flattening (e.g. a param exposed
-  on an unwired instance) name the flattened node (`f1_lp`), not the instance path -- known,
-  not yet mapped back.
+  on an unwired instance) name the instance path (`"f1/lp"`, nested `"o1/inner/lp"`), not the
+  flattened node codegen sees (`f1_lp`): `withSubpatchPaths` (Export/Build, around both
+  platforms' project builders) and `withPaths` (the three estimators' "incomplete" reasons)
+  replace every quoted flattened name, keeping the error's class (2026-10-06).
 - `synthesizeSubpatchPrimitive` builds a canvas-only stand-in `LoguePrimitive` (codegen hooks
   throw): ports, promoted params as `freeLabel` specs (min/max/step from the leaf spec, default =
   the definition's authored value), platforms = intersection of the contents', and per-outlet

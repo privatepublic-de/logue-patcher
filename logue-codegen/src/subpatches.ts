@@ -420,10 +420,21 @@ export function flattenSubpatches(
   // the instance is never touched, so an over-long one still fails loudly in `oscParams.ts`.
   maxLabelLength?: number
 ): PatchDocument {
+  return flattenWithPaths(root, defs, maxLabelLength).doc
+}
+
+/** `flattenSubpatches`, plus each copied node's flattened name -> its instance path
+ *  (`f1_lp` -> `f1/lp`), for `withSubpatchPaths`. */
+function flattenWithPaths(
+  root: PatchDocument,
+  defs: SubpatchDefinitions,
+  maxLabelLength?: number
+): { doc: PatchDocument; paths: Map<string, string> } {
+  const paths = new Map<string, string>()
   const hasSubpatchNodes = root.nodes.some(
     (n) => n.kind === 'obj' && (isSubpatchInstanceType(n.type) || isSubpatchPortType(n.type))
   )
-  if (!hasSubpatchNodes) return root
+  if (!hasSubpatchNodes) return { doc: root, paths }
 
   const flatNodes: PatchDocument['nodes'] = []
   const usedNames = new Set<string>()
@@ -492,6 +503,7 @@ export function flattenSubpatches(
       }
       scope.kind.set(node.name, 'real')
       const name = isRoot ? node.name : claimName(`${path.join('_')}_${node.name}`)
+      if (!isRoot) paths.set(name, [...path, node.name].join('/'))
       scope.flatName.set(node.name, name)
       flatNodes.push(isRoot ? node : { ...node, name, params })
     }
@@ -631,7 +643,42 @@ export function flattenSubpatches(
   }
   emitNets(rootScope)
 
-  return { nodes: flatNodes, nets: flatNets, settings: root.settings, notes: root.notes }
+  return {
+    doc: { nodes: flatNodes, nets: flatNets, settings: root.settings, notes: root.notes },
+    paths
+  }
+}
+
+/**
+ * Runs `fn` (a generator or estimator over `doc`) and, if it throws, names subpatch contents in
+ * the error the way the user placed them: every quoted flattened node name (`"f1_lp"`, which only
+ * codegen ever sees) becomes its instance path (`"f1/lp"`). The error object and its class stay
+ * the same, so every existing handler still catches it. Errors from flattening itself already
+ * use paths; the paths are only worked out once something has failed.
+ */
+export function withSubpatchPaths<T>(
+  doc: PatchDocument,
+  defs: SubpatchDefinitions,
+  fn: () => T
+): T {
+  try {
+    return fn()
+  } catch (e) {
+    if (e instanceof Error) e.message = withPaths(e.message, doc, defs)
+    throw e
+  }
+}
+
+/** `message` with every quoted flattened node name of `doc` replaced by its instance path. */
+export function withPaths(message: string, doc: PatchDocument, defs: SubpatchDefinitions): string {
+  let paths: Map<string, string>
+  try {
+    paths = flattenWithPaths(doc, defs).paths
+  } catch {
+    return message
+  }
+  for (const [flat, path] of paths) message = message.split(`"${flat}"`).join(`"${path}"`)
+  return message
 }
 
 /** A definition's promoted outer names -- throws on a duplicate, which would otherwise merge two

@@ -1,6 +1,6 @@
 import type { LogueModule, PatchDocument } from '../../../src/shared/domain/patch'
 import { isEffectModule } from '../unitKinds'
-import type { SubpatchDefinitions } from '../subpatches'
+import { withSubpatchPaths, type SubpatchDefinitions } from '../subpatches'
 import { generateOldGenOscUnit } from './generateOscUnit'
 import { generateOldGenFxUnit } from './generateFxUnit'
 
@@ -21,7 +21,9 @@ export function generateMinilogueXdProject(
 ): MinilogueXdProject {
   const module = doc.settings.logueTarget?.module ?? 'osc'
   if (isEffectModule(module)) {
-    const fx = generateOldGenFxUnit(doc, { name: unitName }, subpatches)
+    const fx = withSubpatchPaths(doc, subpatches, () =>
+      generateOldGenFxUnit(doc, { name: unitName }, subpatches)
+    )
     return {
       module,
       project: 'fx',
@@ -37,7 +39,9 @@ export function generateMinilogueXdProject(
       }
     }
   }
-  const osc = generateOldGenOscUnit(doc, { name: unitName }, subpatches)
+  const osc = withSubpatchPaths(doc, subpatches, () =>
+    generateOldGenOscUnit(doc, { name: unitName }, subpatches)
+  )
   return {
     module,
     project: 'osc',

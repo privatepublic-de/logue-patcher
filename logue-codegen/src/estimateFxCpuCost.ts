@@ -11,7 +11,7 @@ import { hoistedSuffixes } from './oscBody'
 import { UnsupportedLogueNodeError } from './oscInstances'
 import { findLoguePrimitive } from './primitives'
 import { resolvePlatformGraph } from './resolveUnit'
-import type { SubpatchDefinitions } from './subpatches'
+import { withPaths, type SubpatchDefinitions } from './subpatches'
 import { isEffectModule } from './unitKinds'
 
 /**
@@ -285,7 +285,7 @@ export function estimateFxCpuCost(
     }
   } catch (err) {
     if (err instanceof UnsupportedLogueNodeError)
-      return { status: 'incomplete', reason: err.message }
+      return { status: 'incomplete', reason: withPaths(err.message, doc, subpatches) }
     throw err
   }
 }

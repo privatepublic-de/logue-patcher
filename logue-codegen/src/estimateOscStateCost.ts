@@ -7,7 +7,7 @@ import {
 } from './primitives'
 import { UnsupportedLogueNodeError } from './oscInstances'
 import { resolvePlatformGraph } from './resolveUnit'
-import type { SubpatchDefinitions } from './subpatches'
+import { withPaths, type SubpatchDefinitions } from './subpatches'
 import { findUnitKind, isEffectModule } from './unitKinds'
 import { CODE_HELPER_BYTES, CODE_SIZE_TABLE, type CodeSize } from './codeSizeTable'
 import type { ResolvedActiveInstance } from './oscInstances'
@@ -177,7 +177,7 @@ export function estimateOscStateCost(
     }
   } catch (err) {
     if (err instanceof UnsupportedLogueNodeError) {
-      return { status: 'incomplete', reason: err.message }
+      return { status: 'incomplete', reason: withPaths(err.message, doc, subpatches) }
     }
     throw err
   }
