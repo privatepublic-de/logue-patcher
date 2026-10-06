@@ -1627,8 +1627,15 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
 - Verified (2026-10-04): unit tests, the built app (placing, bus editing, badges, colours,
   arrange, a send's GAIN as a Param Matrix menu param), and real builds of a three-send
   oscillator on both platforms (`scripts/stageBuses.ts`: `lp-xd-buses`/`lp-nts1-buses`, one send
-  GAIN on Shape, one a menu param; only leaf calls below the xd's `process`). No harness render,
-  no hardware pass, no effect-unit build yet; no example uses a bus.
+  GAIN on Shape, one a menu param; only leaf calls below the xd's `process`). The example is
+  `examples/effects/multi-tap.loguepatch` (2026-10-06, delfx): four buffer taps, each `mix/pan`
+  sending straight to the bus `taps`, one `receive-stereo`. Builds on both platforms (xd 3.4 KB
+  of 12, only leaf calls below `process`); `scripts/runMultiTapHarness.ts` (impulse in, both
+  channels, ASan/UBSan) has every tap exactly 4915 samples apart at TIME 30, each pan's l/r
+  ratio exact, each feedback echo 0.360 of its first pass (DEPTH 40 x 0.9), and the two
+  platforms bit-identical. Effect CPU estimate ~1210 real cycles on both (each tap ~220, its
+  4 SDRAM reads): NTS-1 mkII fine; xd past the 1040 "busy" anchor, under "solo only" 2980, like
+  grain-mill-xd. No hardware pass, no listening pass.
 - A node without outlets (a send, a subpatch's outlet port) answers to no outlet name
   (`resolveDeclaredOutletName`), so Replace with... into a send leaves the old output wire stale.
 
@@ -1673,7 +1680,9 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   into a real unit and checks `readelf` for non-fx_api imports (all 64 clean). Example effect
   patches (`examples/effects/`, written by `scripts/writeEffectExamples.ts`): a Freeverb-style
   stereo reverb from primitives, an auto-wah, a tempo swell, a stereo frequency shifter, a stereo reverse delay
-  (`reverse-wash`, plus the lighter `reverse-wash-xd`); `stageFxUnits.ts` stages them with
+  (`reverse-wash`, plus the lighter `reverse-wash-xd`), a stereo multi-tap echo (`multi-tap`, the
+  bus example; its positions are `layoutByFlow`'s, so the writer runs with `--tsconfig
+  tsconfig.web.json`); `stageFxUnits.ts` stages them with
   a CPU-probe menu param (the M7 cycle counter) for measuring on the device. SDRAM (phase 4):
   a primitive's `sdramFloats(node)` share is laid out by `oscBody.ts`' `sdramLayout` (shared with
   the RAM estimate's `sdram` line), allocated once in `unit_init` (`getBufferSize()`), pointed to

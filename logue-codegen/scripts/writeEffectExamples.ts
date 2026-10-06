@@ -24,13 +24,17 @@
  * - reverse-wash (delfx, NTS-1 mkII; builds for both) and reverse-wash-xd (delfx, the xd's lighter
  *   version): a stereo reverse delay from logue/util/reverse-tap; see reverseWash().
  *
- * Usage: npx tsx logue-codegen/scripts/writeEffectExamples.ts
+ * - multi-tap (delfx): a stereo multi-tap echo, the example for buses (2026-10-06); see multiTap().
+ *
+ * Usage: npx tsx --tsconfig tsconfig.web.json logue-codegen/scripts/writeEffectExamples.ts
+ *   (the tsconfig resolves `@logue-codegen` for the renderer's flowLayout, used by multi-tap)
  */
 import { mkdirSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { serializePatchFile } from '../../src/shared/json/patchCodec'
 import type { LogueModule, Net, ObjNode, PatchDocument } from '../../src/shared/domain/patch'
 import type { LogueKnob, ParamValue } from '../../src/shared/domain/paramValueTypes'
+import { layoutByFlow } from '../../src/renderer/src/canvas/flowLayout'
 
 const outDir = join(dirname(new URL(import.meta.url).pathname), '..', '..', 'examples', 'effects')
 
@@ -921,6 +925,97 @@ function reverseWash(xd = false): PatchDocument {
   )
 }
 
+/**
+ * A stereo multi-tap echo: one buffer read by four taps at 1/4, 2/4, 3/4 and 4/4 of a spacing
+ * (TIME), each placed in the stereo field by a `mix/pan` that sends straight to the bus `taps`
+ * (`ObjNode.bus`): one `mix/receive-stereo` hears all four, with no mixer and no wire between
+ * them. The last tap, darkened, feeds back into the buffer (DEPTH, up to 0.9); MIX is dry/wet.
+ * The four taps come back at -6 dB, since four uncorrelated echoes add up to ~+6 dB.
+ */
+function multiTap(): PatchDocument {
+  const taps = [
+    { pan: -70, factor: '50', range: '0' },
+    { pan: 70, factor: '100', range: '0' },
+    { pan: -35, factor: '75', range: '1' },
+    { pan: 35, factor: '100', range: '1' }
+  ]
+  const nodes: ObjNode[] = [
+    obj('audio-in', 'logue/io/audio-in', 0, 300),
+    obj('in+fb', 'logue/math/add', 260, 300),
+    // 1.4 s: TIME at the top puts the last tap there.
+    obj('buffer', 'logue/util/buffer', 500, 300, [{ name: 'LENGTH', value: '1' }]),
+    obj('time', 'logue/sense/control', 260, 700, [
+      { name: 'VALUE', value: '30', ...onKnob('time') }
+    ]),
+    ...taps.flatMap((t, k) => [
+      // Each tap's TIME inlet adds 50 x its input: x k/2 puts tap k at k/4 of the knob's 100 %.
+      // math/scale rather than a VCA: knob-only math is computed per block, so the taps read
+      // at a still time (a VCA would make every tap's time a per-sample input).
+      obj(`spacing-${k + 1}`, 'logue/math/scale', 500, 600 + k * 200, [
+        { name: 'FACTOR', value: t.factor },
+        { name: 'RANGE', value: t.range }
+      ]),
+      obj(`tap-${k + 1}`, 'logue/util/buffer-tap', 760, 300 + k * 200, [
+        { name: 'TIME', value: '0' }
+      ]),
+      {
+        ...obj(`pan-${k + 1}`, 'logue/mix/pan', 1020, 300 + k * 200, [
+          { name: 'PAN', value: String(t.pan) }
+        ]),
+        bus: 'taps'
+      }
+    ]),
+    { ...obj('echoes', 'logue/mix/receive-stereo', 1280, 400), bus: 'taps' },
+    obj('wet-l', 'logue/gain/vca', 1520, 360, [{ name: 'GAIN', value: '12.5' }]),
+    obj('wet-r', 'logue/gain/vca', 1520, 520, [{ name: 'GAIN', value: '12.5' }]),
+    obj('dry/wet', 'logue/mix/stereo-crossfader', 1760, 300, [
+      { name: 'FADE', value: '35', ...onKnob('mix') },
+      { name: 'LAW', value: '1' }
+    ]),
+    obj('audio-out', 'logue/io/audio-out', 2000, 300),
+    // Feedback: the last tap, each pass a little darker.
+    obj('tone', 'logue/filter/lowpass-cheap', 1020, 1200, [{ name: 'CUTOFF', value: '70' }]),
+    obj('feedback', 'logue/sense/control', 760, 1400, [
+      { name: 'VALUE', value: '40', ...onKnob('depth') }
+    ]),
+    obj('feedback-max', 'logue/math/scale', 1020, 1400, [{ name: 'FACTOR', value: '90' }]),
+    obj('fb', 'logue/gain/vca', 1280, 1200)
+  ]
+  const nets: Net[] = [
+    wire('audio-in', 'mono', 'in+fb', 'a'),
+    wire('in+fb', 'out', 'buffer', 'in'),
+    ...taps.flatMap((_, k) => [
+      wire('time', 'unipolar', `spacing-${k + 1}`, 'in'),
+      wire(`spacing-${k + 1}`, 'out', `tap-${k + 1}`, 'time'),
+      wire('buffer', 'buf', `tap-${k + 1}`, 'buf'),
+      wire(`tap-${k + 1}`, 'out', `pan-${k + 1}`, 'in')
+    ]),
+    wire('echoes', 'l', 'wet-l', 'in'),
+    wire('echoes', 'r', 'wet-r', 'in'),
+    wire('audio-in', 'l', 'dry/wet', 'l1'),
+    wire('audio-in', 'r', 'dry/wet', 'r1'),
+    wire('wet-l', 'out', 'dry/wet', 'l2'),
+    wire('wet-r', 'out', 'dry/wet', 'r2'),
+    wire('dry/wet', 'l', 'audio-out', 'l'),
+    wire('dry/wet', 'r', 'audio-out', 'r'),
+    wire('tap-4', 'out', 'tone', 'in'),
+    wire('tone', 'out', 'fb', 'in'),
+    wire('feedback', 'unipolar', 'feedback-max', 'in'),
+    wire('feedback-max', 'out', 'fb', 'gain'),
+    wire('fb', 'out', 'in+fb', 'b')
+  ]
+  // The app's own Arrange by Signal Flow (each spacing beside its tap, the bus receive in line
+  // with the taps), rather than hand-placed positions.
+  const placed = doc(
+    'delfx',
+    'LP MultiTap',
+    nodes,
+    nets,
+    'A stereo multi-tap echo: four taps at 1/4, 2/4, 3/4 and 4/4 of the spacing, spread across the stereo field, the last one fed back and darkened. TIME = spacing (the last tap up to 1.4 s), DEPTH = feedback, MIX = dry/wet. The example for buses: each pan sends straight to the bus "taps", and one receive hears them all.'
+  )
+  return { ...placed, nodes: layoutByFlow(placed) }
+}
+
 mkdirSync(outDir, { recursive: true })
 for (const [file, d] of [
   ['stereo-reverb.loguepatch', reverb()],
@@ -930,6 +1025,7 @@ for (const [file, d] of [
   ['grain-mill.loguepatch', grainMill()],
   ['reverse-wash.loguepatch', reverseWash()],
   ['reverse-wash-xd.loguepatch', reverseWash(true)],
+  ['multi-tap.loguepatch', multiTap()],
   ['grain-voice.loguesub', grainVoice()],
   ...(['free', 'sync', 'rnd', 'rndsync'] as const).map(
     (mode) => [`grain-mill-xd-${mode}.loguepatch`, grainMillXd(mode, XD_VOICES)] as const

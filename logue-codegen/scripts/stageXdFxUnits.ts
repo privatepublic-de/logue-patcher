@@ -363,7 +363,8 @@ for (const [file, dirName] of [
   ['grain-mill-xd-free.loguepatch', 'lp-xdfx-grain-free'],
   ['grain-mill-xd-sync.loguepatch', 'lp-xdfx-grain-sync'],
   ['grain-mill-xd-rnd.loguepatch', 'lp-xdfx-grain-rnd'],
-  ['grain-mill-xd-rndsync.loguepatch', 'lp-xdfx-grain-rndsync']
+  ['grain-mill-xd-rndsync.loguepatch', 'lp-xdfx-grain-rndsync'],
+  ['multi-tap.loguepatch', 'lp-xdfx-multitap']
 ] as const) {
   const d = parsePatchFile(readFileSync(join(examplesDir, file), 'utf-8'))
   staged.push(stage(dirName, d.settings.unitName ?? dirName, d, exampleSubpatches()))

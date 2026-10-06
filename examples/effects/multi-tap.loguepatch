@@ -1,0 +1,785 @@
+{
+  "version": 4,
+  "nodes": [
+    {
+      "type": "logue/io/audio-in",
+      "x": 0,
+      "y": 0,
+      "name": "audio-in",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/math/add",
+      "x": 220,
+      "y": 0,
+      "name": "in+fb",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/util/buffer",
+      "x": 440,
+      "y": 0,
+      "name": "buffer",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "LENGTH",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "type": "logue/sense/control",
+      "x": 220,
+      "y": 125,
+      "name": "time",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "30",
+          "logueKnob": {
+            "nts1mkii": "time",
+            "minilogue-xd": "time"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 440,
+      "y": 125,
+      "name": "spacing-1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "50"
+        },
+        {
+          "name": "RANGE",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/buffer-tap",
+      "x": 660,
+      "y": 0,
+      "name": "tap-1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 880,
+      "y": 0,
+      "name": "pan-1",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "-70"
+        }
+      ],
+      "bus": "taps"
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 440,
+      "y": 249,
+      "name": "spacing-2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "100"
+        },
+        {
+          "name": "RANGE",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/buffer-tap",
+      "x": 660,
+      "y": 249,
+      "name": "tap-2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 880,
+      "y": 249,
+      "name": "pan-2",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "70"
+        }
+      ],
+      "bus": "taps"
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 440,
+      "y": 402,
+      "name": "spacing-3",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "75"
+        },
+        {
+          "name": "RANGE",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/buffer-tap",
+      "x": 660,
+      "y": 402,
+      "name": "tap-3",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 880,
+      "y": 402,
+      "name": "pan-3",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "-35"
+        }
+      ],
+      "bus": "taps"
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 440,
+      "y": 555,
+      "name": "spacing-4",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "100"
+        },
+        {
+          "name": "RANGE",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "type": "logue/util/buffer-tap",
+      "x": 660,
+      "y": 555,
+      "name": "tap-4",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "TIME",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/pan",
+      "x": 880,
+      "y": 555,
+      "name": "pan-4",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "PAN",
+          "value": "35"
+        }
+      ],
+      "bus": "taps"
+    },
+    {
+      "type": "logue/mix/receive-stereo",
+      "x": 1100,
+      "y": 0,
+      "name": "echoes",
+      "kind": "obj",
+      "params": [],
+      "bus": "taps"
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 1320,
+      "y": 0,
+      "name": "wet-l",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "GAIN",
+          "value": "12.5"
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 1320,
+      "y": 125,
+      "name": "wet-r",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "GAIN",
+          "value": "12.5"
+        }
+      ]
+    },
+    {
+      "type": "logue/mix/stereo-crossfader",
+      "x": 1540,
+      "y": 0,
+      "name": "dry/wet",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FADE",
+          "value": "35",
+          "logueKnob": {
+            "nts1mkii": "mix",
+            "minilogue-xd": "mix"
+          }
+        },
+        {
+          "name": "LAW",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "type": "logue/io/audio-out",
+      "x": 1760,
+      "y": 0,
+      "name": "audio-out",
+      "kind": "obj",
+      "params": []
+    },
+    {
+      "type": "logue/filter/lowpass-cheap",
+      "x": 880,
+      "y": 708,
+      "name": "tone",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "CUTOFF",
+          "value": "70"
+        }
+      ]
+    },
+    {
+      "type": "logue/sense/control",
+      "x": 660,
+      "y": 833,
+      "name": "feedback",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "VALUE",
+          "value": "40",
+          "logueKnob": {
+            "nts1mkii": "depth",
+            "minilogue-xd": "depth"
+          }
+        }
+      ]
+    },
+    {
+      "type": "logue/math/scale",
+      "x": 880,
+      "y": 833,
+      "name": "feedback-max",
+      "kind": "obj",
+      "params": [
+        {
+          "name": "FACTOR",
+          "value": "90"
+        }
+      ]
+    },
+    {
+      "type": "logue/gain/vca",
+      "x": 1100,
+      "y": 708,
+      "name": "fb",
+      "kind": "obj",
+      "params": []
+    }
+  ],
+  "nets": [
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "mono"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "in+fb",
+          "inlet": "a"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "in+fb",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "buffer",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spacing-1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spacing-1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-1",
+          "inlet": "time"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-1",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "tap-1",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-1",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spacing-2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spacing-2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-2",
+          "inlet": "time"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-2",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "tap-2",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-2",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spacing-3",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spacing-3",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-3",
+          "inlet": "time"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-3",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "tap-3",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-3",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "time",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "spacing-4",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "spacing-4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-4",
+          "inlet": "time"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "buffer",
+          "outlet": "buf"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tap-4",
+          "inlet": "buf"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "tap-4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "pan-4",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "echoes",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "wet-l",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "echoes",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "wet-r",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "dry/wet",
+          "inlet": "l1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "audio-in",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "dry/wet",
+          "inlet": "r1"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "wet-l",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "dry/wet",
+          "inlet": "l2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "wet-r",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "dry/wet",
+          "inlet": "r2"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "dry/wet",
+          "outlet": "l"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "l"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "dry/wet",
+          "outlet": "r"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "audio-out",
+          "inlet": "r"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "tap-4",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "tone",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "tone",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "feedback",
+          "outlet": "unipolar"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "feedback-max",
+          "inlet": "in"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "feedback-max",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "fb",
+          "inlet": "gain"
+        }
+      ]
+    },
+    {
+      "sources": [
+        {
+          "obj": "fb",
+          "outlet": "out"
+        }
+      ],
+      "dests": [
+        {
+          "obj": "in+fb",
+          "inlet": "b"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "logueTarget": {
+      "module": "delfx"
+    },
+    "unitName": "LP MultiTap"
+  },
+  "notes": "A stereo multi-tap echo: four taps at 1/4, 2/4, 3/4 and 4/4 of the spacing, spread across the stereo field, the last one fed back and darkened. TIME = spacing (the last tap up to 1.4 s), DEPTH = feedback, MIX = dry/wet. The example for buses: each pan sends straight to the bus \"taps\", and one receive hears them all."
+}

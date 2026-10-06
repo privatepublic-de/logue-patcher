@@ -471,7 +471,8 @@ for (const [file, dirName] of [
   ['stereo-reverb.loguepatch', 'lp-fx-reverb'],
   ['auto-wah.loguepatch', 'lp-fx-autowah'],
   ['tempo-swell.loguepatch', 'lp-fx-swell'],
-  ['freq-shifter.loguepatch', 'lp-fx-freqshift']
+  ['freq-shifter.loguepatch', 'lp-fx-freqshift'],
+  ['multi-tap.loguepatch', 'lp-fx-multitap']
 ] as const) {
   const d = parsePatchFile(readFileSync(join(examplesDir, file), 'utf-8'))
   staged.push(stage(dirName, d.settings.unitName!, d, true))

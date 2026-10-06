@@ -2993,3 +2993,20 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   the refit unchanged (17 + 1.54x, -30..+30 %, 18 patches).
 - Effect table (xd delfx): first 614 -> 103. Code size (xd osc): first instance 1114 B incl. the
   `formant_g` leaf (was 1476 incl. `formant_step`), each extra +624 (was +232).
+
+### multi-tap, the bus example (2026-10-06)
+
+- Buses had no example. multi-tap (delfx) uses them where they save wiring: four buffer taps,
+  each through a `mix/pan` that sends straight to the bus `taps` (`ObjNode.bus`), one
+  `receive-stereo` for all four, then a -6 dB wet trim and the dry/wet.
+- The TIME knob reaches each tap's `time` through `math/scale` (x k/2), not a VCA: scale is
+  `pure`, so it's computed per block and the taps take their `control-still` path. Through VCAs
+  every tap counted as moving (94 cycles + 4 SDRAM reads each, against ~220 real still).
+- Estimate ~1210 real cycles on both platforms; the four taps' SDRAM reads are most of it.
+- Host harness (`runMultiTapHarness.ts`): taps exactly 3 + k x 4915 samples at TIME 30, pans
+  exact, each fed-back echo 0.360 of its first pass, NTS-1 mkII and xd renders bit-identical.
+- Opened in the built app: no warnings, the `-> taps` badges on the four pans. Positions come
+  from `layoutByFlow`, since the hand-placed ones crossed more wires.
+- Also on the list was "Replace with... into a send leaves the old output wire stale". That
+  is `replaceNode`'s deliberate choice (keep a wire it can't place visible and removable, rather
+  than guess), not a bug, so it stays.
