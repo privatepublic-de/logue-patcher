@@ -121,6 +121,7 @@ const axolotiApi: AxolotiIpcApi = {
     onMenuOpenPatch: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.openPatch'], cb),
     onMenuSavePatch: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.savePatch'], cb),
     onMenuSavePatchAs: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.savePatchAs'], cb),
+    onMenuCloseTab: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.closeTab'], cb),
     onMenuOpenRecentFile: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.openRecentFile'], cb),
     onMenuOpenAbout: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.openAbout'], cb),
     onMenuExportUnitSource: (cb) => subscribe(IPC_EVENT_CHANNELS['menu.exportUnitSource'], cb),

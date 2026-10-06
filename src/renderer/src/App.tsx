@@ -97,10 +97,20 @@ function App(): React.JSX.Element {
   const activeTabId = useTabsStore((s) => s.activeTabId)
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null
 
-  const handleCloseTab = (id: string): void => {
+  const handleCloseTab = (id: string): boolean => {
     const tab = useTabsStore.getState().tabs.find((t) => t.id === id)
-    if (tab?.dirty && !window.confirm(`Discard unsaved changes to "${tab.title}"?`)) return
+    if (tab?.dirty && !window.confirm(`Discard unsaved changes to "${tab.title}"?`)) return false
     closeTab(id)
+    return true
+  }
+
+  // ⌘W: the tab's × closing the last tab leaves the start screen, but ⌘W on the last tab (or
+  // on the start screen) closes the window, which quits. Bypasses the close guard on purpose:
+  // the discard was just confirmed, and main's unsaved list only catches up after a render.
+  const handleMenuCloseTab = (): void => {
+    const { activeTabId } = useTabsStore.getState()
+    if (activeTabId && !handleCloseTab(activeTabId)) return
+    if (useTabsStore.getState().tabs.length === 0) void window.axoloti.system.closeWindowAfterSave()
   }
 
   const handleNewSubpatch = (): void => {
@@ -217,6 +227,7 @@ function App(): React.JSX.Element {
       window.axoloti.events.onMenuOpenPatch(handleOpen),
       window.axoloti.events.onMenuSavePatch(handleSave),
       window.axoloti.events.onMenuSavePatchAs(handleSaveAs),
+      window.axoloti.events.onMenuCloseTab(handleMenuCloseTab),
       window.axoloti.events.onSaveAllAndClose(handleSaveAllAndClose),
       window.axoloti.events.onMenuOpenRecentFile(handleOpenRecentFile),
       window.axoloti.events.onMenuOpenAbout(() => setShowAbout(true)),

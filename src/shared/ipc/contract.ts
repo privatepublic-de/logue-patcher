@@ -337,6 +337,8 @@ export interface AxolotiIpcEvents {
   'menu.openPatch'(): void
   'menu.savePatch'(): void
   'menu.savePatchAs'(): void
+  /** File › Close Tab (⌘W): closes the active tab, or the window when no tab is open or it was the last one. */
+  'menu.closeTab'(): void
   /** A file picked from the native "Open Recent" submenu (role: 'recentDocuments') or the Dock icon, via app.on('open-file'). */
   'menu.openRecentFile'(filePath: string): void
   /** The app menu's "About" item -- overridden from its default `role: 'about'` (native panel) to open AboutModal.tsx instead, since the native panel can't show a library/license list. */
@@ -380,6 +382,7 @@ export const IPC_EVENT_CHANNELS = {
   'menu.openPatch': 'axoloti:event:menu.openPatch',
   'menu.savePatch': 'axoloti:event:menu.savePatch',
   'menu.savePatchAs': 'axoloti:event:menu.savePatchAs',
+  'menu.closeTab': 'axoloti:event:menu.closeTab',
   'menu.openRecentFile': 'axoloti:event:menu.openRecentFile',
   'menu.openAbout': 'axoloti:event:menu.openAbout',
   'menu.exportUnitSource': 'axoloti:event:menu.exportUnitSource',
@@ -409,6 +412,7 @@ export interface AxolotiEventSubscriptions {
   onMenuOpenPatch(cb: () => void): () => void
   onMenuSavePatch(cb: () => void): () => void
   onMenuSavePatchAs(cb: () => void): () => void
+  onMenuCloseTab(cb: () => void): () => void
   onMenuOpenRecentFile(cb: (filePath: string) => void): () => void
   onMenuOpenAbout(cb: () => void): () => void
   onMenuExportUnitSource(cb: () => void): () => void

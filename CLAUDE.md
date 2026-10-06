@@ -1608,7 +1608,8 @@ still too much wiring; plan and decisions in `docs/PLAN-buses.md`). `logue-codeg
   (see "Effect CPU table"; "—" on NTS-1 mkII). Effect tabs get the wave icon
   (`TabInfo.module`).
 - **Menus** (`main/index.ts`, macOS order since 2026-10-02): app (About, Settings… ⌘,), File
-  (New Oscillator ⌘N, New Effect ▸, New Subpatch ⇧⌘N, Open, Save), Edit (Undo/Redo drive the
+  (New Oscillator ⌘N, New Effect ▸, New Subpatch ⇧⌘N, Open, Save, Close Tab ⌘W -- closes the
+  active tab; on the last tab or the start screen it closes the window, so the app quits), Edit (Undo/Redo drive the
   patch, see `menu.undo`), View (Zoom to Fit ⌥⌘0, Arrange by Signal Flow ⌥⌘A, Spread Out,
   Electron's page zoom ⌘+/⌘−/⌘0 -- the user needs it for reading, never remove it;
   Reload/DevTools only in development -- Reload drops unsaved patches unasked), Build (Export
@@ -1897,7 +1898,7 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   buildOutputFolder, subpatchLibraryPath -- main's `PATH_PICKERS` holds each dialog's title), `subpatchLibrary` (list),
   `patchFile` (openPath, save, openDialog, saveDialog, listRecent),
   `logueExport` (exportNts1MkiiUnit, exportMinilogueXdUnit), `logueBuild` (buildMinilogueXdUnit/
-  buildNts1MkiiUnit; detectLocalArmToolchain), `events` (21
+  buildNts1MkiiUnit; detectLocalArmToolchain), `events` (22
   menu-triggered subscriptions, `menu.newLogueEffect(module)` among them + `app.saveAllAndClose` + `logueMidi.data`/`logueMidi.setupChanged`/
   `subpatchLibrary.changed`).
 - `noImplicitAny` is switched back on in both tsconfigs (the electron-toolkit base turns it

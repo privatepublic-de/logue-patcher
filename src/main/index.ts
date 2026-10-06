@@ -135,7 +135,13 @@ function buildAppMenu(): void {
           click: send(IPC_EVENT_CHANNELS['menu.savePatchAs'])
         },
         { type: 'separator' },
-        { role: 'close' }
+        {
+          // Not `role: 'close'`: ⌘W closes the active tab, and the window (so the app) only
+          // once no tab is left (App.tsx).
+          label: 'Close Tab',
+          accelerator: 'CmdOrCtrl+W',
+          click: send(IPC_EVENT_CHANNELS['menu.closeTab'])
+        }
       ]
     },
     {
