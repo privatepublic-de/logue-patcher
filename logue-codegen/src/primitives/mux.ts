@@ -48,6 +48,9 @@ export const mux2Primitive: LoguePrimitive = {
       min: 0,
       max: 100,
       default: 0,
+      // Snaps the canvas dial to the two choices; the DSP still thresholds at 50, so an older
+      // in-between value plays as before.
+      step: 100,
       setStatement: (suffix, valueExpr) => `selectPercent_${suffix} = ${valueExpr};`
     }
   ]
@@ -188,6 +191,9 @@ export const demux2Primitive: LoguePrimitive = {
       min: 0,
       max: 100,
       default: 0,
+      // Snaps the canvas dial to the two choices; the DSP still thresholds at 50, so an older
+      // in-between value plays as before.
+      step: 100,
       setStatement: (suffix, valueExpr) => `selectPercent_${suffix} = ${valueExpr};`
     }
   ]
