@@ -5,20 +5,24 @@
  * after a re-measured `fxCpuCostTable.ts`; new readings come from `hwtest/calibrateFx.ts`, and
  * `logue-estimateFxCpuCost.spec.ts` checks the band.
  *
- * Usage: npx tsx logue-codegen/scripts/checkNts1FxCpuEstimate.ts
+ * Usage: npx tsx logue-codegen/scripts/checkNts1FxCpuEstimate.ts [--xd]
+ *   --xd: the minilogue xd's scale against `XD_FX_DEVICE_READINGS` instead.
  */
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { parsePatchFile } from '../../src/shared/json/patchCodec'
 import { estimateFxCpuCost } from '../src/estimateFxCpuCost'
 import { exampleSubpatches, examplesDir } from './exampleSubpatches'
-import { NTS1MKII_FX_PROBE_READINGS } from './nts1FxProbeUnits'
+import { NTS1MKII_FX_PROBE_READINGS, XD_FX_DEVICE_READINGS } from './nts1FxProbeUnits'
+
+const XD = process.argv.includes('--xd')
+const platform = XD ? 'minilogue-xd' : 'nts1mkii'
 
 const subpatches = exampleSubpatches()
 const rows: { c: number; s: number; m: number }[] = []
-for (const r of NTS1MKII_FX_PROBE_READINGS) {
+for (const r of XD ? XD_FX_DEVICE_READINGS : NTS1MKII_FX_PROBE_READINGS) {
   const doc = r.doc ?? parsePatchFile(readFileSync(join(examplesDir, r.example!), 'utf-8'))
-  const result = estimateFxCpuCost(doc, subpatches, 'nts1mkii')
+  const result = estimateFxCpuCost(doc, subpatches, platform)
   if (result.status !== 'ok') throw new Error(`${r.name}: ${result.reason}`)
   const { sum, cyclesPerSample } = result.estimate
   rows.push({ c: sum.cycles, s: sum.sdram, m: r.cycles })
@@ -46,4 +50,8 @@ for (const { c, s, m } of rows) {
 const det = a11 * a22 - a12 * a12
 const k = (b1 * a22 - b2 * a12) / det
 const p = (a11 * b2 - a12 * b1) / det
-console.log(`\nfresh fit: scale ${k.toFixed(2)}, ${p.toFixed(1)} cycles per SDRAM access`)
+const errors = rows.map(({ c, s, m }) => (k * c + p * s) / m - 1)
+console.log(
+  `\nfresh fit: scale ${k.toFixed(2)}, ${p.toFixed(1)} cycles per SDRAM access; errors ` +
+    `${(Math.min(...errors) * 100).toFixed(0)}..${(Math.max(...errors) * 100).toFixed(0)} %`
+)

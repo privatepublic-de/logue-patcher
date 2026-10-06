@@ -9,7 +9,8 @@
  *   measured separately (the same graph without the primitive).
  * - Control inlets are wired from audio-in's mono too, not from a util/constant: a constant is
  *   per-block, so the reader's hoisted path would be measured instead of the per-sample one a
- *   moving source (an LFO, a follower) takes.
+ *   moving source (an LFO, a follower) takes. `control-still` measures that hoisted path too
+ *   (constants into the control inlets), for a reader fed by a knob or knob-only math.
  * - Every variant is stored as `cycles` at SDRAM_PENALTY 0 plus `sdram`, the SDRAM accesses per
  *   sample: cycles at any penalty are `cycles + penalty * sdram`, so the unknown cost of an SDRAM
  *   access stays a constant of the estimator, not of the table.
@@ -103,9 +104,15 @@ const fxUnit: UnitBuilder = (id, params, wireMode) => {
     const wanted =
       inlet.role === 'buffer' ||
       (wireMode === 'audio' && inlet.role === 'audio') ||
-      wireMode === 'all'
+      wireMode === 'all' ||
+      wireMode === 'still'
     if (!wanted) continue
-    if (inlet.role === 'control' && GATE_INLETS.has(inlet.name)) {
+    if (wireMode === 'still' && inlet.role === 'control') {
+      // A per-block value, as a knob or knob-only math feeds it (hoisted: no per-sample cost).
+      const name = `c_${inlet.name}`
+      nodes.push(obj(name, 'logue/util/constant', [{ name: 'VALUE', value: '37' }]))
+      nets.push(wire({ obj: name, outlet: 'out' }, 'n', inlet.name))
+    } else if (inlet.role === 'control' && GATE_INLETS.has(inlet.name)) {
       if (!nodes.some((n) => n.name === CLOCK)) nodes.push(obj(CLOCK, 'logue/lfo/square-lfo'))
       nets.push(wire({ obj: CLOCK, outlet: 'out' }, 'n', inlet.name))
     } else {
@@ -343,7 +350,7 @@ for (const id of recognizedLoguePrimitiveIds()) {
   if (p.modules && !p.modules.includes('delfx')) continue
   const measured: Record<string, Variant> = {}
   let overflowed = false
-  for (const job of variants(id, fxUnit)) {
+  for (const job of variants(id, fxUnit, { still: true })) {
     try {
       const twoDoc = withInstances(job.doc, id, 2)
       const threeDoc = withInstances(job.doc, id, 3)
