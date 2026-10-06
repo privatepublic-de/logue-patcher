@@ -68,9 +68,9 @@ export const CPU_COST_TABLE: Record<
     snapshotHash: '51754dcc3757ff3f'
   },
   'logue/filter/formant': {
-    variants: { base: 495, control: 533, 'control-still': 534 },
-    worst: 534,
-    snapshotHash: '3064386816179abd'
+    variants: { base: 102, control: 210, 'control-still': 103 },
+    worst: 210,
+    snapshotHash: '0eae7be6852f4378'
   },
   'logue/filter/highpass-cheap': {
     variants: { base: 8, control: 24, 'control-still': 8 },

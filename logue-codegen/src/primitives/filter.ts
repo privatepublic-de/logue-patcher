@@ -1800,11 +1800,9 @@ const FORMANT_BP_STEP_HELPER: HelperBlock = {
   // gain at resonance by the *k -- v1's own raw peak gain is 1/k, so this cancels it, keeping
   // RESONANCE from also sweeping loudness. See logue/filter/formant's own doc comment (both for
   // the DSP itself and for why this is force-inlined -- a real, hardware-confirmed fix).
-  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float g, float k)
+  // a1/a2/a3 come from formant_a1 per block (or per 16 samples), not per sample.
+  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float a1, float a2, float a3, float k)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
-    float a2 = g * a1;
-    float a3 = g * a2;
     float v3 = in - *s2;
     float v1 = a1 * (*s1) + a2 * v3;
     float v2 = *s2 + a2 * (*s1) + a3 * v3;
@@ -1860,6 +1858,11 @@ const FORMANT_K_FROM_PERCENT_HELPER: HelperBlock = {
     float u = 1.f - t;
     return u * u * u * ${(FORMANT_K_MAX - FORMANT_K_MIN).toFixed(2)}f + ${FORMANT_K_MIN.toFixed(2)}f;
   }
+  // The ZDF SVF's 1/(1+g(g+k)), the one divide per band.
+  static inline __attribute__((always_inline)) float formant_a1(float g, float k)
+  {
+    return 1.f / (1.f + g * (g + k));
+  }
 `
 }
 
@@ -1880,14 +1883,18 @@ const FORMANT_NOTE_HELPER: HelperBlock = {
 }
 
 /**
- * Takes the raw `resonancePercent` and converts it to `k` inside, and assigns every nested helper
- * result (`k`, `gA`/`gB`/`gC`) to a named local before passing it on (the `svfKExpr` convention).
- * The original shape nested those calls as arguments -- `formant_step(...,
- * formant_k_from_percent(clampf(...)), ...)` at the call site and `formant_bp_step(...,
- * formant_g_from_note(noteA), ...)` in here -- and crashed a real minilogue xd at `-Os` but not
- * at `-O2`. An 11-build hardware bisect ruled out the DSP and numerics (identical values, a
- * 10M-sample stability sweep, ELF/linker diffs). Keep both this shape and
- * `FORMANT_BP_STEP_HELPER`'s force-inlining; the records disagree on which one alone was enough.
+ * The coefficients, apart from the per-sample bands: `formant_g` is one band's `g` for a vowel/
+ * voice/shift (the table lookup, `note_w0` and the Taylor `tan`), `formant_ctl` all ten for a
+ * moving input every 16 samples. Unwired (or fed per-block values) they are block constants
+ * instead, so a still formant costs three bandpasses a sample (2026-10-06: the coefficient work
+ * was ~80 % of its per-sample cost, and the user's formant patch, VOWEL/CHARACTER on knobs, hung
+ * an xd).
+ *
+ * Every nested helper result is a named local before it's passed on: the original shape nested
+ * those calls as arguments (`formant_bp_step(..., formant_g_from_note(noteA), ...)`) and crashed
+ * a real minilogue xd at `-Os` but not at `-O2`. An 11-build hardware bisect ruled out the DSP
+ * and numerics (identical values, a 10M-sample stability sweep, ELF/linker diffs). Keep that
+ * shape and the force-inlining; the records disagree on which one alone was enough.
  *
  * Row order: u, o, a, e, i (index 0..4); columns: F1, F2, F3 (index 0..2) -- see
  * logue/filter/formant's own doc comment for the Hz source table, the note-space conversion,
@@ -1898,15 +1905,15 @@ const FORMANT_STEP_HELPER: HelperBlock = {
   // kFormantNote[voice][vowel][3] (F1/F2/F3), float -- derived from the same table
   // the embedded array is actually built from, same reasoning as ADDITIVE_STEP_HELPER's own.
   sharedBytes: FORMANT_NOTE_TABLES.length * FORMANT_NOTE_TABLES[0].length * 3 * 4,
-  code: `  static float formant_step(float *s1a, float *s2a, float *s1b, float *s2b, float *s1c, float *s2c,
-    float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent, float x)
+  // A real leaf, called per block (or per 16 samples): inlined, its table lookup and note_w0 were
+  // ~1.1 KB in every instance. process -> leaf is the hardware-proven call shape (see above).
+  code: `  static __attribute__((noinline)) float formant_g(float vowelPercent, float shiftSemis, float characterPercent, int f)
   {
     static const float kFormantNote[3][5][3] = {
       ${FORMANT_NOTE_TABLES.map(
         (t) => '{\n        ' + t.map(formatFormantNoteRow).join(',\n        ') + '\n      }'
       ).join(',\n      ')}
     };
-    float k = formant_k_from_percent(resonancePercent);
     float pos = vowelPercent * 0.01f;
     if (pos < 0.f) pos = 0.f; else if (pos > 1.f) pos = 1.f;
     float segF = pos * 4.f;
@@ -1918,19 +1925,40 @@ const FORMANT_STEP_HELPER: HelperBlock = {
     int voice = (int)cpos;
     if (voice > 1) voice = 1;
     float vfrac = cpos - (float)voice;
-
-    float noteA = formant_note(kFormantNote, voice, seg, frac, vfrac, 0) + shiftSemis;
-    float noteB = formant_note(kFormantNote, voice, seg, frac, vfrac, 1) + shiftSemis;
-    float noteC = formant_note(kFormantNote, voice, seg, frac, vfrac, 2) + shiftSemis;
-
-    float gA = formant_g_from_note(noteA);
-    float gB = formant_g_from_note(noteB);
-    float gC = formant_g_from_note(noteC);
-
-    float yA = formant_bp_step(s1a, s2a, x, gA, k);
-    float yB = formant_bp_step(s1b, s2b, x, gB, k);
-    float yC = formant_bp_step(s1c, s2c, x, gC, k);
-
+    float note = formant_note(kFormantNote, voice, seg, frac, vfrac, f) + shiftSemis;
+    float g = formant_g_from_note(note);
+    return g;
+  }
+  // c: k, then a1/a2/a3 for each band, worked out every 16 samples. The a's step (eq_ctl's
+  // reasoning: every sample's coefficients are then a real SVF's, and a ZDF SVF takes a step in
+  // g/k smoothly), but k also scales each band's output (k*v1), and stepped there a RESONANCE LFO
+  // zippered at -41 dB (harness), so c[0] ramps over the 16 (c[10] the step). The first call jumps.
+  static inline __attribute__((always_inline)) void formant_ctl(uint32_t *n, float *c, float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      float k = formant_k_from_percent(resonancePercent);
+      for (int f = 0; f < 3; ++f)
+      {
+        float g = formant_g(vowelPercent, shiftSemis, characterPercent, f);
+        float a1 = formant_a1(g, k);
+        float a2 = g * a1;
+        c[1 + 3 * f] = a1;
+        c[2 + 3 * f] = a2;
+        c[3 + 3 * f] = g * a2;
+      }
+      if (*n == 0u) c[0] = k;
+      c[10] = (k - c[0]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[10];
+  }
+  static inline __attribute__((always_inline)) float formant_step(float *s, float x, float k,
+    float a1A, float a2A, float a3A, float a1B, float a2B, float a3B, float a1C, float a2C, float a3C)
+  {
+    float yA = formant_bp_step(&s[0], &s[1], x, a1A, a2A, a3A, k);
+    float yB = formant_bp_step(&s[2], &s[3], x, a1B, a2B, a3B, k);
+    float yC = formant_bp_step(&s[4], &s[5], x, a1C, a2C, a3C, k);
     return (yA * ${FORMANT_BAND_WEIGHTS[0].toFixed(2)}f + yB * ${FORMANT_BAND_WEIGHTS[1].toFixed(2)}f + yC * ${FORMANT_BAND_WEIGHTS[2].toFixed(2)}f) * ${(1 / FORMANT_WEIGHT_SUM).toFixed(4)}f;
   }
 `
@@ -1954,9 +1982,8 @@ function formantShiftExpr(suffix: string, inlets: Record<string, string | undefi
     : `shiftSemis_${suffix}`
 }
 
-/** Returns the raw, un-converted resonance PERCENT (symmetric with vowel/shift's own shape) --
- * see `formant_step`'s own doc comment for why the `formant_k_from_percent` conversion moved
- * inside that function rather than nesting here at the call site. */
+/** Returns the raw, un-converted resonance PERCENT (symmetric with vowel/shift's own shape):
+ * `formant_k_from_percent` converts it inside (see `FORMANT_STEP_HELPER`). */
 function formantResonancePercentExpr(
   suffix: string,
   inlets: Record<string, string | undefined>
@@ -1966,12 +1993,56 @@ function formantResonancePercentExpr(
     : `resonancePercent_${suffix}`
 }
 
+const FORMANT_BANDS = ['A', 'B', 'C'] as const
+
+interface FormantValues {
+  vowel: BlockValue
+  shift: BlockValue
+  resonance: BlockValue
+  character: BlockValue
+  /** Set while nothing moves: k, then each band's g/a1/a2/a3, as block constants. */
+  still?: BlockValue[]
+}
+
+function formantValues(suffix: string, inlets: Record<string, string | undefined>): FormantValues {
+  const values: FormantValues = {
+    vowel: blockValue('blkFmtVowel', suffix, formantVowelExpr(suffix, inlets), [inlets.vowel]),
+    shift: blockValue('blkFmtShift', suffix, formantShiftExpr(suffix, inlets), [inlets.shift]),
+    resonance: blockValue('blkFmtRes', suffix, formantResonancePercentExpr(suffix, inlets), [
+      inlets.resonance
+    ]),
+    character: blockValue('blkFmtChar', suffix, formantCharacterExpr(suffix, inlets), [
+      inlets.character
+    ])
+  }
+  const all = [inlets.vowel, inlets.shift, inlets.resonance, inlets.character]
+  if (all.every(isBlockInvariant)) {
+    const { vowel, shift, resonance, character } = values
+    const k = blockValue('blkFmtK', suffix, `formant_k_from_percent(${resonance.ref})`, all)
+    const still = [k]
+    FORMANT_BANDS.forEach((band, f) => {
+      const g = blockValue(
+        `blkFmtG${band}`,
+        suffix,
+        `formant_g(${vowel.ref}, ${shift.ref}, ${character.ref}, ${f})`,
+        all
+      )
+      const a1 = blockValue(`blkFmtA1${band}`, suffix, `formant_a1(${g.ref}, ${k.ref})`, all)
+      const a2 = blockValue(`blkFmtA2${band}`, suffix, `${g.ref} * ${a1.ref}`, all)
+      const a3 = blockValue(`blkFmtA3${band}`, suffix, `${g.ref} * ${a2.ref}`, all)
+      still.push(g, a1, a2, a3)
+    })
+    values.still = still
+  }
+  return values
+}
+
 export const formantFilterPrimitive: LoguePrimitive = {
   id: 'logue/filter/formant',
   outletPolarity: 'inherit',
-  // vowelPercent_ + shiftSemis_ + resonancePercent_ + characterPercent_ + fS1a_/fS2a_/fS1b_/fS2b_/fS1c_/fS2c_,
-  // 10 floats
-  stateBytesPerInstance: 40,
+  // vowelPercent_ + shiftSemis_ + resonancePercent_ + characterPercent_ + fS_[6] + fCtl_ +
+  // fC_[11] (fCtl_/fC_ only used while an input moves), 22 words
+  stateBytesPerInstance: 88,
   description:
     'A 3-band resonant filter bank sweeping through human vowel formants, with formant frequency shift (moves the formants, not the pitch of the input), a male-to-female-to-child voice blend and resonance control.',
   inlets: [
@@ -1982,11 +2053,35 @@ export const formantFilterPrimitive: LoguePrimitive = {
     { name: 'character', role: 'control' }
   ],
   memberDecls: (suffix) =>
-    `  float vowelPercent_${suffix};\n  float shiftSemis_${suffix};\n  float resonancePercent_${suffix};\n  float characterPercent_${suffix};\n  float fS1a_${suffix};\n  float fS2a_${suffix};\n  float fS1b_${suffix};\n  float fS2b_${suffix};\n  float fS1c_${suffix};\n  float fS2c_${suffix};\n`,
+    `  float vowelPercent_${suffix};\n  float shiftSemis_${suffix};\n  float resonancePercent_${suffix};\n  float characterPercent_${suffix};\n  float fS_${suffix}[6];\n  uint32_t fCtl_${suffix};\n  float fC_${suffix}[11];\n`,
   initStatement: (suffix) =>
-    `    fS1a_${suffix} = 0.f;\n    fS2a_${suffix} = 0.f;\n    fS1b_${suffix} = 0.f;\n    fS2b_${suffix} = 0.f;\n    fS1c_${suffix} = 0.f;\n    fS2c_${suffix} = 0.f;\n`,
-  renderExpr: (suffix, inlets) =>
-    `formant_step(&fS1a_${suffix}, &fS2a_${suffix}, &fS1b_${suffix}, &fS2b_${suffix}, &fS1c_${suffix}, &fS2c_${suffix}, ${formantVowelExpr(suffix, inlets)}, ${formantShiftExpr(suffix, inlets)}, ${formantResonancePercentExpr(suffix, inlets)}, ${formantCharacterExpr(suffix, inlets)}, ${inlets.in ?? '0.f'})`,
+    `    for (int i = 0; i < 6; ++i) fS_${suffix}[i] = 0.f;\n    fCtl_${suffix} = 0;\n    for (int i = 0; i < 11; ++i) fC_${suffix}[i] = 0.f;\n`,
+  blockConstants: (suffix, inlets) => {
+    const v = formantValues(suffix, inlets)
+    return blockDecls({
+      vowel: v.vowel,
+      shift: v.shift,
+      resonance: v.resonance,
+      character: v.character,
+      ...Object.fromEntries((v.still ?? []).map((b, i) => [`c${i}`, b]))
+    })
+  },
+  renderExpr: (suffix, inlets) => {
+    const v = formantValues(suffix, inlets)
+    const head = `formant_step(fS_${suffix}, ${inlets.in ?? '0.f'}`
+    if (v.still) {
+      // still: k, then g/a1/a2/a3 per band -- the bands take k and a1/a2/a3.
+      const [k, ...bands] = v.still
+      const a = bands.filter((_, i) => i % 4 !== 0).map((b) => b.ref)
+      return `${head}, ${k.ref}, ${a.join(', ')})`
+    }
+    const c = `fC_${suffix}`
+    const coefs = Array.from({ length: 10 }, (_, i) => `${c}[${i}]`).join(', ')
+    return (
+      `(formant_ctl(&fCtl_${suffix}, ${c}, ${v.vowel.ref}, ${v.shift.ref}, ${v.resonance.ref}, ${v.character.ref}), ` +
+      `${head}, ${coefs}))`
+    )
+  },
   advanceStatement: () => '',
   // Every one of these must be listed directly (not via `dependsOn`, which only resolves against
   // `HELPER_REGISTRY` -- `polyblep`/`polyblep_saw`/`polyblep_square` only) -- same reasoning

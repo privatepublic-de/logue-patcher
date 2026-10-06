@@ -234,22 +234,22 @@ export const FX_CPU_COST_TABLE: Record<
   'logue/filter/formant': {
     variants: {
       base: {
-        first: { cycles: 614, sdram: 0 },
-        shared: { cycles: -2, sdram: 0 },
-        extra: { cycles: 616, sdram: 0 }
+        first: { cycles: 103, sdram: 0 },
+        shared: { cycles: -22, sdram: 0 },
+        extra: { cycles: 128, sdram: 0 }
       },
       control: {
-        first: { cycles: 649, sdram: 0 },
-        shared: { cycles: 1, sdram: 0 },
-        extra: { cycles: 642, sdram: 0 }
+        first: { cycles: 212, sdram: 0 },
+        shared: { cycles: -10, sdram: 0 },
+        extra: { cycles: 203, sdram: 0 }
       },
       'control-still': {
-        first: { cycles: 662, sdram: 0 },
-        shared: { cycles: -4, sdram: 0 },
-        extra: { cycles: 650, sdram: 0 }
+        first: { cycles: 104, sdram: 0 },
+        shared: { cycles: -17, sdram: 0 },
+        extra: { cycles: 126, sdram: 0 }
       }
     },
-    snapshotHash: '3064386816179abd'
+    snapshotHash: '0eae7be6852f4378'
   },
   'logue/filter/highpass-cheap': {
     variants: {

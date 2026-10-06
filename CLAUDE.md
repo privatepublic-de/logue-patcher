@@ -218,9 +218,8 @@ matching when adding a new one):
   `logue-feedback.spec.ts` pins that a block constant never reads a wired inlet or a `y_` value.
   Emulator (`scripts/measureXdCycles.ts`, xd, cycles/sample incl. a saw/noise source): svf tracked
   405 -> 197, svf free 232 -> 193, comb tracked 183 -> 53, string 489 -> 361, ad/ahd 241/239 ->
-  153/152. **Not done**: `formant` computes its coefficients inside `formant_step` (next to its
-  xd-crash `always_inline`/`formant_note_w0` workarounds), about 80+ cycles of per-block work;
-  hoisting it means splitting that helper, which deserves its own change with a hardware check.
+  153/152. `formant`'s coefficients are block constants since 2026-10-06 (see
+  "`filter/formant`"): 495 -> 102 base.
   `svf`'s `1/(1+g(g+k))` was still divided every sample inside `svf_step` until 2026-10-05: it
   now redoes it only when g or k changed (exact; see "`filter/svf`"). The cheap one-poles' unwired CUTOFF warp is a
   block constant (`blkOnepoleA`) since then too, and `env/multistage` converts its stage times
@@ -413,7 +412,7 @@ measured with constants only and understated a moving source (adsr's 38 below it
 Audio inputs (`base`) come from the noise too.
 **The gauge is in REAL cycles** (2026-10-06, `oscRealCycles`, `cpuZone` converts): measured
 through audio telemetry (see "Hardware test harness"), xd real = 17 + 1.54 x the estimate per
-voice (17 distinct patches, -30..+30 %), NTS-1 mkII 0.77 x (19, -29..+28 %): the fits with the
+voice (17 distinct patches, -30..+30 %), NTS-1 mkII 0.77 x (18, -29..+28 %): the fits with the
 smallest worst error (`calibrateOsc.ts --refit`, no device: recomputes the stored readings'
 estimates with the current table). With the constants-only table they were 164 + 1.40x (+-31 %
 at best) and 44 + 0.83x (+-42 % at best). Per-instance costs stay on the emulator's scale (the
@@ -422,7 +421,8 @@ tooltip says so). xd anchors
 1225 and breaks up from 1250 (`XD_OSC_HANG_CYCLES` 1225, red); one voice ran to 1290 and FROZE at
 1300 (kept sounding, MIDI dead: the hang signature). Green to 858 (`XD_OSC_CLEAN_CYCLES`, where a
 30 % under-read still clears), amber "tight" between. Old reports agree: cpiano (estimate 404,
-~640 converted, 921 measured) plays chords fine; formant (655 -> ~1030, ~1700 measured) and a
+~640 converted, 921 measured) plays chords fine; formant before its per-block coefficients
+(655 -> ~1030, ~1700 measured) and a
 granular patch (~795 on the old table -> ~1240) hung it -- `logue-cpuCostTable.spec.ts` pins those and that every
 calibrated patch stays below red. The Build panel's gauge: a solid fill for the saved settings,
 a faint extension up to the knob maximum, and one line ("fine" / "tight" / "may hang", plus the
@@ -976,11 +976,28 @@ Current rules only. The round-by-round reports, measurements and reversals behin
 - **`filter/formant`**: 3 ZDF bandpasses on Peterson & Barney formants, `VOWEL` order
   `u o a e i` (alphabetical makes F2 jump). `CHARACTER` (2026-09-29) blends the male table (0, the
   original) -> women's (50) -> children's (100) in note space via the leaf `formant_note`
-  (always_inline); SHIFT stays on top. xd emulator 430 -> 492 base. Women's/children's rows are
-  from memory of the published averages: check against the paper. Confirmed on both devices (user, 2026-09-30), on the xd at its 668-cycle estimate. Quiet at high `RESONANCE` by design (unity peak
+  (always_inline); SHIFT stays on top. Women's/children's rows are
+  from memory of the published averages: check against the paper. Confirmed on both devices (user, 2026-09-30), on the xd at its 668-cycle estimate -- but the user's own patch (VOWEL/CHARACTER on the knobs) later hung an xd at ~1700 real cycles a voice. Quiet at high `RESONANCE` by design (unity peak
   gain; use a VCA). On the xd, `formant_bp_step`/`formant_g_from_note` must stay
   `always_inline` and use their own `formant_note_w0` copy -- removing that brings back a real
   hardware crash at `-Os` that was cornered (11-build bisect) but never root-caused.
+  - **Per-block coefficients** (2026-10-06): k and each band's g/a1/a2/a3 (the table lookup,
+    `note_w0`, the Taylor `tan` and the one divide per band) are block constants while the inputs
+    are unwired or per-block (knobs); the loop runs only the three bandpasses (`formant_step`,
+    always_inline). `formant_g` is one shared `noinline` leaf (inlined it was ~1.1 KB per
+    instance), so the xd's call shape is `process -> formant_g` (leaf) and nothing else, checked
+    on the crash repros (`scripts/stageFormant.ts`: single wired `resonance`, triple-wired, LFOs,
+    two instances). A moving input goes through `formant_ctl` every 16 samples: the a's step
+    (every sample is a real SVF), `k` -- which also scales each band's output -- ramps; stepped,
+    a RESONANCE LFO zippered at -41 dB. Harness (`scripts/runFormantHarness.ts`, xd, ASan/UBSan,
+    against renders of the per-sample version): still settings and knob-fed inputs bit-identical;
+    a fast full-range LFO (sine source, RATE 90, RESONANCE 90) leaves -61 (resonance) .. -70 dB
+    above 1.5 kHz where the per-sample version had -79..-127 -- the price of control rate; the
+    formants follow a moving input up to 16 samples late. xd emulator: 495 -> 102 base, 533 ->
+    210 `control`, 534 -> 103 `control-still`; the user's patch (whole unit) 622 -> 202; xd fx
+    614 -> 103 first. Code (xd osc): 1114 B for the first instance (was 1476 with the old
+    `formant_step` helper), +624 per extra (was +232). State 40 -> 88 B (= the bss). No
+    hardware pass yet.
 - **`osc/additive`**: `TIMBRE` (additive inlet, depth 100) crossfades 6 baked wavetable frames (12312 B,
   ~37.5% of the xd's RAM), with a runtime Nyquist clamp. The 6-frame version builds to 13.6 KB on the xd (17.5 KB on
   NTS-1 mkII) and plays on both devices (user, 2026-09-30).
@@ -1881,7 +1898,7 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   an oscillator's PARAM n is row n+1, after Shape/Alt) and `withXdOscTelemetry` (wraps
   `OSC_CYCLE`). `calibrateOsc.ts` (`--xd`) measures the user's oscillator patches with every device
   control stripped (so each param is at its authored value on device and in the estimate):
-  NTS-1 mkII real ~= 0.77 x `estimateOscCpuCost` (-29..+28 %, 19 distinct patches), xd real ~=
+  NTS-1 mkII real ~= 0.77 x `estimateOscCpuCost` (-29..+28 %, 18 distinct patches; the formant reading was dropped 2026-10-06), xd real ~=
   17 + 1.54 x it (-30..+30 %, 17; per voice), since the table re-measure with moving sources
   (`--refit`). **Each xd voice has its own ~1728 cycles per
   sample**: with 1-4 notes held, cpiano read ~915 per voice and the budget 1729 every time -- the
@@ -1992,7 +2009,12 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   `EXCITER_STRIKE_GAIN_RATIO`) are ear-tune starting points, not measured — no real hardware/
   harness pass through the actual `string` primitive has confirmed them yet (see that primitive's
   own gotcha entry above).
-- The formant block-constant hoist is still deferred (see "Per-block work"). `~/.logue-emu`
+- `filter/formant`'s per-block coefficients (2026-10-06) are harness-, link- and emulator-checked
+  only: no hardware pass. The user's formant patch is the one that hung an xd before; it now
+  estimates ~200 emulator cycles, so `calibrateOsc.ts --xd`'s hang guard lets it through -- the
+  right check, with the user there (a hang needs a power cycle). Its old NTS-1 mkII calibration
+  reading (753 cycles) was dropped from `nts1OscCpuReadings.json`: that code is gone. Staged:
+  `lp-xd-fmt-*`/`lp-nts1-fmt-*` (`scripts/stageFormant.ts`). `~/.logue-emu`
   exists on this machine (set up 2026-09-28), so `measureCpuCosts.ts` runs directly.
 - Knob bindings/slot followers (see "Graph resolution") work on a real minilogue xd and a real
   NTS-1 mkII (user, 2026-09-29, a `KnobTest` unit per device: a `sense/control` on Shape into an

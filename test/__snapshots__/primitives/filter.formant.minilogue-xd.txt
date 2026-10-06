@@ -17,12 +17,9 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    fS1a_n = 0.f;
-    fS2a_n = 0.f;
-    fS1b_n = 0.f;
-    fS2b_n = 0.f;
-    fS1c_n = 0.f;
-    fS2c_n = 0.f;
+    for (int i = 0; i < 6; ++i) fS_n[i] = 0.f;
+    fCtl_n = 0;
+    for (int i = 0; i < 11; ++i) fC_n[i] = 0.f;
     vowelPercent_n = 50;
     shiftSemis_n = 0;
     resonancePercent_n = 60;
@@ -87,9 +84,26 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
+    const float blkFmtVowel_n = vowelPercent_n;
+    const float blkFmtShift_n = shiftSemis_n;
+    const float blkFmtRes_n = resonancePercent_n;
+    const float blkFmtChar_n = characterPercent_n;
+    const float blkFmtK_n = formant_k_from_percent(blkFmtRes_n);
+    const float blkFmtGA_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 0);
+    const float blkFmtA1A_n = formant_a1(blkFmtGA_n, blkFmtK_n);
+    const float blkFmtA2A_n = blkFmtGA_n * blkFmtA1A_n;
+    const float blkFmtA3A_n = blkFmtGA_n * blkFmtA2A_n;
+    const float blkFmtGB_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 1);
+    const float blkFmtA1B_n = formant_a1(blkFmtGB_n, blkFmtK_n);
+    const float blkFmtA2B_n = blkFmtGB_n * blkFmtA1B_n;
+    const float blkFmtA3B_n = blkFmtGB_n * blkFmtA2B_n;
+    const float blkFmtGC_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 2);
+    const float blkFmtA1C_n = formant_a1(blkFmtGC_n, blkFmtK_n);
+    const float blkFmtA2C_n = blkFmtGC_n * blkFmtA1C_n;
+    const float blkFmtA3C_n = blkFmtGC_n * blkFmtA2C_n;
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = formant_step(&fS1a_n, &fS2a_n, &fS1b_n, &fS2b_n, &fS1c_n, &fS2c_n, vowelPercent_n, shiftSemis_n, resonancePercent_n, characterPercent_n, 0.f);
+      float y_n = formant_step(fS_n, 0.f, blkFmtK_n, blkFmtA1A_n, blkFmtA2A_n, blkFmtA3A_n, blkFmtA1B_n, blkFmtA2B_n, blkFmtA3B_n, blkFmtA1C_n, blkFmtA2C_n, blkFmtA3C_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -125,15 +139,11 @@ private:
   float shiftSemis_n;
   float resonancePercent_n;
   float characterPercent_n;
-  float fS1a_n;
-  float fS2a_n;
-  float fS1b_n;
-  float fS2b_n;
-  float fS1c_n;
-  float fS2c_n;
+  float fS_n[6];
+  uint32_t fCtl_n;
+  float fC_n[11];
 
-  static float formant_step(float *s1a, float *s2a, float *s1b, float *s2b, float *s1c, float *s2c,
-    float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent, float x)
+  static __attribute__((noinline)) float formant_g(float vowelPercent, float shiftSemis, float characterPercent, int f)
   {
     static const float kFormantNote[3][5][3] = {
       {
@@ -158,7 +168,6 @@ private:
         { 66.0003f, 103.3500f, 106.0032f }
       }
     };
-    float k = formant_k_from_percent(resonancePercent);
     float pos = vowelPercent * 0.01f;
     if (pos < 0.f) pos = 0.f; else if (pos > 1.f) pos = 1.f;
     float segF = pos * 4.f;
@@ -170,19 +179,40 @@ private:
     int voice = (int)cpos;
     if (voice > 1) voice = 1;
     float vfrac = cpos - (float)voice;
-
-    float noteA = formant_note(kFormantNote, voice, seg, frac, vfrac, 0) + shiftSemis;
-    float noteB = formant_note(kFormantNote, voice, seg, frac, vfrac, 1) + shiftSemis;
-    float noteC = formant_note(kFormantNote, voice, seg, frac, vfrac, 2) + shiftSemis;
-
-    float gA = formant_g_from_note(noteA);
-    float gB = formant_g_from_note(noteB);
-    float gC = formant_g_from_note(noteC);
-
-    float yA = formant_bp_step(s1a, s2a, x, gA, k);
-    float yB = formant_bp_step(s1b, s2b, x, gB, k);
-    float yC = formant_bp_step(s1c, s2c, x, gC, k);
-
+    float note = formant_note(kFormantNote, voice, seg, frac, vfrac, f) + shiftSemis;
+    float g = formant_g_from_note(note);
+    return g;
+  }
+  // c: k, then a1/a2/a3 for each band, worked out every 16 samples. The a's step (eq_ctl's
+  // reasoning: every sample's coefficients are then a real SVF's, and a ZDF SVF takes a step in
+  // g/k smoothly), but k also scales each band's output (k*v1), and stepped there a RESONANCE LFO
+  // zippered at -41 dB (harness), so c[0] ramps over the 16 (c[10] the step). The first call jumps.
+  static inline __attribute__((always_inline)) void formant_ctl(uint32_t *n, float *c, float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      float k = formant_k_from_percent(resonancePercent);
+      for (int f = 0; f < 3; ++f)
+      {
+        float g = formant_g(vowelPercent, shiftSemis, characterPercent, f);
+        float a1 = formant_a1(g, k);
+        float a2 = g * a1;
+        c[1 + 3 * f] = a1;
+        c[2 + 3 * f] = a2;
+        c[3 + 3 * f] = g * a2;
+      }
+      if (*n == 0u) c[0] = k;
+      c[10] = (k - c[0]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[10];
+  }
+  static inline __attribute__((always_inline)) float formant_step(float *s, float x, float k,
+    float a1A, float a2A, float a3A, float a1B, float a2B, float a3B, float a1C, float a2C, float a3C)
+  {
+    float yA = formant_bp_step(&s[0], &s[1], x, a1A, a2A, a3A, k);
+    float yB = formant_bp_step(&s[2], &s[3], x, a1B, a2B, a3B, k);
+    float yC = formant_bp_step(&s[4], &s[5], x, a1C, a2C, a3C, k);
     return (yA * 1.00f + yB * 0.50f + yC * 0.28f) * 0.5618f;
   }
 
@@ -198,11 +228,9 @@ private:
   // gain at resonance by the *k -- v1's own raw peak gain is 1/k, so this cancels it, keeping
   // RESONANCE from also sweeping loudness. See logue/filter/formant's own doc comment (both for
   // the DSP itself and for why this is force-inlined -- a real, hardware-confirmed fix).
-  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float g, float k)
+  // a1/a2/a3 come from formant_a1 per block (or per 16 samples), not per sample.
+  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float a1, float a2, float a3, float k)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
-    float a2 = g * a1;
-    float a3 = g * a2;
     float v3 = in - *s2;
     float v1 = a1 * (*s1) + a2 * v3;
     float v2 = *s2 + a2 * (*s1) + a3 * v3;
@@ -241,6 +269,11 @@ private:
     if (t < 0.f) t = 0.f; else if (t > 1.f) t = 1.f;
     float u = 1.f - t;
     return u * u * u * 1.95f + 0.05f;
+  }
+  // The ZDF SVF's 1/(1+g(g+k)), the one divide per band.
+  static inline __attribute__((always_inline)) float formant_a1(float g, float k)
+  {
+    return 1.f / (1.f + g * (g + k));
   }
 
   static float clampf(float v, float lo, float hi)
@@ -303,12 +336,9 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    fS1a_n = 0.f;
-    fS2a_n = 0.f;
-    fS1b_n = 0.f;
-    fS2b_n = 0.f;
-    fS1c_n = 0.f;
-    fS2c_n = 0.f;
+    for (int i = 0; i < 6; ++i) fS_n[i] = 0.f;
+    fCtl_n = 0;
+    for (int i = 0; i < 11; ++i) fC_n[i] = 0.f;
     value_c_in = 37 * 0.01f;
     value_c_vowel = 37 * 0.01f;
     value_c_shift = 37 * 0.01f;
@@ -383,9 +413,26 @@ public:
       float y_c_shift = value_c_shift;
       float y_c_resonance = value_c_resonance;
       float y_c_character = value_c_character;
+    const float blkFmtVowel_n = clampf(vowelPercent_n + (y_c_vowel) * 50.f, 0.f, 100.f);
+    const float blkFmtShift_n = clampf(shiftSemis_n + (y_c_shift) * 24.f, -24.f, 24.f);
+    const float blkFmtRes_n = clampf(resonancePercent_n + (y_c_resonance) * 50.f, 0.f, 100.f);
+    const float blkFmtChar_n = clampf(characterPercent_n + (y_c_character) * 50.f, 0.f, 100.f);
+    const float blkFmtK_n = formant_k_from_percent(blkFmtRes_n);
+    const float blkFmtGA_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 0);
+    const float blkFmtA1A_n = formant_a1(blkFmtGA_n, blkFmtK_n);
+    const float blkFmtA2A_n = blkFmtGA_n * blkFmtA1A_n;
+    const float blkFmtA3A_n = blkFmtGA_n * blkFmtA2A_n;
+    const float blkFmtGB_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 1);
+    const float blkFmtA1B_n = formant_a1(blkFmtGB_n, blkFmtK_n);
+    const float blkFmtA2B_n = blkFmtGB_n * blkFmtA1B_n;
+    const float blkFmtA3B_n = blkFmtGB_n * blkFmtA2B_n;
+    const float blkFmtGC_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 2);
+    const float blkFmtA1C_n = formant_a1(blkFmtGC_n, blkFmtK_n);
+    const float blkFmtA2C_n = blkFmtGC_n * blkFmtA1C_n;
+    const float blkFmtA3C_n = blkFmtGC_n * blkFmtA2C_n;
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = formant_step(&fS1a_n, &fS2a_n, &fS1b_n, &fS2b_n, &fS1c_n, &fS2c_n, clampf(vowelPercent_n + (y_c_vowel) * 50.f, 0.f, 100.f), clampf(shiftSemis_n + (y_c_shift) * 24.f, -24.f, 24.f), clampf(resonancePercent_n + (y_c_resonance) * 50.f, 0.f, 100.f), clampf(characterPercent_n + (y_c_character) * 50.f, 0.f, 100.f), y_c_in);
+      float y_n = formant_step(fS_n, y_c_in, blkFmtK_n, blkFmtA1A_n, blkFmtA2A_n, blkFmtA3A_n, blkFmtA1B_n, blkFmtA2B_n, blkFmtA3B_n, blkFmtA1C_n, blkFmtA2C_n, blkFmtA3C_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -426,15 +473,11 @@ private:
   float shiftSemis_n;
   float resonancePercent_n;
   float characterPercent_n;
-  float fS1a_n;
-  float fS2a_n;
-  float fS1b_n;
-  float fS2b_n;
-  float fS1c_n;
-  float fS2c_n;
+  float fS_n[6];
+  uint32_t fCtl_n;
+  float fC_n[11];
 
-  static float formant_step(float *s1a, float *s2a, float *s1b, float *s2b, float *s1c, float *s2c,
-    float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent, float x)
+  static __attribute__((noinline)) float formant_g(float vowelPercent, float shiftSemis, float characterPercent, int f)
   {
     static const float kFormantNote[3][5][3] = {
       {
@@ -459,7 +502,6 @@ private:
         { 66.0003f, 103.3500f, 106.0032f }
       }
     };
-    float k = formant_k_from_percent(resonancePercent);
     float pos = vowelPercent * 0.01f;
     if (pos < 0.f) pos = 0.f; else if (pos > 1.f) pos = 1.f;
     float segF = pos * 4.f;
@@ -471,19 +513,40 @@ private:
     int voice = (int)cpos;
     if (voice > 1) voice = 1;
     float vfrac = cpos - (float)voice;
-
-    float noteA = formant_note(kFormantNote, voice, seg, frac, vfrac, 0) + shiftSemis;
-    float noteB = formant_note(kFormantNote, voice, seg, frac, vfrac, 1) + shiftSemis;
-    float noteC = formant_note(kFormantNote, voice, seg, frac, vfrac, 2) + shiftSemis;
-
-    float gA = formant_g_from_note(noteA);
-    float gB = formant_g_from_note(noteB);
-    float gC = formant_g_from_note(noteC);
-
-    float yA = formant_bp_step(s1a, s2a, x, gA, k);
-    float yB = formant_bp_step(s1b, s2b, x, gB, k);
-    float yC = formant_bp_step(s1c, s2c, x, gC, k);
-
+    float note = formant_note(kFormantNote, voice, seg, frac, vfrac, f) + shiftSemis;
+    float g = formant_g_from_note(note);
+    return g;
+  }
+  // c: k, then a1/a2/a3 for each band, worked out every 16 samples. The a's step (eq_ctl's
+  // reasoning: every sample's coefficients are then a real SVF's, and a ZDF SVF takes a step in
+  // g/k smoothly), but k also scales each band's output (k*v1), and stepped there a RESONANCE LFO
+  // zippered at -41 dB (harness), so c[0] ramps over the 16 (c[10] the step). The first call jumps.
+  static inline __attribute__((always_inline)) void formant_ctl(uint32_t *n, float *c, float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      float k = formant_k_from_percent(resonancePercent);
+      for (int f = 0; f < 3; ++f)
+      {
+        float g = formant_g(vowelPercent, shiftSemis, characterPercent, f);
+        float a1 = formant_a1(g, k);
+        float a2 = g * a1;
+        c[1 + 3 * f] = a1;
+        c[2 + 3 * f] = a2;
+        c[3 + 3 * f] = g * a2;
+      }
+      if (*n == 0u) c[0] = k;
+      c[10] = (k - c[0]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[10];
+  }
+  static inline __attribute__((always_inline)) float formant_step(float *s, float x, float k,
+    float a1A, float a2A, float a3A, float a1B, float a2B, float a3B, float a1C, float a2C, float a3C)
+  {
+    float yA = formant_bp_step(&s[0], &s[1], x, a1A, a2A, a3A, k);
+    float yB = formant_bp_step(&s[2], &s[3], x, a1B, a2B, a3B, k);
+    float yC = formant_bp_step(&s[4], &s[5], x, a1C, a2C, a3C, k);
     return (yA * 1.00f + yB * 0.50f + yC * 0.28f) * 0.5618f;
   }
 
@@ -499,11 +562,9 @@ private:
   // gain at resonance by the *k -- v1's own raw peak gain is 1/k, so this cancels it, keeping
   // RESONANCE from also sweeping loudness. See logue/filter/formant's own doc comment (both for
   // the DSP itself and for why this is force-inlined -- a real, hardware-confirmed fix).
-  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float g, float k)
+  // a1/a2/a3 come from formant_a1 per block (or per 16 samples), not per sample.
+  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float a1, float a2, float a3, float k)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
-    float a2 = g * a1;
-    float a3 = g * a2;
     float v3 = in - *s2;
     float v1 = a1 * (*s1) + a2 * v3;
     float v2 = *s2 + a2 * (*s1) + a3 * v3;
@@ -542,6 +603,11 @@ private:
     if (t < 0.f) t = 0.f; else if (t > 1.f) t = 1.f;
     float u = 1.f - t;
     return u * u * u * 1.95f + 0.05f;
+  }
+  // The ZDF SVF's 1/(1+g(g+k)), the one divide per band.
+  static inline __attribute__((always_inline)) float formant_a1(float g, float k)
+  {
+    return 1.f / (1.f + g * (g + k));
   }
 
   static float clampf(float v, float lo, float hi)
@@ -644,12 +710,9 @@ public:
     shapeParam01_ = 0.f;
     shape01_ = 0.f;
     shape2_01_ = 0.f;
-    fS1a_n = 0.f;
-    fS2a_n = 0.f;
-    fS1b_n = 0.f;
-    fS2b_n = 0.f;
-    fS1c_n = 0.f;
-    fS2c_n = 0.f;
+    for (int i = 0; i < 6; ++i) fS_n[i] = 0.f;
+    fCtl_n = 0;
+    for (int i = 0; i < 11; ++i) fC_n[i] = 0.f;
     vowelPercent_n = 50;
     shiftSemis_n = 0;
     resonancePercent_n = 60;
@@ -720,9 +783,26 @@ public:
 
   void process(int32_t *yn, uint32_t frames)
   {
+    const float blkFmtVowel_n = vowelPercent_n;
+    const float blkFmtShift_n = shiftSemis_n;
+    const float blkFmtRes_n = resonancePercent_n;
+    const float blkFmtChar_n = characterPercent_n;
+    const float blkFmtK_n = formant_k_from_percent(blkFmtRes_n);
+    const float blkFmtGA_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 0);
+    const float blkFmtA1A_n = formant_a1(blkFmtGA_n, blkFmtK_n);
+    const float blkFmtA2A_n = blkFmtGA_n * blkFmtA1A_n;
+    const float blkFmtA3A_n = blkFmtGA_n * blkFmtA2A_n;
+    const float blkFmtGB_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 1);
+    const float blkFmtA1B_n = formant_a1(blkFmtGB_n, blkFmtK_n);
+    const float blkFmtA2B_n = blkFmtGB_n * blkFmtA1B_n;
+    const float blkFmtA3B_n = blkFmtGB_n * blkFmtA2B_n;
+    const float blkFmtGC_n = formant_g(blkFmtVowel_n, blkFmtShift_n, blkFmtChar_n, 2);
+    const float blkFmtA1C_n = formant_a1(blkFmtGC_n, blkFmtK_n);
+    const float blkFmtA2C_n = blkFmtGC_n * blkFmtA1C_n;
+    const float blkFmtA3C_n = blkFmtGC_n * blkFmtA2C_n;
     for (uint32_t i = 0; i < frames; ++i)
     {
-      float y_n = formant_step(&fS1a_n, &fS2a_n, &fS1b_n, &fS2b_n, &fS1c_n, &fS2c_n, vowelPercent_n, shiftSemis_n, resonancePercent_n, characterPercent_n, 0.f);
+      float y_n = formant_step(fS_n, 0.f, blkFmtK_n, blkFmtA1A_n, blkFmtA2A_n, blkFmtA3A_n, blkFmtA1B_n, blkFmtA2B_n, blkFmtA3B_n, blkFmtA1C_n, blkFmtA2C_n, blkFmtA3C_n);
       // `* 0.999f` (not just clip1m1f alone) -- found via a real host-native ASan/UBSan
       // harness run (2026-09-16): f32_to_q31's real formula, (q31_t)(f * (float)0x7FFFFFFF),
       // overflows int32_t whenever f is exactly +1.0f, because 0x7FFFFFFF isn't exactly
@@ -758,15 +838,11 @@ private:
   float shiftSemis_n;
   float resonancePercent_n;
   float characterPercent_n;
-  float fS1a_n;
-  float fS2a_n;
-  float fS1b_n;
-  float fS2b_n;
-  float fS1c_n;
-  float fS2c_n;
+  float fS_n[6];
+  uint32_t fCtl_n;
+  float fC_n[11];
 
-  static float formant_step(float *s1a, float *s2a, float *s1b, float *s2b, float *s1c, float *s2c,
-    float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent, float x)
+  static __attribute__((noinline)) float formant_g(float vowelPercent, float shiftSemis, float characterPercent, int f)
   {
     static const float kFormantNote[3][5][3] = {
       {
@@ -791,7 +867,6 @@ private:
         { 66.0003f, 103.3500f, 106.0032f }
       }
     };
-    float k = formant_k_from_percent(resonancePercent);
     float pos = vowelPercent * 0.01f;
     if (pos < 0.f) pos = 0.f; else if (pos > 1.f) pos = 1.f;
     float segF = pos * 4.f;
@@ -803,19 +878,40 @@ private:
     int voice = (int)cpos;
     if (voice > 1) voice = 1;
     float vfrac = cpos - (float)voice;
-
-    float noteA = formant_note(kFormantNote, voice, seg, frac, vfrac, 0) + shiftSemis;
-    float noteB = formant_note(kFormantNote, voice, seg, frac, vfrac, 1) + shiftSemis;
-    float noteC = formant_note(kFormantNote, voice, seg, frac, vfrac, 2) + shiftSemis;
-
-    float gA = formant_g_from_note(noteA);
-    float gB = formant_g_from_note(noteB);
-    float gC = formant_g_from_note(noteC);
-
-    float yA = formant_bp_step(s1a, s2a, x, gA, k);
-    float yB = formant_bp_step(s1b, s2b, x, gB, k);
-    float yC = formant_bp_step(s1c, s2c, x, gC, k);
-
+    float note = formant_note(kFormantNote, voice, seg, frac, vfrac, f) + shiftSemis;
+    float g = formant_g_from_note(note);
+    return g;
+  }
+  // c: k, then a1/a2/a3 for each band, worked out every 16 samples. The a's step (eq_ctl's
+  // reasoning: every sample's coefficients are then a real SVF's, and a ZDF SVF takes a step in
+  // g/k smoothly), but k also scales each band's output (k*v1), and stepped there a RESONANCE LFO
+  // zippered at -41 dB (harness), so c[0] ramps over the 16 (c[10] the step). The first call jumps.
+  static inline __attribute__((always_inline)) void formant_ctl(uint32_t *n, float *c, float vowelPercent, float shiftSemis, float resonancePercent, float characterPercent)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      float k = formant_k_from_percent(resonancePercent);
+      for (int f = 0; f < 3; ++f)
+      {
+        float g = formant_g(vowelPercent, shiftSemis, characterPercent, f);
+        float a1 = formant_a1(g, k);
+        float a2 = g * a1;
+        c[1 + 3 * f] = a1;
+        c[2 + 3 * f] = a2;
+        c[3 + 3 * f] = g * a2;
+      }
+      if (*n == 0u) c[0] = k;
+      c[10] = (k - c[0]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[10];
+  }
+  static inline __attribute__((always_inline)) float formant_step(float *s, float x, float k,
+    float a1A, float a2A, float a3A, float a1B, float a2B, float a3B, float a1C, float a2C, float a3C)
+  {
+    float yA = formant_bp_step(&s[0], &s[1], x, a1A, a2A, a3A, k);
+    float yB = formant_bp_step(&s[2], &s[3], x, a1B, a2B, a3B, k);
+    float yC = formant_bp_step(&s[4], &s[5], x, a1C, a2C, a3C, k);
     return (yA * 1.00f + yB * 0.50f + yC * 0.28f) * 0.5618f;
   }
 
@@ -831,11 +927,9 @@ private:
   // gain at resonance by the *k -- v1's own raw peak gain is 1/k, so this cancels it, keeping
   // RESONANCE from also sweeping loudness. See logue/filter/formant's own doc comment (both for
   // the DSP itself and for why this is force-inlined -- a real, hardware-confirmed fix).
-  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float g, float k)
+  // a1/a2/a3 come from formant_a1 per block (or per 16 samples), not per sample.
+  static inline __attribute__((always_inline)) float formant_bp_step(float *s1, float *s2, float in, float a1, float a2, float a3, float k)
   {
-    float a1 = 1.f / (1.f + g * (g + k));
-    float a2 = g * a1;
-    float a3 = g * a2;
     float v3 = in - *s2;
     float v1 = a1 * (*s1) + a2 * v3;
     float v2 = *s2 + a2 * (*s1) + a3 * v3;
@@ -874,6 +968,11 @@ private:
     if (t < 0.f) t = 0.f; else if (t > 1.f) t = 1.f;
     float u = 1.f - t;
     return u * u * u * 1.95f + 0.05f;
+  }
+  // The ZDF SVF's 1/(1+g(g+k)), the one divide per band.
+  static inline __attribute__((always_inline)) float formant_a1(float g, float k)
+  {
+    return 1.f / (1.f + g * (g + k));
   }
 
   static float clampf(float v, float lo, float hi)

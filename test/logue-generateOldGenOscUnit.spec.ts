@@ -3854,7 +3854,7 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
   })
 
   describe('logue/filter/formant -- 3-band vowel formant filter', () => {
-    it('defaults to VOWEL=50/SHIFT=0/RESONANCE=60/CHARACTER=0 and calls formant_step once with all 6 state pointers plus the input', () => {
+    it('defaults to VOWEL=50/SHIFT=0/RESONANCE=60/CHARACTER=0 and, unwired, calls formant_step once with block-constant coefficients', () => {
       const doc: PatchDocument = {
         nodes: [
           sineNode('osc1'),
@@ -3870,13 +3870,19 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
       }
       const result = generateOldGenOscUnit(doc, { name: 'formant test' })
       expect(result.oscCpp).toContain(
-        'float y_formant1 = formant_step(&fS1a_formant1, &fS2a_formant1, &fS1b_formant1, &fS2b_formant1, &fS1c_formant1, &fS2c_formant1, vowelPercent_formant1, shiftSemis_formant1, resonancePercent_formant1, characterPercent_formant1, y_osc1);'
+        'float y_formant1 = formant_step(fS_formant1, y_osc1, blkFmtK_formant1, blkFmtA1A_formant1, blkFmtA2A_formant1, blkFmtA3A_formant1, blkFmtA1B_formant1, blkFmtA2B_formant1, blkFmtA3B_formant1, blkFmtA1C_formant1, blkFmtA2C_formant1, blkFmtA3C_formant1);'
       )
+      // The table lookup, note_w0 and the divide run once per block, before the loop.
+      const loop = result.oscCpp.indexOf('float y_formant1')
+      const g = result.oscCpp.indexOf('const float blkFmtGA_formant1 = formant_g(')
+      expect(g).toBeGreaterThan(0)
+      expect(g).toBeLessThan(loop)
+      expect(result.oscCpp).not.toContain('formant_ctl(&')
       expect(result.oscCpp).toContain('vowelPercent_formant1 = 50;')
       expect(result.oscCpp).toContain('shiftSemis_formant1 = 0;')
       expect(result.oscCpp).toContain('resonancePercent_formant1 = 60;')
       expect(result.oscCpp).toContain('characterPercent_formant1 = 0;')
-      expect(result.oscCpp.match(/formant_step\(&/g)).toHaveLength(1)
+      expect(result.oscCpp.match(/formant_step\(fS_/g)).toHaveLength(1)
     })
 
     it('bakes the note-space vowel table in u->o->a->e->i order (NOT alphabetical) with the exact Peterson & Barney-derived note values', () => {
@@ -3917,10 +3923,9 @@ describe('generateOldGenOscUnit (phase-4, minilogue xd)', () => {
         { kind: 'obj', type: 'logue/filter/formant', name: 'formant1', x: 0, y: 0, params: [] }
       ])
       const result = generateOldGenOscUnit(doc, { name: 'formant init' })
-      for (const state of ['fS1a', 'fS2a', 'fS1b', 'fS2b', 'fS1c', 'fS2c']) {
-        expect(result.oscCpp).toContain(`float ${state}_formant1;`)
-        expect(result.oscCpp).toContain(`${state}_formant1 = 0.f;`)
-      }
+      expect(result.oscCpp).toContain('float fS_formant1[6];')
+      expect(result.oscCpp).toContain('for (int i = 0; i < 6; ++i) fS_formant1[i] = 0.f;')
+      expect(result.oscCpp).toContain('fCtl_formant1 = 0;')
     })
 
     it('a wired vowel/shift/resonance inlet each adds (scaled by its own depth) to its param, independently clamped', () => {

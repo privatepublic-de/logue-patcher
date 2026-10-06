@@ -70,13 +70,6 @@
     "estimate": 404
   },
   {
-    "name": "formant",
-    "date": "2026-10-06",
-    "cycles": 753,
-    "maxCycles": 755,
-    "estimate": 694
-  },
-  {
     "name": "harmonics",
     "date": "2026-10-06",
     "cycles": 220,

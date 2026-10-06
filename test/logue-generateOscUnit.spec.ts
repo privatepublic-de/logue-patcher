@@ -765,10 +765,10 @@ describe('generateOscUnit (phase-2 minimal slice)', () => {
         notes: ''
       }
       const result = generateOscUnit(doc, { name: 'formant on nts1' })
-      // The shared step helper is called exactly once per instance regardless of how many of
-      // its 3 internal bands it computes -- the second, unrelated match is the helper's own
-      // `static float formant_step(...)` definition.
-      expect(result.oscH.match(/formant_step\(&/g)).toHaveLength(1)
+      // The shared step helper is called exactly once per instance; a moving vowel recomputes
+      // the coefficients at control rate (formant_ctl) right before it.
+      expect(result.oscH.match(/formant_step\(fS_/g)).toHaveLength(1)
+      expect(result.oscH.match(/formant_ctl\(&fCtl_formant1, fC_formant1, /g)).toHaveLength(1)
       expect(result.oscH).toContain(
         'static inline __attribute__((always_inline)) float formant_bp_step'
       )

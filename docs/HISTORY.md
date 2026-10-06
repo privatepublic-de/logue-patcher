@@ -2961,3 +2961,30 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   SDRAM access, -11..+14 %; NTS-1 mkII 0.85x + 44.1, -22..+19 %), so the scale constants are
   unchanged. auto-wah still reads +15 % on the xd: not this; its follower-driven svf's `control`
   variant moves cutoff, resonance and pitch at once, where auto-wah moves only the cutoff.
+
+### formant's coefficients per block (2026-10-06)
+
+- Why: the user's formant patch (VOWEL/CHARACTER from the two shape knobs) hung an xd during the
+  oscillator calibration at ~1700 real cycles a voice. Its knob-fed inputs were already per-block
+  values, but `formant_step` recomputed everything per sample: the table lookup, three
+  `note_w0`s, three Taylor `tan`s and three divides -- ~80 % of its cost (`control-still` 534
+  against base 495, both all coefficient work).
+- Now: the coefficients are block constants unless an input moves, and a moving input recomputes
+  them every 16 samples (`formant_ctl`). First version stepped `k` too; since `k` also scales each
+  band's output, a RESONANCE LFO zippered at -41 dB above 1.5 kHz (sine through RESONANCE 90),
+  so `k` ramps over the 16 now (-61 dB). Vowel/shift/character at the same fast LFO: -68..-70 dB
+  (per-sample: -79..-100). Shift's own case reads -23.7 dB both ways (the moving formants on the
+  sine themselves).
+- First everything was force-inlined (the crash rule): ~1.4 KB per instance, against the old
+  284 B + one shared 1192 B `formant_step` (two instances: ~2.8 KB vs ~1.7 KB). `formant_g` (one
+  band's g: table, `note_w0`, `tan`) is now a shared `noinline` leaf called per block, 3 cycles
+  dearer per voice-sample in the user's patch (199 -> 202). Call shape on every staged xd build,
+  the 2026-09-19 crash repros included: only leaves below `process`.
+- Emulator (xd osc, per voice-sample): base 495 -> 102, `control` 533 -> 210, `control-still`
+  534 -> 103; the user's whole patch 622 -> 202 (real ~= 17 + 1.54x: ~975 -> ~330), with LFOs on
+  vowel/character 697 -> 372.
+- The NTS-1 mkII calibration had a formant reading (753 cycles at estimate 694); dropped, since a
+  `--refit` would pair it with the new code's estimate. The refit without it: 4 + 0.76x,
+  -28..+28 % over 18 patches, so the 0.77x constant stays.
+- Effect table (xd delfx): first 614 -> 103. Code size (xd osc): first instance 1114 B incl. the
+  `formant_g` leaf (was 1476 incl. `formant_step`), each extra +624 (was +232).

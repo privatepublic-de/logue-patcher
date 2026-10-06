@@ -377,19 +377,15 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '99712da0bbd917df'
     },
     'logue/filter/formant': {
-      first: 284,
-      extra: 232,
-      helpers: [
-        'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-      ],
+      first: 646,
+      extra: 624,
+      helpers: ['Osc::formant_g(float, float, float, int)', 'memset'],
       unwired: {
-        first: 100,
-        extra: 64,
-        helpers: [
-          'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-        ]
+        first: 494,
+        extra: 412,
+        helpers: ['Osc::formant_g(float, float, float, int)', 'memset']
       },
-      snapshotHash: '3064386816179abd'
+      snapshotHash: '0eae7be6852f4378'
     },
     'logue/sense/pitch': { first: 0, extra: 0, helpers: [], snapshotHash: 'bc482cf6e4e29433' },
     'logue/sense/control': { first: 8, extra: 0, helpers: [], snapshotHash: '550ef812bd56decd' },
@@ -1046,19 +1042,15 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '99712da0bbd917df'
     },
     'logue/filter/formant': {
-      first: 302,
-      extra: 244,
-      helpers: [
-        'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-      ],
+      first: 714,
+      extra: 648,
+      helpers: ['Fx::formant_g(float, float, float, int)', 'memset'],
       unwired: {
-        first: 114,
-        extra: 76,
-        helpers: [
-          'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-        ]
+        first: 514,
+        extra: 440,
+        helpers: ['Fx::formant_g(float, float, float, int)', 'memset']
       },
-      snapshotHash: '3064386816179abd'
+      snapshotHash: '0eae7be6852f4378'
     },
     'logue/sense/control': { first: 8, extra: 0, helpers: [], snapshotHash: '550ef812bd56decd' },
     'logue/util/constant': { first: 4, extra: 0, helpers: [], snapshotHash: 'f3edec1a842e0630' },
@@ -1755,19 +1747,15 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '68c43266f8ca9bcc'
     },
     'logue/filter/formant': {
-      first: 507,
-      extra: 232,
-      helpers: [
-        'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-      ],
+      first: 906,
+      extra: 710,
+      helpers: ['Osc::formant_g(float, float, float, int)', 'memset'],
       unwired: {
-        first: 343,
-        extra: 64,
-        helpers: [
-          'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-        ]
+        first: 754,
+        extra: 502,
+        helpers: ['Osc::formant_g(float, float, float, int)', 'memset']
       },
-      snapshotHash: '65230083185e249c'
+      snapshotHash: '4672f99f1056f6ff'
     },
     'logue/sense/pitch': { first: 0, extra: 0, helpers: [], snapshotHash: 'e86f9bdb5b25a186' },
     'logue/sense/control': { first: 12, extra: 0, helpers: [], snapshotHash: '0601f991f0cabfe7' },
@@ -2422,19 +2410,15 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '68c43266f8ca9bcc'
     },
     'logue/filter/formant': {
-      first: 514,
-      extra: 248,
-      helpers: [
-        'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-      ],
+      first: 967,
+      extra: 737,
+      helpers: ['Fx::formant_g(float, float, float, int)', 'memset'],
       unwired: {
-        first: 350,
-        extra: 64,
-        helpers: [
-          'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)'
-        ]
+        first: 771,
+        extra: 545,
+        helpers: ['Fx::formant_g(float, float, float, int)', 'memset']
       },
-      snapshotHash: '65230083185e249c'
+      snapshotHash: '4672f99f1056f6ff'
     },
     'logue/sense/control': { first: 8, extra: 0, helpers: [], snapshotHash: '0601f991f0cabfe7' },
     'logue/util/constant': { first: 8, extra: 0, helpers: [], snapshotHash: '2f68421838833402' },
@@ -2807,7 +2791,7 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::delay_step(short*, int*, float, float, float, float)': 328,
     'Osc::env_rate_from_percent(float)': 76,
     'Osc::exp_approx(float)': 68,
-    'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1192,
+    'Osc::formant_g(float, float, float, int)': 468,
     'Osc::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 728,
     'Osc::knob_env_value(float, int)': 172,
     'Osc::note_w0(float)': 164,
@@ -2824,7 +2808,7 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Fx::delay_step(short*, int*, float, float, float, float)': 328,
     'Fx::env_rate_from_percent(float)': 76,
     'Fx::exp_approx(float)': 68,
-    'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1470,
+    'Fx::formant_g(float, float, float, int)': 608,
     'Fx::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 728,
     'Fx::harmonic_ratio(float)': 74,
     'Fx::knob_env_value(float, int)': 172,
@@ -2844,7 +2828,7 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Osc::delay_step(short*, int*, float, float, float, float)': 328,
     'Osc::env_rate_from_percent(float)': 76,
     'Osc::exp_approx(float)': 68,
-    'Osc::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1216,
+    'Osc::formant_g(float, float, float, int)': 480,
     'Osc::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 744,
     'Osc::knob_env_value(float, int)': 180,
     'Osc::note_w0(float)': 176,
@@ -2861,7 +2845,7 @@ export const CODE_HELPER_BYTES: Record<CodeSizeContext, Record<string, number>> 
     'Fx::delay_step(short*, int*, float, float, float, float)': 328,
     'Fx::env_rate_from_percent(float)': 76,
     'Fx::exp_approx(float)': 68,
-    'Fx::formant_step(float*, float*, float*, float*, float*, float*, float, float, float, float, float)': 1490,
+    'Fx::formant_g(float, float, float, int)': 616,
     'Fx::freq_shift_step(float*, int*, float*, float*, float*, float, float, float, float, float*)': 744,
     'Fx::harmonic_ratio(float)': 76,
     'Fx::knob_env_value(float, int)': 180,
