@@ -1,6 +1,7 @@
 import type { LoguePlatform, PatchDocument } from '../../src/shared/domain/patch'
 import { CPU_COST_BASELINE_CYCLES, CPU_COST_TABLE } from './cpuCostTable'
 import { UnsupportedLogueNodeError } from './oscInstances'
+import { hoistedSuffixes } from './oscBody'
 import { resolvePlatformGraph } from './resolveUnit'
 import { findLoguePrimitive } from './primitives'
 import { isEffectModule } from './unitKinds'
@@ -11,8 +12,8 @@ import type { SubpatchDefinitions } from './subpatches'
  * (`cpuCostTable.ts`) plus the fixed per-unit overhead, in cycles per voice-sample on the
  * emulator's own scale (`scripts/emulateXdCycles.py`) -- an estimate for comparing patches, not a
  * hardware measurement. Each instance counts the measured variant matching it -- which checkboxes
- * are flipped from their defaults, and whether any control inlet is wired (audio inputs are always
- * counted as wired); only a combination nobody measured falls back to the primitive's worst.
+ * are flipped from their defaults, and whether any control inlet is fed a value that moves per
+ * sample (audio inputs are always counted as wired; knob-only math is per block and free); only a combination nobody measured falls back to the primitive's worst.
  * (Counting granular at its SIZE/WINDOW-100 worst for any moved setting made a patch that plays
  * fine read 27% high.) The xd runs the oscillator once per voice.
  *
@@ -25,12 +26,17 @@ import type { SubpatchDefinitions } from './subpatches'
  * NTS-1 mkII: no emulator for its Cortex-M7, so the same xd table stands in; the fit does the
  * rest. The osc is rendered once, not per voice.
  */
-/** minilogue xd: real cycles per voice-sample = 164 + 1.40 * estimate (19 readings, -34..+35 %). */
-export const XD_OSC_REAL_BASE = 164
-export const XD_OSC_REAL_SCALE = 1.4
-/** NTS-1 mkII: real cycles per sample = 44 + 0.83 * estimate (21 readings, -37..+54 %). */
-export const NTS1MKII_OSC_REAL_BASE = 44
-export const NTS1MKII_OSC_REAL_SCALE = 0.83
+/**
+ * minilogue xd: real cycles per voice-sample = 17 + 1.54 * estimate, NTS-1 mkII 0 + 0.77 *
+ * estimate: the fits with the smallest worst error (`calibrateOsc.ts --refit`, 2026-10-06, the
+ * table measured with moving sources): 17 distinct patches within -30..+30 % on the xd, 19 within
+ * -29..+28 % on the NTS-1 mkII. (Against the table measured with constants: 164 + 1.40x / 44 +
+ * 0.83x, the NTS-1 mkII's worst at +54 %.)
+ */
+export const XD_OSC_REAL_BASE = 17
+export const XD_OSC_REAL_SCALE = 1.54
+export const NTS1MKII_OSC_REAL_BASE = 0
+export const NTS1MKII_OSC_REAL_SCALE = 0.77
 
 export const XD_VOICES = 4
 /** Each xd voice's own cycles per sample (measured with 1-4 notes held: the same for each). */
@@ -43,14 +49,14 @@ export const XD_CYCLES_PER_SAMPLE = 1728
  * recorded hangs (formant, ~1700 real; a granular patch, estimate ~795) sit past "fine".
  */
 export const XD_OSC_HANG_CYCLES = 1225
-/** Where an estimate 34 % low (the fit's worst) still clears the ceiling: 0.66 * 1225. */
-export const XD_OSC_CLEAN_CYCLES = 808
+/** Where an estimate 30 % low (the fit's worst) still clears the ceiling: 0.70 * 1225. */
+export const XD_OSC_CLEAN_CYCLES = 858
 
 /**
  * NTS-1 mkII, a sine burning an exact load (`cpuCeiling.ts --osc`, 2026-10-06): with factory
  * CHORUS, STEREO delay and HALL reverb on, clean to 6650 cycles per sample, dropouts from 6700
  * (twice); with the effects off, clean to 10000, dropouts from 10050 (a first run read 7350,
- * which two later ones didn't reproduce). "Fine" ends where an estimate 37 % low (the fit's
+ * which two later ones didn't reproduce). "Fine" ends where an estimate 29 % low (the fit's
  * worst) still clears 6700. Of ~11,457 in all.
  */
 export const NTS1MKII_OSC_DROPOUT_CYCLES = 6700
@@ -61,7 +67,7 @@ export const NTS1MKII_OSC_SOLO_CYCLES = 10000
  * get ~9800 cycles per sample with the factory effects off. Each gauge sees only its own unit.
  */
 export const NTS1MKII_SHARED_CYCLES = 9800
-export const NTS1MKII_OSC_CLEAN_CYCLES = 4200
+export const NTS1MKII_OSC_CLEAN_CYCLES = 4750
 /** ~549 MHz / 48 kHz, measured on the device: everything it does per sample. */
 export const NTS1MKII_CYCLES_PER_SAMPLE = 11457
 
@@ -144,8 +150,15 @@ export function estimateOscCpuCost(
       return { status: 'incomplete', reason: "CPU use isn't measured for effects yet." }
     }
     const unmeasured: string[] = []
+    // Knob-only math runs once a block (`hoistedSuffixes`) and costs nothing per sample. A reader
+    // fed by such values counts its `control-still` variant (most then take their unwired path,
+    // some -- bass-support -- don't), one fed by anything that moves its `control` variant.
+    const hoisted = hoistedSuffixes(activeInstances)
     const perInstance = activeInstances.map((inst): InstanceCpuCost => {
       const nodeName = inst.node.name ?? inst.suffix
+      if (hoisted.has(inst.suffix)) {
+        return { nodeName, primitiveId: inst.id, cycles: 0, variant: 'per-block', maxCycles: 0 }
+      }
       const entry = CPU_COST_TABLE[inst.id]
       // NTS-1 mkII-only primitives can't be measured on the xd emulator; one with no helper code
       // (sense/velocity: a latched member read) costs next to nothing, like every such primitive.
@@ -190,19 +203,28 @@ export function estimateOscCpuCost(
           flipChoices = flipChoices.map((c) => [...c, spec.name])
         }
       }
-      const controlWired = (primitive.inlets ?? []).some(
-        (i) => i.role === 'control' && inst.inletSources[i.name] !== undefined
-      )
+      const controlSources = (primitive.inlets ?? [])
+        .filter((i) => i.role === 'control')
+        .map((i) => inst.inletSources[i.name])
+        .filter((source) => source !== undefined)
+      const controlWired = controlSources.some((source) => !hoisted.has(source.suffix))
+      const controlStill = !controlWired && controlSources.length > 0
       const keyOf = (flips: string[]): string =>
-        [...flips, ...(controlWired ? ['control'] : [])].join('+') || 'base'
-      const costOf = (key: string): number => entry.variants[key] ?? entry.worst
+        [...flips, ...(controlWired ? ['control'] : controlStill ? ['control-still'] : [])].join(
+          '+'
+        ) || 'base'
+      // A table measured before `control-still` existed: a still input as unwired.
+      const costOf = (key: string): number =>
+        entry.variants[key] ??
+        entry.variants[key.replace(/\+?control-still$/, '') || 'base'] ??
+        entry.worst
       const key = keyOf(flipped)
       const reachable = flipChoices.map((c) => costOf(keyOf(c)))
       const heavy = Object.entries(entry.variants)
         .filter(([k]) => k.startsWith('heavy-'))
         .map(([, v]) => v)
       if (heavy.length > 0 && (movableSetting || controlWired)) reachable.push(...heavy)
-      const cycles = entry.variants[key]
+      const cycles = entry.variants[key] ?? (controlStill ? costOf(key) : undefined)
       const maxCycles = Math.max(cycles ?? entry.worst, ...reachable)
       return cycles === undefined
         ? { nodeName, primitiveId: inst.id, cycles: entry.worst, variant: 'worst', maxCycles }

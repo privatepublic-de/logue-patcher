@@ -4,7 +4,7 @@
     "date": "2026-10-06",
     "cycles": 261,
     "maxCycles": 262,
-    "estimate": 195
+    "estimate": 297
   },
   {
     "name": "all",
@@ -25,105 +25,105 @@
     "date": "2026-10-06",
     "cycles": 154,
     "maxCycles": 156,
-    "estimate": 106
+    "estimate": 175
   },
   {
     "name": "comb",
     "date": "2026-10-06",
     "cycles": 344,
     "maxCycles": 347,
-    "estimate": 274
+    "estimate": 439
   },
   {
     "name": "combnew",
     "date": "2026-10-06",
     "cycles": 251,
     "maxCycles": 253,
-    "estimate": 201
+    "estimate": 314
   },
   {
     "name": "combnts1",
     "date": "2026-10-06",
     "cycles": 288,
     "maxCycles": 290,
-    "estimate": 165
+    "estimate": 400
   },
   {
     "name": "cpiano-fixed",
     "date": "2026-10-06",
     "cycles": 222,
     "maxCycles": 237,
-    "estimate": 358
+    "estimate": 339
   },
   {
     "name": "cpiano",
     "date": "2026-10-06",
     "cycles": 431,
     "maxCycles": 433,
-    "estimate": 381
+    "estimate": 404
   },
   {
     "name": "einfach",
     "date": "2026-10-06",
     "cycles": 431,
     "maxCycles": 435,
-    "estimate": 381
+    "estimate": 404
   },
   {
     "name": "formant",
     "date": "2026-10-06",
     "cycles": 753,
     "maxCycles": 755,
-    "estimate": 682
+    "estimate": 694
   },
   {
     "name": "harmonics",
     "date": "2026-10-06",
     "cycles": 220,
     "maxCycles": 222,
-    "estimate": 118
+    "estimate": 261
   },
   {
     "name": "pd-simple",
     "date": "2026-10-06",
     "cycles": 216,
     "maxCycles": 219,
-    "estimate": 154
+    "estimate": 332
   },
   {
     "name": "rm",
     "date": "2026-10-06",
     "cycles": 268,
     "maxCycles": 271,
-    "estimate": 182
+    "estimate": 345
   },
   {
     "name": "sache",
     "date": "2026-10-06",
     "cycles": 316,
     "maxCycles": 319,
-    "estimate": 354
+    "estimate": 308
   },
   {
     "name": "smpstr",
     "date": "2026-10-06",
     "cycles": 431,
     "maxCycles": 434,
-    "estimate": 381
+    "estimate": 404
   },
   {
     "name": "string",
     "date": "2026-10-06",
     "cycles": 617,
     "maxCycles": 621,
-    "estimate": 607
+    "estimate": 593
   },
   {
     "name": "test-lp24",
     "date": "2026-10-06",
     "cycles": 249,
     "maxCycles": 251,
-    "estimate": 223
+    "estimate": 231
   },
   {
     "name": "test-sample",
@@ -137,13 +137,13 @@
     "date": "2026-10-06",
     "cycles": 178,
     "maxCycles": 180,
-    "estimate": 163
+    "estimate": 297
   },
   {
     "name": "untitled",
     "date": "2026-10-06",
     "cycles": 190,
     "maxCycles": 193,
-    "estimate": 153
+    "estimate": 216
   }
 ]

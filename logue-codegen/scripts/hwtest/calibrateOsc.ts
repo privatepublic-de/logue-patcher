@@ -11,6 +11,10 @@
  *   patches: HWTEST_OSC_PATCHES (default ~/Documents/logue-patches), subpatches from its
  *   `subpatches` folder and its top level.
  * Leaves the device as it was (osc slot 1 and the program restored and verified).
+ *
+ * `--refit` touches no device: it recomputes every stored reading's estimate from its patch with
+ * the current cost table (after a re-measure), writes them back and prints the affine fit
+ * real = a + b * estimate (smallest worst relative error) for `estimateOscCpuCost.ts`' constants.
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import { homedir } from 'os'
@@ -96,7 +100,59 @@ function loadSubpatches(): Map<string, PatchDocument> {
   return defs
 }
 
+/**
+ * real = a + b * e with the smallest worst relative error (a grid search): the gauge's green zone
+ * is sized by the worst under-read, so that is what the fit keeps small.
+ */
+function affineFit(points: { e: number; r: number }[]): { a: number; b: number } {
+  let best = { a: 0, b: 1, worst: Infinity }
+  for (let a = 0; a <= 500; a += 1) {
+    for (let b = 0.3; b <= 3; b += 0.005) {
+      let worst = 0
+      for (const { e, r } of points) worst = Math.max(worst, Math.abs((a + b * e) / r - 1))
+      if (worst < best.worst) best = { a, b, worst }
+    }
+  }
+  return best
+}
+
+function refit(): void {
+  const platform = XD ? 'minilogue-xd' : 'nts1mkii'
+  const defs = loadSubpatches()
+  const readings: { name: string; cycles: number; estimate: number }[] = JSON.parse(
+    readFileSync(READINGS_FILE, 'utf-8')
+  )
+  for (const r of readings) {
+    const doc = stripDeviceControls(
+      parsePatchFile(readFileSync(join(PATCHES, `${r.name}.loguepatch`), 'utf-8'))
+    )
+    const est = estimateOscCpuCost(doc, defs, platform)
+    if (est.status !== 'ok') throw new Error(`${r.name}: ${est.reason}`)
+    console.log(
+      `${r.name.padEnd(22)} estimate ${String(r.estimate).padStart(4)} -> ${est.estimate.cyclesPerVoice}`
+    )
+    r.estimate = est.estimate.cyclesPerVoice
+  }
+  writeFileSync(READINGS_FILE, JSON.stringify(readings, null, 2) + '\n')
+  // Copies of one patch under other names (cpiano, einfach, smpstr) count once.
+  const points = [
+    ...new Map(
+      readings.map((r) => [
+        `${r.estimate}:${Math.round(r.cycles / 5)}`,
+        { e: r.estimate, r: r.cycles }
+      ])
+    ).values()
+  ]
+  const { a, b } = affineFit(points)
+  const errors = points.map((p) => (a + b * p.e) / p.r - 1)
+  console.log(
+    `\nreal = ${a.toFixed(0)} + ${b.toFixed(2)} x estimate (${points.length} distinct); errors ` +
+      `${(Math.min(...errors) * 100).toFixed(0)}..${(Math.max(...errors) * 100).toFixed(0)} %`
+  )
+}
+
 async function main(): Promise<void> {
+  if (process.argv.includes('--refit')) return refit()
   const filters = process.argv.slice(2).filter((a) => !a.startsWith('--'))
   const defs = loadSubpatches()
   const patches = readdirSync(PATCHES)

@@ -2935,3 +2935,20 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   code -- not explained; the busy case (chorus + stereo + hall) reproduced at 6650/6700.
 - The gauges can't see the other slots' units, so the NTS-1 mkII tooltips give the shared figure
   and say to add the estimates; the oscillator's "effects off" zone now ends at 10000.
+
+### The oscillator CPU table re-measured with moving sources (2026-10-06)
+
+- The table's `control` variants had wired every inlet from a util/constant, which knob-only
+  hoisting makes per-block: they measured the still path (svf `control` 40, the same as `base`;
+  adsr's 38 below its base 46). Now every wired inlet takes white noise (gates a square LFO, both
+  measured alone and subtracted): svf 115 / TRACK 212, sine-lfo 85, ladder 247.
+- With only that, the refit got worse on the xd (`bass` read -35 %): the estimator, copying the
+  effect estimator's rule, counted a reader fed by per-block values as unwired, but
+  bass-support's wired path stays per-sample whatever feeds it (392 against 265 unwired). So the
+  table measures both, `control` (moving) and `control-still` (constants), and the estimator
+  picks by source. The effect estimator still uses the "per-block = unwired" rule (its table has
+  no still variants); auto-wah's +31 % may be that.
+- Refit on the stored hardware readings (`calibrateOsc.ts --refit`, copies of one patch counted
+  once, smallest worst error): xd 17 + 1.54x, -30..+30 % (old table at best +-31 %); NTS-1 mkII
+  0.77x, -29..+28 % (old at best +-42 %). The near-zero intercepts: the table now explains the
+  cost rather than a constant offset. Green moved to 858 (xd) and 4750 (NTS-1 mkII).
