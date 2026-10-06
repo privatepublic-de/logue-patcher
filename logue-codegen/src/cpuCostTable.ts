@@ -292,14 +292,14 @@ export const CPU_COST_TABLE: Record<
   'logue/osc/bass-support': {
     variants: {
       base: 265,
-      control: 467,
+      control: 362,
       'control-still': 392,
       RETRIG: 265,
-      'RETRIG+control': 467,
+      'RETRIG+control': 362,
       'RETRIG+control-still': 392
     },
-    worst: 467,
-    snapshotHash: 'da5adbf9ea4c7a45'
+    worst: 392,
+    snapshotHash: '8c0581583e35f2f4'
   },
   'logue/osc/exciter': {
     variants: { base: 192, control: 205, 'control-still': 196 },
@@ -418,9 +418,9 @@ export const CPU_COST_TABLE: Record<
   'logue/sense/shape': { variants: { base: 0 }, worst: 0, snapshotHash: '325e380beee3bc55' },
   'logue/sense/shape-2': { variants: { base: 0 }, worst: 0, snapshotHash: '0a03598e05e5c340' },
   'logue/shape/drive': {
-    variants: { base: 30, control: 131, 'control-still': 30 },
-    worst: 131,
-    snapshotHash: 'fd99dae03aa4746d'
+    variants: { base: 30, control: 93, 'control-still': 30 },
+    worst: 93,
+    snapshotHash: '47bc5cda72f6b7e2'
   },
   'logue/shape/soft-clip': {
     variants: { base: 24, control: 35, 'control-still': 33 },

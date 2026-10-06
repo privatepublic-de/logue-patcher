@@ -269,11 +269,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '94bd46054709e8a4'
     },
     'logue/shape/drive': {
-      first: 452,
-      extra: 348,
+      first: 464,
+      extra: 356,
       helpers: ['Osc::exp_approx(float)'],
-      unwired: { first: 296, extra: 192, helpers: ['Osc::exp_approx(float)'] },
-      snapshotHash: 'fd99dae03aa4746d'
+      unwired: { first: 308, extra: 200, helpers: ['Osc::exp_approx(float)'] },
+      snapshotHash: '47bc5cda72f6b7e2'
     },
     'logue/filter/comb': {
       first: 874,
@@ -333,20 +333,22 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '447d0e2b472a3a55'
     },
     'logue/osc/bass-support': {
-      first: 790,
-      extra: 676,
+      first: 808,
+      extra: 712,
       helpers: [
         'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
-        'Osc::note_w0(float)'
+        'Osc::note_w0(float)',
+        'memset'
       ],
       unwired: {
-        first: 790,
-        extra: 552,
+        first: 812,
+        extra: 584,
         helpers: [
-          'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)'
+          'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
+          'memset'
         ]
       },
-      snapshotHash: 'da5adbf9ea4c7a45'
+      snapshotHash: '8c0581583e35f2f4'
     },
     'logue/filter/svf': {
       first: 664,
@@ -929,11 +931,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '94bd46054709e8a4'
     },
     'logue/shape/drive': {
-      first: 392,
-      extra: 308,
+      first: 512,
+      extra: 416,
       helpers: ['Fx::exp_approx(float)'],
-      unwired: { first: 312, extra: 164, helpers: ['Fx::exp_approx(float)'] },
-      snapshotHash: 'fd99dae03aa4746d'
+      unwired: { first: 336, extra: 184, helpers: ['Fx::exp_approx(float)'] },
+      snapshotHash: '47bc5cda72f6b7e2'
     },
     'logue/filter/comb': {
       first: 778,
@@ -993,21 +995,23 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '447d0e2b472a3a55'
     },
     'logue/osc/bass-support': {
-      first: 778,
-      extra: 648,
+      first: 960,
+      extra: 852,
       helpers: [
         'Fx::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
-        'Fx::note_w0(float)'
+        'Fx::note_w0(float)',
+        'memset'
       ],
       unwired: {
-        first: 646,
-        extra: 488,
+        first: 676,
+        extra: 556,
         helpers: [
           'Fx::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
-          'Fx::note_w0(float)'
+          'Fx::note_w0(float)',
+          'memset'
         ]
       },
-      snapshotHash: 'da5adbf9ea4c7a45'
+      snapshotHash: '8c0581583e35f2f4'
     },
     'logue/filter/svf': {
       first: 568,
@@ -1639,11 +1643,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '216989a0fb3b382f'
     },
     'logue/shape/drive': {
-      first: 514,
-      extra: 348,
+      first: 526,
+      extra: 360,
       helpers: ['Osc::exp_approx(float)'],
-      unwired: { first: 358, extra: 192, helpers: ['Osc::exp_approx(float)'] },
-      snapshotHash: '969016942b668a37'
+      unwired: { first: 370, extra: 204, helpers: ['Osc::exp_approx(float)'] },
+      snapshotHash: 'bd26f52b476704e9'
     },
     'logue/filter/comb': {
       first: 996,
@@ -1703,20 +1707,22 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '7e367a90928dd9f0'
     },
     'logue/osc/bass-support': {
-      first: 1054,
-      extra: 696,
+      first: 1157,
+      extra: 728,
       helpers: [
         'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
-        'Osc::note_w0(float)'
+        'Osc::note_w0(float)',
+        'memset'
       ],
       unwired: {
-        first: 1000,
-        extra: 638,
+        first: 1103,
+        extra: 670,
         helpers: [
-          'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)'
+          'Osc::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
+          'memset'
         ]
       },
-      snapshotHash: '3ecec297631c48fa'
+      snapshotHash: '257face24f38440f'
     },
     'logue/filter/svf': {
       first: 717,
@@ -2297,11 +2303,11 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '216989a0fb3b382f'
     },
     'logue/shape/drive': {
-      first: 457,
-      extra: 312,
+      first: 609,
+      extra: 416,
       helpers: ['Fx::exp_approx(float)'],
-      unwired: { first: 377, extra: 184, helpers: ['Fx::exp_approx(float)'] },
-      snapshotHash: '969016942b668a37'
+      unwired: { first: 433, extra: 204, helpers: ['Fx::exp_approx(float)'] },
+      snapshotHash: 'bd26f52b476704e9'
     },
     'logue/filter/comb': {
       first: 936,
@@ -2361,21 +2367,23 @@ export const CODE_SIZE_TABLE: Record<
       snapshotHash: '7e367a90928dd9f0'
     },
     'logue/osc/bass-support': {
-      first: 1007,
-      extra: 656,
+      first: 1290,
+      extra: 840,
       helpers: [
         'Fx::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
-        'Fx::note_w0(float)'
+        'Fx::note_w0(float)',
+        'memset'
       ],
       unwired: {
-        first: 871,
-        extra: 516,
+        first: 1002,
+        extra: 568,
         helpers: [
           'Fx::bass_support_step(float*, float, float, float, float, float, float, float, float, float)',
-          'Fx::note_w0(float)'
+          'Fx::note_w0(float)',
+          'memset'
         ]
       },
-      snapshotHash: '3ecec297631c48fa'
+      snapshotHash: '257face24f38440f'
     },
     'logue/filter/svf': {
       first: 665,

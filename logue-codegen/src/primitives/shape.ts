@@ -204,10 +204,24 @@ const DRIVE_STEP_HELPER: HelperBlock = {
     const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
     return drive_step(z, x, pre, hi * post, (lo - hi) * post);
   }
-  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
-  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  // A moving DRIVE at control rate: every 16th call works out h = exp(dB / 2), the pre-gain h^2
+  // and the makeup level / h (c[0], c[1]); both ramp there over the 16 (c[2], c[3] the steps),
+  // since a stepped gain zippers. The very first call jumps. Per sample, the exp_approx and the
+  // divide were most of a moving drive's cost.
+  static inline __attribute__((always_inline)) void drive_ctl(uint32_t *n, float *c, float drivePercent, float level)
   {
-    return drive_step_t(z, x, h * h, level / h, t);
+    if ((*n & 15u) == 0u)
+    {
+      const float h = exp_approx(drivePercent * ${DRIVE_HALF_LN_PER_PERCENT.toPrecision(8)}f);
+      const float pre = h * h;
+      const float post = level / h;
+      if (*n == 0u) { c[0] = pre; c[1] = post; }
+      c[2] = (pre - c[0]) * 0.0625f;
+      c[3] = (post - c[1]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[2];
+    c[1] += c[3];
   }
 `
 }
@@ -220,8 +234,8 @@ const DRIVE_TONE_INLET_DEPTH = 50
  * `h = exp(dB / 2)` gives the pre-gain `h^2` and the makeup `1/h` (half the drive taken back, so a
  * signal driven into the clip stays about as loud as it came in). With both inputs still,
  * everything down to the tilt's two weights is a block constant (`drive_step`); a moving `tone`
- * re-weights per sample (`drive_step_t`, a clamp and a few multiplies); a moving `drive` pays an
- * `exp_approx` and a divide a sample (`drive_step_h`).
+ * re-weights per sample (`drive_step_t`, a clamp and a few multiplies); a moving `drive` works out
+ * its two gains every 16 samples and ramps them (`drive_ctl`, then `drive_step_t`).
  */
 function driveCode(
   suffix: string,
@@ -247,9 +261,12 @@ function driveCode(
         ? `tonePercent_${suffix} + (${inlets.tone}) * ${DRIVE_TONE_INLET_DEPTH}.f`
         : additiveInletExpr('tonePercent', suffix, inlets.tone, DRIVE_TONE_INLET_DEPTH)
   if (!h.decl) {
+    const c = `driveC_${suffix}`
     return {
       values: { level },
-      call: `drive_step_h(&z_${suffix}, ${x}, ${h.ref}, ${level.ref}, ${tone})`
+      call:
+        `(drive_ctl(&driveCtl_${suffix}, ${c}, ${drivePercent}, ${level.ref}), ` +
+        `drive_step_t(&z_${suffix}, ${x}, ${c}[0], ${c}[1], ${tone}))`
     }
   }
   const pre = blockValue('blkDrivePre', suffix, `${h.ref} * ${h.ref}`, [])
@@ -290,8 +307,9 @@ function driveCode(
 export const drivePrimitive: LoguePrimitive = {
   id: 'logue/shape/drive',
   outletPolarity: 'inherit',
-  // z_ + drivePercent_ + tonePercent_ + levelPercent_, 4 floats
-  stateBytesPerInstance: 16,
+  // z_ + drivePercent_ + tonePercent_ + levelPercent_ + driveCtl_ + driveC_[4] (driveCtl_/driveC_
+  // only used while `drive` moves), 9 words
+  stateBytesPerInstance: 36,
   description:
     'A light saturator with a tone control: DRIVE pushes the signal into a soft clip (half the gain is taken back after it), TONE tilts the result from dark through flat to thin, LEVEL sets the output.',
   searchTerms: ['saturation', 'saturator', 'overdrive', 'distortion', 'grit', 'tone'],
@@ -301,8 +319,9 @@ export const drivePrimitive: LoguePrimitive = {
     { name: 'tone', role: 'control' }
   ],
   memberDecls: (suffix) =>
-    `  float z_${suffix};\n  float drivePercent_${suffix};\n  float tonePercent_${suffix};\n  float levelPercent_${suffix};\n`,
-  initStatement: (suffix) => `    z_${suffix} = 0.f;\n`,
+    `  float z_${suffix};\n  float drivePercent_${suffix};\n  float tonePercent_${suffix};\n  float levelPercent_${suffix};\n  uint32_t driveCtl_${suffix};\n  float driveC_${suffix}[4];\n`,
+  initStatement: (suffix) =>
+    `    z_${suffix} = 0.f;\n    driveCtl_${suffix} = 0;\n    for (int i = 0; i < 4; ++i) driveC_${suffix}[i] = 0.f;\n`,
   blockConstants: (suffix, inlets) => blockDecls(driveCode(suffix, inlets).values),
   renderExpr: (suffix, inlets) => driveCode(suffix, inlets).call,
   advanceStatement: () => '',

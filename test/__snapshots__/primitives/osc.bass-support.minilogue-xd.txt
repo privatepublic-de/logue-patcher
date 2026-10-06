@@ -19,6 +19,8 @@ public:
     shape2_01_ = 0.f;
     for (int k = 0; k < 7; k++) st_n[k] = 0.f;
     st_n[0] = -1000.f;
+    bassCtl_n = 0;
+    for (int k = 0; k < 8; k++) bassC_n[k] = 0.f;
     shape_n = 67;
     sub_n = 30;
     drive_n = 40;
@@ -141,6 +143,8 @@ private:
   float tone_n;
   float glide_n;
   float retrig_n;
+  uint32_t bassCtl_n;
+  float bassC_n[8];
 
   static float note_w0(float note)
   {
@@ -197,6 +201,31 @@ private:
     if (x > 0.8f) x = 0.8f;
     float x2 = x * x;
     return x * (1.f + x2 * (0.333333f + x2 * 0.133333f));
+  }
+
+  // A moving pitch, drive or tone at control rate: every 16th call works out w0 (c[0]), the drive
+  // gain and its level compensation (c[1], c[2]) and the tone filter's g and a1 (c[3], c[4]). w0
+  // and the two gains ramp over the 16 (c[5..7] the steps: a stepped gain zippers, a ramped w0
+  // glides); g and a1 step together, so every sample's filter is a real one. The very first call
+  // jumps. Per sample, note_w0 and the two divides were most of a moving bass's cost.
+  static inline __attribute__((always_inline)) void bass_ctl(uint32_t *n, float *c, float note, float driveGain, float tone, float baseW0)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float w0 = note_w0(note);
+      const float comp = 1.f / bass_sat(driveGain);
+      const float g = bass_tone_g(baseW0, tone);
+      c[3] = g;
+      c[4] = 1.f / (1.f + g * (g + 1.f));
+      if (*n == 0u) { c[0] = w0; c[1] = driveGain; c[2] = comp; }
+      c[5] = (w0 - c[0]) * 0.0625f;
+      c[6] = (driveGain - c[1]) * 0.0625f;
+      c[7] = (comp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[5];
+    c[1] += c[6];
+    c[2] += c[7];
   }
 
   // One sample: SHAPE morphs sine -> triangle -> saw -> square (all starting at a zero
@@ -322,6 +351,8 @@ public:
     shape2_01_ = 0.f;
     for (int k = 0; k < 7; k++) st_n[k] = 0.f;
     st_n[0] = -1000.f;
+    bassCtl_n = 0;
+    for (int k = 0; k < 8; k++) bassC_n[k] = 0.f;
     value_c_pitch = 37 * 0.01f;
     value_c_shape = 37 * 0.01f;
     value_c_drive = 37 * 0.01f;
@@ -456,6 +487,8 @@ private:
   float tone_n;
   float glide_n;
   float retrig_n;
+  uint32_t bassCtl_n;
+  float bassC_n[8];
 
   static float note_w0(float note)
   {
@@ -512,6 +545,31 @@ private:
     if (x > 0.8f) x = 0.8f;
     float x2 = x * x;
     return x * (1.f + x2 * (0.333333f + x2 * 0.133333f));
+  }
+
+  // A moving pitch, drive or tone at control rate: every 16th call works out w0 (c[0]), the drive
+  // gain and its level compensation (c[1], c[2]) and the tone filter's g and a1 (c[3], c[4]). w0
+  // and the two gains ramp over the 16 (c[5..7] the steps: a stepped gain zippers, a ramped w0
+  // glides); g and a1 step together, so every sample's filter is a real one. The very first call
+  // jumps. Per sample, note_w0 and the two divides were most of a moving bass's cost.
+  static inline __attribute__((always_inline)) void bass_ctl(uint32_t *n, float *c, float note, float driveGain, float tone, float baseW0)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float w0 = note_w0(note);
+      const float comp = 1.f / bass_sat(driveGain);
+      const float g = bass_tone_g(baseW0, tone);
+      c[3] = g;
+      c[4] = 1.f / (1.f + g * (g + 1.f));
+      if (*n == 0u) { c[0] = w0; c[1] = driveGain; c[2] = comp; }
+      c[5] = (w0 - c[0]) * 0.0625f;
+      c[6] = (driveGain - c[1]) * 0.0625f;
+      c[7] = (comp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[5];
+    c[1] += c[6];
+    c[2] += c[7];
   }
 
   // One sample: SHAPE morphs sine -> triangle -> saw -> square (all starting at a zero
@@ -637,6 +695,8 @@ public:
     shape2_01_ = 0.f;
     for (int k = 0; k < 7; k++) st_n[k] = 0.f;
     st_n[0] = -1000.f;
+    bassCtl_n = 0;
+    for (int k = 0; k < 8; k++) bassC_n[k] = 0.f;
     shape_n = 67;
     sub_n = 30;
     drive_n = 40;
@@ -759,6 +819,8 @@ private:
   float tone_n;
   float glide_n;
   float retrig_n;
+  uint32_t bassCtl_n;
+  float bassC_n[8];
 
   static float note_w0(float note)
   {
@@ -815,6 +877,31 @@ private:
     if (x > 0.8f) x = 0.8f;
     float x2 = x * x;
     return x * (1.f + x2 * (0.333333f + x2 * 0.133333f));
+  }
+
+  // A moving pitch, drive or tone at control rate: every 16th call works out w0 (c[0]), the drive
+  // gain and its level compensation (c[1], c[2]) and the tone filter's g and a1 (c[3], c[4]). w0
+  // and the two gains ramp over the 16 (c[5..7] the steps: a stepped gain zippers, a ramped w0
+  // glides); g and a1 step together, so every sample's filter is a real one. The very first call
+  // jumps. Per sample, note_w0 and the two divides were most of a moving bass's cost.
+  static inline __attribute__((always_inline)) void bass_ctl(uint32_t *n, float *c, float note, float driveGain, float tone, float baseW0)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float w0 = note_w0(note);
+      const float comp = 1.f / bass_sat(driveGain);
+      const float g = bass_tone_g(baseW0, tone);
+      c[3] = g;
+      c[4] = 1.f / (1.f + g * (g + 1.f));
+      if (*n == 0u) { c[0] = w0; c[1] = driveGain; c[2] = comp; }
+      c[5] = (w0 - c[0]) * 0.0625f;
+      c[6] = (driveGain - c[1]) * 0.0625f;
+      c[7] = (comp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[5];
+    c[1] += c[6];
+    c[2] += c[7];
   }
 
   // One sample: SHAPE morphs sine -> triangle -> saw -> square (all starting at a zero
@@ -940,6 +1027,8 @@ public:
     shape2_01_ = 0.f;
     for (int k = 0; k < 7; k++) st_n[k] = 0.f;
     st_n[0] = -1000.f;
+    bassCtl_n = 0;
+    for (int k = 0; k < 8; k++) bassC_n[k] = 0.f;
     value_c_pitch = 37 * 0.01f;
     value_c_shape = 37 * 0.01f;
     value_c_drive = 37 * 0.01f;
@@ -1074,6 +1163,8 @@ private:
   float tone_n;
   float glide_n;
   float retrig_n;
+  uint32_t bassCtl_n;
+  float bassC_n[8];
 
   static float note_w0(float note)
   {
@@ -1130,6 +1221,31 @@ private:
     if (x > 0.8f) x = 0.8f;
     float x2 = x * x;
     return x * (1.f + x2 * (0.333333f + x2 * 0.133333f));
+  }
+
+  // A moving pitch, drive or tone at control rate: every 16th call works out w0 (c[0]), the drive
+  // gain and its level compensation (c[1], c[2]) and the tone filter's g and a1 (c[3], c[4]). w0
+  // and the two gains ramp over the 16 (c[5..7] the steps: a stepped gain zippers, a ramped w0
+  // glides); g and a1 step together, so every sample's filter is a real one. The very first call
+  // jumps. Per sample, note_w0 and the two divides were most of a moving bass's cost.
+  static inline __attribute__((always_inline)) void bass_ctl(uint32_t *n, float *c, float note, float driveGain, float tone, float baseW0)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float w0 = note_w0(note);
+      const float comp = 1.f / bass_sat(driveGain);
+      const float g = bass_tone_g(baseW0, tone);
+      c[3] = g;
+      c[4] = 1.f / (1.f + g * (g + 1.f));
+      if (*n == 0u) { c[0] = w0; c[1] = driveGain; c[2] = comp; }
+      c[5] = (w0 - c[0]) * 0.0625f;
+      c[6] = (driveGain - c[1]) * 0.0625f;
+      c[7] = (comp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[5];
+    c[1] += c[6];
+    c[2] += c[7];
   }
 
   // One sample: SHAPE morphs sine -> triangle -> saw -> square (all starting at a zero
@@ -1307,6 +1423,8 @@ public:
     shape2_01_ = 0.f;
     for (int k = 0; k < 7; k++) st_n[k] = 0.f;
     st_n[0] = -1000.f;
+    bassCtl_n = 0;
+    for (int k = 0; k < 8; k++) bassC_n[k] = 0.f;
     shape_n = 67;
     sub_n = 30;
     drive_n = 40;
@@ -1437,6 +1555,8 @@ private:
   float tone_n;
   float glide_n;
   float retrig_n;
+  uint32_t bassCtl_n;
+  float bassC_n[8];
 
   static float note_w0(float note)
   {
@@ -1493,6 +1613,31 @@ private:
     if (x > 0.8f) x = 0.8f;
     float x2 = x * x;
     return x * (1.f + x2 * (0.333333f + x2 * 0.133333f));
+  }
+
+  // A moving pitch, drive or tone at control rate: every 16th call works out w0 (c[0]), the drive
+  // gain and its level compensation (c[1], c[2]) and the tone filter's g and a1 (c[3], c[4]). w0
+  // and the two gains ramp over the 16 (c[5..7] the steps: a stepped gain zippers, a ramped w0
+  // glides); g and a1 step together, so every sample's filter is a real one. The very first call
+  // jumps. Per sample, note_w0 and the two divides were most of a moving bass's cost.
+  static inline __attribute__((always_inline)) void bass_ctl(uint32_t *n, float *c, float note, float driveGain, float tone, float baseW0)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float w0 = note_w0(note);
+      const float comp = 1.f / bass_sat(driveGain);
+      const float g = bass_tone_g(baseW0, tone);
+      c[3] = g;
+      c[4] = 1.f / (1.f + g * (g + 1.f));
+      if (*n == 0u) { c[0] = w0; c[1] = driveGain; c[2] = comp; }
+      c[5] = (w0 - c[0]) * 0.0625f;
+      c[6] = (driveGain - c[1]) * 0.0625f;
+      c[7] = (comp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[5];
+    c[1] += c[6];
+    c[2] += c[7];
   }
 
   // One sample: SHAPE morphs sine -> triangle -> saw -> square (all starting at a zero
@@ -1663,6 +1808,8 @@ public:
     shape2_01_ = 0.f;
     for (int k = 0; k < 7; k++) st_n[k] = 0.f;
     st_n[0] = -1000.f;
+    bassCtl_n = 0;
+    for (int k = 0; k < 8; k++) bassC_n[k] = 0.f;
     shape_n = 67;
     sub_n = 30;
     drive_n = 40;
@@ -1790,6 +1937,8 @@ private:
   float tone_n;
   float glide_n;
   float retrig_n;
+  uint32_t bassCtl_n;
+  float bassC_n[8];
 
   static float note_w0(float note)
   {
@@ -1846,6 +1995,31 @@ private:
     if (x > 0.8f) x = 0.8f;
     float x2 = x * x;
     return x * (1.f + x2 * (0.333333f + x2 * 0.133333f));
+  }
+
+  // A moving pitch, drive or tone at control rate: every 16th call works out w0 (c[0]), the drive
+  // gain and its level compensation (c[1], c[2]) and the tone filter's g and a1 (c[3], c[4]). w0
+  // and the two gains ramp over the 16 (c[5..7] the steps: a stepped gain zippers, a ramped w0
+  // glides); g and a1 step together, so every sample's filter is a real one. The very first call
+  // jumps. Per sample, note_w0 and the two divides were most of a moving bass's cost.
+  static inline __attribute__((always_inline)) void bass_ctl(uint32_t *n, float *c, float note, float driveGain, float tone, float baseW0)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float w0 = note_w0(note);
+      const float comp = 1.f / bass_sat(driveGain);
+      const float g = bass_tone_g(baseW0, tone);
+      c[3] = g;
+      c[4] = 1.f / (1.f + g * (g + 1.f));
+      if (*n == 0u) { c[0] = w0; c[1] = driveGain; c[2] = comp; }
+      c[5] = (w0 - c[0]) * 0.0625f;
+      c[6] = (driveGain - c[1]) * 0.0625f;
+      c[7] = (comp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[5];
+    c[1] += c[6];
+    c[2] += c[7];
   }
 
   // One sample: SHAPE morphs sine -> triangle -> saw -> square (all starting at a zero

@@ -6,7 +6,7 @@
  * - Tone: a quiet sine (no clipping) at three notes, its gain against the input's at every TONE,
  *   next to the one-pole tilt's exact response.
  * - Moving paths: `drive` / `tone` fed from `sense/gate` x a constant (per sample, so codegen
- *   takes drive_step_h / drive_step_t, but the value is fixed once the note is on) must match the
+ *   takes drive_ctl / drive_step_t, but the value is fixed once the note is on) must match the
  *   dial set to the same value.
  * - Fuzz: noise at full DRIVE with sine LFOs into both inlets, all LEVELs: finite and bounded.
  *

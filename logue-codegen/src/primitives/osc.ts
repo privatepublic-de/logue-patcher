@@ -2577,6 +2577,9 @@ const BASS_SAT_HELPER: HelperBlock = {
 `
 }
 
+// The tone filter's damping: Q ~1, a small bump at the cutoff.
+const BASS_TONE_K = 1
+
 const BASS_BLOCK_NOTE_HELPER: HelperBlock = {
   key: 'bass_block_note',
   code: `  // Once per block: the note to play, an octave below the played one, glided.
@@ -2610,11 +2613,33 @@ const BASS_BLOCK_NOTE_HELPER: HelperBlock = {
     float x2 = x * x;
     return x * (1.f + x2 * (0.333333f + x2 * 0.133333f));
   }
+
+  // A moving pitch, drive or tone at control rate: every 16th call works out w0 (c[0]), the drive
+  // gain and its level compensation (c[1], c[2]) and the tone filter's g and a1 (c[3], c[4]). w0
+  // and the two gains ramp over the 16 (c[5..7] the steps: a stepped gain zippers, a ramped w0
+  // glides); g and a1 step together, so every sample's filter is a real one. The very first call
+  // jumps. Per sample, note_w0 and the two divides were most of a moving bass's cost.
+  static inline __attribute__((always_inline)) void bass_ctl(uint32_t *n, float *c, float note, float driveGain, float tone, float baseW0)
+  {
+    if ((*n & 15u) == 0u)
+    {
+      const float w0 = note_w0(note);
+      const float comp = 1.f / bass_sat(driveGain);
+      const float g = bass_tone_g(baseW0, tone);
+      c[3] = g;
+      c[4] = 1.f / (1.f + g * (g + ${BASS_TONE_K}.f));
+      if (*n == 0u) { c[0] = w0; c[1] = driveGain; c[2] = comp; }
+      c[5] = (w0 - c[0]) * 0.0625f;
+      c[6] = (driveGain - c[1]) * 0.0625f;
+      c[7] = (comp - c[2]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[5];
+    c[1] += c[6];
+    c[2] += c[7];
+  }
 `
 }
-
-// The tone filter's damping: Q ~1, a small bump at the cutoff.
-const BASS_TONE_K = 1
 
 const BASS_STEP_HELPER: HelperBlock = {
   key: 'bass_support_step',
@@ -2701,6 +2726,8 @@ interface BassValues {
   g: BlockValue
   a1: BlockValue
   shape: string
+  /** Set while pitch, drive or tone moves: `bass_ctl`'s arguments after `&bassCtl_, bassC_`. */
+  ctl?: string
 }
 
 function bassValues(suffix: string, inlets: Record<string, string | undefined>): BassValues {
@@ -2750,7 +2777,11 @@ function bassValues(suffix: string, inlets: Record<string, string | undefined>):
     inlets.shape !== undefined
       ? additiveInletExpr('shape', suffix, inlets.shape, BASS_SHAPE_INLET_DEPTH)
       : `shape_${suffix}`
-  return { noteDecl, baseW0Decl, w0, driveGain, bias, biasOut, comp, g, a1, shape }
+  const moving = ![inlets.pitch, inlets.drive, inlets.tone].every(isBlockInvariant)
+  const ctl = moving
+    ? `${inlets.pitch !== undefined ? `${tuned} + (${inlets.pitch}) * ${COARSE_PARAM.max}.f` : tuned}, ${driveGain.ref}, ${tone}, ${baseW0Decl.name}`
+    : undefined
+  return { noteDecl, baseW0Decl, w0, driveGain, bias, biasOut, comp, g, a1, shape, ctl }
 }
 
 /**
@@ -2767,8 +2798,9 @@ function bassValues(suffix: string, inlets: Record<string, string | undefined>):
 export const bassSupportPrimitive: LoguePrimitive = {
   id: 'logue/osc/bass-support',
   outletPolarity: 'audio',
-  // st_[7] + coarse_ fine_ shape_ sub_ drive_ asym_ tone_ glide_ retrig_
-  stateBytesPerInstance: 64,
+  // st_[7] + coarse_ fine_ shape_ sub_ drive_ asym_ tone_ glide_ retrig_ + bassCtl_ + bassC_[8]
+  // (bassCtl_/bassC_ only used while pitch, drive or tone moves), 25 words
+  stateBytesPerInstance: 100,
   description:
     'A deep, saturated bass one octave below the note you play; COARSE moves it further (-12 for two octaves down). SHAPE, SUB, DRIVE, ASYM and TONE shape the sound; GLIDE slides between notes. On low notes the sub is mostly felt, not heard.',
   inlets: [
@@ -2781,9 +2813,12 @@ export const bassSupportPrimitive: LoguePrimitive = {
     `  float st_${suffix}[7];\n` +
     `  float coarse_${suffix};\n  float fine_${suffix};\n` +
     `  float shape_${suffix};\n  float sub_${suffix};\n  float drive_${suffix};\n  float asym_${suffix};\n` +
-    `  float tone_${suffix};\n  float glide_${suffix};\n  float retrig_${suffix};\n`,
+    `  float tone_${suffix};\n  float glide_${suffix};\n  float retrig_${suffix};\n` +
+    `  uint32_t bassCtl_${suffix};\n  float bassC_${suffix}[8];\n`,
   initStatement: (suffix) =>
-    `    for (int k = 0; k < 7; k++) st_${suffix}[k] = 0.f;\n` + `    st_${suffix}[0] = -1000.f;\n`,
+    `    for (int k = 0; k < 7; k++) st_${suffix}[k] = 0.f;\n` +
+    `    st_${suffix}[0] = -1000.f;\n` +
+    `    bassCtl_${suffix} = 0;\n    for (int k = 0; k < 8; k++) bassC_${suffix}[k] = 0.f;\n`,
   noteOnStatement: (suffix) =>
     `    if (retrig_${suffix} >= ${TRACK_ON_RAW_THRESHOLD}.f) { st_${suffix}[1] = 0.f; st_${suffix}[2] = 0.f; }\n`,
   blockConstants: (suffix, inlets) => {
@@ -2791,18 +2826,29 @@ export const bassSupportPrimitive: LoguePrimitive = {
     return [
       v.noteDecl,
       v.baseW0Decl,
-      ...blockDecls({
-        driveGain: v.driveGain,
-        bias: v.bias,
-        biasOut: v.biasOut,
-        comp: v.comp,
-        g: v.g,
-        a1: v.a1
-      })
+      ...blockDecls(
+        v.ctl
+          ? { driveGain: v.driveGain, bias: v.bias, biasOut: v.biasOut }
+          : {
+              driveGain: v.driveGain,
+              bias: v.bias,
+              biasOut: v.biasOut,
+              comp: v.comp,
+              g: v.g,
+              a1: v.a1
+            }
+      )
     ]
   },
   renderExpr: (suffix, inlets) => {
     const v = bassValues(suffix, inlets)
+    if (v.ctl) {
+      const c = `bassC_${suffix}`
+      return (
+        `(bass_ctl(&bassCtl_${suffix}, ${c}, ${v.ctl}), ` +
+        `bass_support_step(st_${suffix}, ${c}[0], ${v.shape}, sub_${suffix} * 0.01f, ${c}[1], ${v.bias.ref}, ${v.biasOut.ref}, ${c}[2], ${c}[3], ${c}[4]))`
+      )
+    }
     return `bass_support_step(st_${suffix}, ${v.w0}, ${v.shape}, sub_${suffix} * 0.01f, ${v.driveGain.ref}, ${v.bias.ref}, ${v.biasOut.ref}, ${v.comp.ref}, ${v.g.ref}, ${v.a1.ref})`
   },
   advanceStatement: () => '',

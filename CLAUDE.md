@@ -878,8 +878,14 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   - xd emulator (cycles/voice-sample above the baseline): 264 base, 513 with all four inputs
     wired (a wired `pitch` means a `note_w0` per sample, wired `drive`/`tone` per-sample
     divides; the table's base/control variants re-measured 265/392 on 2026-10-02) -- a heavy primitive; the wired case alone is past the 468 "plays fine" anchor.
-    The rational tanh it started with cost ~20 more (a divide); a control-rate update of the
-    wired coefficients would be the next saving. Confirmed on both devices (user, 2026-09-30),
+    The rational tanh it started with cost ~20 more (a divide). **Moving inputs at control
+    rate** (2026-10-06, `bass_ctl`): with `pitch`, `drive` or `tone` moving, w0, the drive gain and
+    its compensation and the tone filter's g/a1 are worked out every 16 samples; w0 and the gains
+    ramp, g/a1 step together (every sample a real filter). Table `control` (noise into every
+    input) 467 -> 362, xd fx 533 -> 370; a whole unit with LFOs into all three 562 -> 458; still
+    unchanged (283). Every third-octave band within 0.13 dB of the per-sample version
+    (`scripts/runControlRateCompare.ts`), fuzz clean, RAM estimate = bss (state 64 -> 100 B), only
+    leaf calls below the xd's `process`, both fx sweeps link. No hardware pass of it. Confirmed on both devices (user, 2026-09-30),
     including on the xd a mono-legato note (RETRIG still worked, so it sends `OSC_NOTEON`)
     and device portamento with wide jumps. The emulator reads `osc_sinf` as silence (only the note LUT is stubbed;
     plain `osc/sine` too), so the sine corner's cycles are real but its rms there is 0.
@@ -1012,15 +1018,17 @@ Current rules only. The round-by-round reports, measurements and reversals behin
   6 dB/oct lowpass there, 50 exactly flat, 100 the matching highpass. LEVEL is `LEVEL_PARAM`.
   Additive `drive`/`tone` (depth 50). Three always-inline leaves pick the path (`driveCode`):
   both still -> `drive_step` with every gain a block constant; a moving `tone` ->
-  `drive_step_t` (a clamp, a few multiplies); a moving `drive` -> `drive_step_h` (an
-  `exp_approx` and a divide a sample). Harness (`scripts/runDriveHarness.ts`, xd, ASan/UBSan):
+  `drive_step_t` (a clamp, a few multiplies); a moving `drive` -> `drive_ctl` (2026-10-06:
+  its `exp_approx` and divide every 16 samples, the pre-gain and makeup ramped in between; every
+  third-octave band within 0.22 dB of the per-sample version under a fast LFO, `scripts/
+  runControlRateCompare.ts`; state 16 -> 36 B) then `drive_step_t`. Harness (`scripts/runDriveHarness.ts`, xd, ASan/UBSan):
   the settled curve within 1.6e-6 of `clip(c*h^2)/h`, the tilt within 0.05 dB of the one-pole's
   exact response at 65/784/4186 Hz for every TONE, the moving paths bit-identical to the dial,
   fuzz clean. Not lighter than what it replaced in Radio: ~33 xd fx emulator cycles against ~25
   for wavefolder + lowpass-cheap there, where the wavefolder's input (0.3 peak test noise x3)
   never reached a fold, so its loop ran once (a hot input folding costs it ~6 more per fold).
-  CPU tables: xd osc 26 base / 27 control; xd fx 26 base, 121 with moving `drive` and `tone`
-  (the per-sample `exp_approx` and divide; a control-rate drive would be the next saving).
+  CPU tables: xd osc 30 base, `control` 131 -> 93 with `drive_ctl`; xd fx 26 base, 121 -> 85
+  with moving `drive` and `tone`.
   On a real NTS-1 mkII and a real xd the output matches the host render as an effect unit (`hwtest/functional.ts`) and inside an oscillator (`hwtest/oscChecks.ts`), 2026-10-06; no listening pass.
 - **`mix/pan`** (2026-09-30, grain-mill phase 3): equal-power placement ADDED onto a stereo bus
   (`l`/`r` in and out), so pans chain into a mix with no mixer node. Gains are

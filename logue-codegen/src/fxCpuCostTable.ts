@@ -1119,9 +1119,9 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 273, sdram: 0 }
       },
       control: {
-        first: { cycles: 533, sdram: 0 },
-        shared: { cycles: 8, sdram: 0 },
-        extra: { cycles: 525, sdram: 0 }
+        first: { cycles: 370, sdram: 0 },
+        shared: { cycles: -7, sdram: 0 },
+        extra: { cycles: 372, sdram: 0 }
       },
       'control-still': {
         first: { cycles: 435, sdram: 0 },
@@ -1134,9 +1134,9 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 273, sdram: 0 }
       },
       'RETRIG+control': {
-        first: { cycles: 533, sdram: 0 },
-        shared: { cycles: 8, sdram: 0 },
-        extra: { cycles: 525, sdram: 0 }
+        first: { cycles: 370, sdram: 0 },
+        shared: { cycles: -7, sdram: 0 },
+        extra: { cycles: 372, sdram: 0 }
       },
       'RETRIG+control-still': {
         first: { cycles: 435, sdram: 0 },
@@ -1144,7 +1144,7 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 452, sdram: 0 }
       }
     },
-    snapshotHash: 'da5adbf9ea4c7a45'
+    snapshotHash: '8c0581583e35f2f4'
   },
   'logue/osc/exciter': {
     variants: {
@@ -1479,9 +1479,9 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 25, sdram: 0 }
       },
       control: {
-        first: { cycles: 121, sdram: 0 },
+        first: { cycles: 85, sdram: 0 },
         shared: { cycles: 2, sdram: 0 },
-        extra: { cycles: 118, sdram: 0 }
+        extra: { cycles: 82, sdram: 0 }
       },
       'control-still': {
         first: { cycles: 28, sdram: 0 },
@@ -1489,7 +1489,7 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 27, sdram: 0 }
       }
     },
-    snapshotHash: 'fd99dae03aa4746d'
+    snapshotHash: '47bc5cda72f6b7e2'
   },
   'logue/shape/soft-clip': {
     variants: {

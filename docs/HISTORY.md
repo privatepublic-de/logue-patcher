@@ -3010,3 +3010,24 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
 - Also on the list was "Replace with... into a send leaves the old output wire stale". That
   is `replaceNode`'s deliberate choice (keep a wire it can't place visible and removable, rather
   than guess), not a bug, so it stays.
+
+### drive and bass-support: moving inputs at control rate (2026-10-06)
+
+- Both were named in CLAUDE.md as the next saving: `shape/drive`'s moving DRIVE paid an
+  `exp_approx` and a divide a sample, `osc/bass-support`'s moving pitch/drive/tone a `note_w0`
+  and two divides.
+- `drive_ctl` / `bass_ctl` follow `eq_ctl`/`ladder_ctl`: worked out every 16 samples, gains (and
+  bass's w0) ramped over the 16, a filter's g/a1 stepped together. Unwired or per-block inputs
+  keep their block constants (output unchanged, and drive's harness still finds a moving path
+  bit-identical to the dial at a fixed value).
+- Judged against the per-sample version by third-octave bands (`runControlRateCompare.ts`): a
+  sample-by-sample difference is misleading here -- bass's pitch following a +-24 st LFO up to
+  16 samples late gives -11.5 dB of waveform difference with every band within 0.13 dB. Drive
+  under a fast LFO: bands within 0.22 dB, the waveform difference (-35 dB) is the lag.
+- Emulator: drive `control` 131 -> 93 (xd osc), 121 -> 85 (xd fx); bass `control` 467 -> 362,
+  533 -> 370 (xd fx); whole units: saw -> drive with an LFO on DRIVE 226 -> 189, bass with LFOs
+  into pitch/drive/tone 562 -> 458. No stored calibration reading used either with a moving
+  input (a `--refit` changed no estimate), so the readings stay valid.
+- A measuring slip worth not repeating: stashing the source to render a "before" reference while
+  a table re-measure ran in the background let part of that run measure the old code. The run was
+  stopped, the tables reset and measured again; render references before starting a re-measure.

@@ -61,6 +61,8 @@ public:
     shape01_ = 0.f;
     shape2_01_ = 0.f;
     z_n = 0.f;
+    driveCtl_n = 0;
+    for (int i = 0; i < 4; ++i) driveC_n[i] = 0.f;
     drivePercent_n = 50;
     tonePercent_n = 50;
     levelPercent_n = 100;
@@ -143,6 +145,8 @@ private:
   float drivePercent_n;
   float tonePercent_n;
   float levelPercent_n;
+  uint32_t driveCtl_n;
+  float driveC_n[4];
 
   // Pre-gain, the cubic soft clip (x - 4x^3/27, reaching 1 with zero slope at 1.5; no divide),
   // then TONE's tilt: the clipped signal split by a one-pole at 800 Hz, its highs weighted
@@ -165,10 +169,24 @@ private:
     const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
     return drive_step(z, x, pre, hi * post, (lo - hi) * post);
   }
-  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
-  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  // A moving DRIVE at control rate: every 16th call works out h = exp(dB / 2), the pre-gain h^2
+  // and the makeup level / h (c[0], c[1]); both ramp there over the 16 (c[2], c[3] the steps),
+  // since a stepped gain zippers. The very first call jumps. Per sample, the exp_approx and the
+  // divide were most of a moving drive's cost.
+  static inline __attribute__((always_inline)) void drive_ctl(uint32_t *n, float *c, float drivePercent, float level)
   {
-    return drive_step_t(z, x, h * h, level / h, t);
+    if ((*n & 15u) == 0u)
+    {
+      const float h = exp_approx(drivePercent * 0.020723266f);
+      const float pre = h * h;
+      const float post = level / h;
+      if (*n == 0u) { c[0] = pre; c[1] = post; }
+      c[2] = (pre - c[0]) * 0.0625f;
+      c[3] = (post - c[1]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[2];
+    c[1] += c[3];
   }
 
   // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real `expf` call, a deliberate,
@@ -262,6 +280,8 @@ public:
     shape01_ = 0.f;
     shape2_01_ = 0.f;
     z_n = 0.f;
+    driveCtl_n = 0;
+    for (int i = 0; i < 4; ++i) driveC_n[i] = 0.f;
     value_c_in = 37 * 0.01f;
     value_c_drive = 37 * 0.01f;
     value_c_tone = 37 * 0.01f;
@@ -353,6 +373,8 @@ private:
   float drivePercent_n;
   float tonePercent_n;
   float levelPercent_n;
+  uint32_t driveCtl_n;
+  float driveC_n[4];
 
   // Pre-gain, the cubic soft clip (x - 4x^3/27, reaching 1 with zero slope at 1.5; no divide),
   // then TONE's tilt: the clipped signal split by a one-pole at 800 Hz, its highs weighted
@@ -375,10 +397,24 @@ private:
     const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
     return drive_step(z, x, pre, hi * post, (lo - hi) * post);
   }
-  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
-  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  // A moving DRIVE at control rate: every 16th call works out h = exp(dB / 2), the pre-gain h^2
+  // and the makeup level / h (c[0], c[1]); both ramp there over the 16 (c[2], c[3] the steps),
+  // since a stepped gain zippers. The very first call jumps. Per sample, the exp_approx and the
+  // divide were most of a moving drive's cost.
+  static inline __attribute__((always_inline)) void drive_ctl(uint32_t *n, float *c, float drivePercent, float level)
   {
-    return drive_step_t(z, x, h * h, level / h, t);
+    if ((*n & 15u) == 0u)
+    {
+      const float h = exp_approx(drivePercent * 0.020723266f);
+      const float pre = h * h;
+      const float post = level / h;
+      if (*n == 0u) { c[0] = pre; c[1] = post; }
+      c[2] = (pre - c[0]) * 0.0625f;
+      c[3] = (post - c[1]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[2];
+    c[1] += c[3];
   }
 
   // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real `expf` call, a deliberate,
@@ -475,6 +511,8 @@ public:
     shape01_ = 0.f;
     shape2_01_ = 0.f;
     z_n = 0.f;
+    driveCtl_n = 0;
+    for (int i = 0; i < 4; ++i) driveC_n[i] = 0.f;
     drivePercent_n = 50;
     tonePercent_n = 50;
     levelPercent_n = 100;
@@ -557,6 +595,8 @@ private:
   float drivePercent_n;
   float tonePercent_n;
   float levelPercent_n;
+  uint32_t driveCtl_n;
+  float driveC_n[4];
 
   // Pre-gain, the cubic soft clip (x - 4x^3/27, reaching 1 with zero slope at 1.5; no divide),
   // then TONE's tilt: the clipped signal split by a one-pole at 800 Hz, its highs weighted
@@ -579,10 +619,24 @@ private:
     const float lo = t > 50.f ? (100.f - t) * 0.02f : 1.f;
     return drive_step(z, x, pre, hi * post, (lo - hi) * post);
   }
-  // A moving DRIVE: h = exp(dB / 2) from the caller, pre-gain h^2, makeup 1/h.
-  static inline __attribute__((always_inline)) float drive_step_h(float *z, float x, float h, float level, float t)
+  // A moving DRIVE at control rate: every 16th call works out h = exp(dB / 2), the pre-gain h^2
+  // and the makeup level / h (c[0], c[1]); both ramp there over the 16 (c[2], c[3] the steps),
+  // since a stepped gain zippers. The very first call jumps. Per sample, the exp_approx and the
+  // divide were most of a moving drive's cost.
+  static inline __attribute__((always_inline)) void drive_ctl(uint32_t *n, float *c, float drivePercent, float level)
   {
-    return drive_step_t(z, x, h * h, level / h, t);
+    if ((*n & 15u) == 0u)
+    {
+      const float h = exp_approx(drivePercent * 0.020723266f);
+      const float pre = h * h;
+      const float post = level / h;
+      if (*n == 0u) { c[0] = pre; c[1] = post; }
+      c[2] = (pre - c[0]) * 0.0625f;
+      c[3] = (post - c[1]) * 0.0625f;
+    }
+    (*n)++;
+    c[0] += c[2];
+    c[1] += c[3];
   }
 
   // Range-reduced Padé[2/2] approximation of exp(x) -- NOT a real `expf` call, a deliberate,
