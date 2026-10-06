@@ -479,6 +479,11 @@ units too (five-argument hook). What differs, each from a measured miss:
   noise never reaches 0.5), and every outlet is read (an unread one is dead code: reverse-tap's
   head `b` vanished). Buffer partners, the clock and the output adds are measured alone and
   subtracted (`overhead`); a writer/tap pair's `first`s are split by their `extra`s.
+  `control-still` (2026-10-06, as in the oscillator table): control inlets from constants, the
+  per-block path a knob or knob-only math gives; the estimator counts it for a reader fed only by
+  hoisted values (before, it counted such a reader as unwired). It changed no calibration unit by
+  more than 2 %: both fits stayed (xd 1.46 / 25.5, NTS-1 mkII 0.85 / 44.1), and auto-wah's +15 %
+  (xd) isn't this.
 - util/grain has `heavy-capturing` (SIZE 100 on the slow clock: recording the whole window).
 `estimateFxCpuCost.ts` sums a patch: per-block (`hoistedSuffixes`) instances cost 0 and count as
 unwired for their readers (grain-mill's envelope times took the per-block path; `control` read

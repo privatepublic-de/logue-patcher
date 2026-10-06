@@ -217,17 +217,29 @@ export function estimateFxCpuCost(
         if (exposed(spec.name)) flipChoices = flipChoices.flatMap((c) => [c, [...c, spec.name]])
         else if (isFlipped) flipChoices = flipChoices.map((c) => [...c, spec.name])
       }
-      const controlWired = (p.inlets ?? []).some(
-        (i) => i.role === 'control' && moving(inst.inletSources[i.name])
-      )
+      const controlSources = (p.inlets ?? [])
+        .filter((i) => i.role === 'control')
+        .map((i) => inst.inletSources[i.name])
+        .filter((source) => source !== undefined)
+      const controlWired = controlSources.some(moving)
+      // Fed only by per-block values: `control-still` (most readers then take their unwired
+      // path, some don't), or the unwired cost from a table measured before it existed.
+      const controlStill = !controlWired && controlSources.length > 0
       const capturing = inst.id === 'logue/util/grain' && moving(inst.inletSources.trig)
       const keyOf = (flips: string[]): string =>
         capturing
           ? 'heavy-capturing'
-          : [...flips, ...(controlWired ? ['control'] : [])].join('+') || 'base'
+          : [
+              ...flips,
+              ...(controlWired ? ['control'] : controlStill ? ['control-still'] : [])
+            ].join('+') || 'base'
       // The one-time cost of sharing code between instances goes with the second.
       const at = (key: string): FxCpuCost | undefined => {
-        const v = entry.variants[key]
+        const v =
+          entry.variants[key] ??
+          (key.endsWith('control-still')
+            ? entry.variants[key.replace(/\+?control-still$/, '') || 'base']
+            : undefined)
         if (!v) return undefined
         if (count === 1) return v.first
         if (count > 2) return v.extra

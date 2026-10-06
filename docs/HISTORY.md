@@ -2952,3 +2952,12 @@ the multistage envelope (~55), two sample-holds, the lfsr, chance.
   once, smallest worst error): xd 17 + 1.54x, -30..+30 % (old table at best +-31 %); NTS-1 mkII
   0.77x, -29..+28 % (old at best +-42 %). The near-zero intercepts: the table now explains the
   cost rather than a constant offset. Green moved to 858 (xd) and 4750 (NTS-1 mkII).
+
+### The effect CPU table gets `control-still` too (2026-10-06)
+
+- Same split as the oscillator table: the effect estimator counted a reader fed by knob-only math
+  as unwired. Re-measured with `control-still` (~35 min, `additive`/`string` still don't fit a
+  delfx). Every calibration unit moved by at most 2 %, both fits stayed put (xd 1.46x + 25.5 per
+  SDRAM access, -11..+14 %; NTS-1 mkII 0.85x + 44.1, -22..+19 %), so the scale constants are
+  unchanged. auto-wah still reads +15 % on the xd: not this; its follower-driven svf's `control`
+  variant moves cutoff, resonance and pitch at once, where auto-wah moves only the cutoff.

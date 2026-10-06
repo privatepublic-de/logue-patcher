@@ -53,6 +53,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 17, sdram: 0 },
         extra: { cycles: 91, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 28, sdram: 0 },
+        shared: { cycles: 22, sdram: 0 },
+        extra: { cycles: 61, sdram: 0 }
+      },
       EXP: {
         first: { cycles: 25, sdram: 0 },
         shared: { cycles: -78, sdram: 0 },
@@ -62,6 +67,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 88, sdram: 0 },
         shared: { cycles: 20, sdram: 0 },
         extra: { cycles: 90, sdram: 0 }
+      },
+      'EXP+control-still': {
+        first: { cycles: 26, sdram: 0 },
+        shared: { cycles: 22, sdram: 0 },
+        extra: { cycles: 59, sdram: 0 }
       }
     },
     snapshotHash: 'c384655566b26ffc'
@@ -77,6 +87,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 43, sdram: 0 },
         shared: { cycles: 30, sdram: 0 },
         extra: { cycles: 75, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 31, sdram: 0 },
+        shared: { cycles: 37, sdram: 0 },
+        extra: { cycles: 76, sdram: 0 }
       }
     },
     snapshotHash: 'abd7e5820bec87bc'
@@ -103,6 +118,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 68, sdram: 0 },
         extra: { cycles: 184, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 38, sdram: 0 },
+        shared: { cycles: 64, sdram: 0 },
+        extra: { cycles: 107, sdram: 0 }
+      },
       'heavy-cycle': {
         first: { cycles: 134, sdram: 0 },
         shared: { cycles: 70, sdram: 0 },
@@ -123,6 +143,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 29, sdram: 0 },
         extra: { cycles: 109, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 35, sdram: 0 },
+        shared: { cycles: 37, sdram: 0 },
+        extra: { cycles: 80, sdram: 0 }
+      },
       'heavy-moving-shape': {
         first: { cycles: 123, sdram: 0 },
         shared: { cycles: 24, sdram: 0 },
@@ -142,6 +167,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 73, sdram: 3 },
         shared: { cycles: 25, sdram: 0 },
         extra: { cycles: 91, sdram: 3 }
+      },
+      'control-still': {
+        first: { cycles: 44, sdram: 3 },
+        shared: { cycles: 21, sdram: 0 },
+        extra: { cycles: 65, sdram: 3 }
       }
     },
     snapshotHash: 'f2a1656c07fb52d5'
@@ -158,6 +188,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 69, sdram: 0 },
         extra: { cycles: 209, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 56, sdram: 0 },
+        shared: { cycles: 43, sdram: 0 },
+        extra: { cycles: 100, sdram: 0 }
+      },
       TRACK: {
         first: { cycles: 57, sdram: 0 },
         shared: { cycles: 41, sdram: 0 },
@@ -167,6 +202,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 262, sdram: 0 },
         shared: { cycles: 69, sdram: 0 },
         extra: { cycles: 332, sdram: 0 }
+      },
+      'TRACK+control-still': {
+        first: { cycles: 57, sdram: 0 },
+        shared: { cycles: 42, sdram: 0 },
+        extra: { cycles: 103, sdram: 0 }
       }
     },
     snapshotHash: '1fd2dcd5f18abf0e'
@@ -182,6 +222,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 137, sdram: 0 },
         shared: { cycles: 35, sdram: 0 },
         extra: { cycles: 158, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 53, sdram: 0 },
+        shared: { cycles: 27, sdram: 0 },
+        extra: { cycles: 96, sdram: 0 }
       }
     },
     snapshotHash: '51754dcc3757ff3f'
@@ -197,6 +242,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 649, sdram: 0 },
         shared: { cycles: 1, sdram: 0 },
         extra: { cycles: 642, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 662, sdram: 0 },
+        shared: { cycles: -4, sdram: 0 },
+        extra: { cycles: 650, sdram: 0 }
       }
     },
     snapshotHash: '3064386816179abd'
@@ -212,6 +262,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 21, sdram: 0 },
         shared: { cycles: -50, sdram: 0 },
         extra: { cycles: 70, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 12, sdram: 0 },
+        shared: { cycles: -9, sdram: 0 },
+        extra: { cycles: 21, sdram: 0 }
       }
     },
     snapshotHash: '5918f33ffc84533f'
@@ -238,6 +293,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 247, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 117, sdram: 0 },
+        shared: { cycles: -22, sdram: 0 },
+        extra: { cycles: 142, sdram: 0 }
+      },
       TRACK: {
         first: { cycles: 116, sdram: 0 },
         shared: { cycles: -24, sdram: 0 },
@@ -247,6 +307,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 250, sdram: 0 },
         shared: { cycles: 1, sdram: 0 },
         extra: { cycles: 248, sdram: 0 }
+      },
+      'TRACK+control-still': {
+        first: { cycles: 117, sdram: 0 },
+        shared: { cycles: -23, sdram: 0 },
+        extra: { cycles: 142, sdram: 0 }
       },
       'heavy-moving-cutoff': {
         first: { cycles: 249, sdram: 0 },
@@ -267,6 +332,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 17, sdram: 0 },
         shared: { cycles: -43, sdram: 0 },
         extra: { cycles: 62, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 9, sdram: 0 },
+        shared: { cycles: -15, sdram: 0 },
+        extra: { cycles: 24, sdram: 0 }
       }
     },
     snapshotHash: '9498d8e54c739257'
@@ -283,6 +353,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 8, sdram: 0 },
         extra: { cycles: 211, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 50, sdram: 0 },
+        shared: { cycles: 39, sdram: 0 },
+        extra: { cycles: 89, sdram: 0 }
+      },
       TRACK: {
         first: { cycles: 52, sdram: 0 },
         shared: { cycles: 39, sdram: 0 },
@@ -292,6 +367,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 277, sdram: 0 },
         shared: { cycles: 55, sdram: 0 },
         extra: { cycles: 327, sdram: 0 }
+      },
+      'TRACK+control-still': {
+        first: { cycles: 52, sdram: 0 },
+        shared: { cycles: 40, sdram: 0 },
+        extra: { cycles: 91, sdram: 0 }
       }
     },
     snapshotHash: '71e157475bbe46c8'
@@ -307,6 +387,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 80, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 77, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 21, sdram: 0 },
+        shared: { cycles: -4, sdram: 0 },
+        extra: { cycles: 23, sdram: 0 }
       }
     },
     snapshotHash: '99712da0bbd917df'
@@ -319,6 +404,11 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 4, sdram: 0 }
       },
       control: {
+        first: { cycles: 1, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      },
+      'control-still': {
         first: { cycles: 1, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
         extra: { cycles: 0, sdram: 0 }
@@ -338,6 +428,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: -47, sdram: 0 },
         extra: { cycles: 108, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 30, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 42, sdram: 0 }
+      },
       TRACK: {
         first: { cycles: 15, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
@@ -347,6 +442,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 173, sdram: 0 },
         shared: { cycles: 3, sdram: 0 },
         extra: { cycles: 157, sdram: 0 }
+      },
+      'TRACK+control-still': {
+        first: { cycles: 30, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 42, sdram: 0 }
       }
     },
     snapshotHash: '9023a42eadc26048'
@@ -362,6 +462,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 60, sdram: 0 },
         shared: { cycles: 11, sdram: 0 },
         extra: { cycles: 56, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 16, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 24, sdram: 0 }
       }
     },
     snapshotHash: '93415749054fe77d'
@@ -377,6 +482,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 60, sdram: 0 },
         shared: { cycles: 11, sdram: 0 },
         extra: { cycles: 56, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 16, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 24, sdram: 0 }
       }
     },
     snapshotHash: '657d45b8a4249ea5'
@@ -392,6 +502,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 54, sdram: 0 },
         shared: { cycles: 12, sdram: 0 },
         extra: { cycles: 50, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 10, sdram: 0 },
+        shared: { cycles: 6, sdram: 0 },
+        extra: { cycles: 18, sdram: 0 }
       }
     },
     snapshotHash: '001bad58241c33a2'
@@ -407,6 +522,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 81, sdram: 0 },
         shared: { cycles: 14, sdram: 0 },
         extra: { cycles: 75, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 37, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 44, sdram: 0 }
       }
     },
     snapshotHash: 'f091daaf62b2b62e'
@@ -422,6 +542,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 54, sdram: 0 },
         shared: { cycles: 11, sdram: 0 },
         extra: { cycles: 56, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 10, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 25, sdram: 0 }
       }
     },
     snapshotHash: '5bf8d1d088df38b0'
@@ -437,6 +562,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 61, sdram: 0 },
         shared: { cycles: 12, sdram: 0 },
         extra: { cycles: 57, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 22, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 30, sdram: 0 }
       }
     },
     snapshotHash: '63720761f9fb074b'
@@ -449,6 +579,11 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 0, sdram: 0 }
       },
       control: {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      },
+      'control-still': {
         first: { cycles: 0, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 0, sdram: 0 }
@@ -467,6 +602,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 41, sdram: 0 },
         shared: { cycles: -75, sdram: 0 },
         extra: { cycles: 97, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 16, sdram: 0 },
+        shared: { cycles: -84, sdram: 0 },
+        extra: { cycles: 105, sdram: 0 }
       }
     },
     snapshotHash: 'efecc236e2563837'
@@ -480,6 +620,11 @@ export const FX_CPU_COST_TABLE: Record<
       },
       control: {
         first: { cycles: 4, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 7, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 0, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 7, sdram: 0 }
       }
@@ -497,6 +642,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 7, sdram: 0 },
         shared: { cycles: -3, sdram: 0 },
         extra: { cycles: 11, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
       }
     },
     snapshotHash: 'f164a8c5070849fd'
@@ -512,6 +662,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 0, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 7, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
       }
     },
     snapshotHash: 'c1bb3de72d4ece0e'
@@ -527,6 +682,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 0, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 7, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
       }
     },
     snapshotHash: '4357ab282a1ca032'
@@ -539,6 +699,11 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 0, sdram: 0 }
       },
       control: {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      },
+      'control-still': {
         first: { cycles: 0, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 0, sdram: 0 }
@@ -557,6 +722,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 32, sdram: 0 },
         shared: { cycles: -62, sdram: 0 },
         extra: { cycles: 91, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 20, sdram: 0 },
+        shared: { cycles: -115, sdram: 0 },
+        extra: { cycles: 143, sdram: 0 }
       }
     },
     snapshotHash: '7338eb6e334fed60'
@@ -572,6 +742,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 16, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 19, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 6, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 13, sdram: 0 }
       }
     },
     snapshotHash: '5affa568710e10ce'
@@ -586,6 +761,11 @@ export const FX_CPU_COST_TABLE: Record<
       control: {
         first: { cycles: 0, sdram: 0 },
         shared: { cycles: -8, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 0, sdram: 0 }
       }
     },
@@ -632,6 +812,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 54, sdram: 0 },
         shared: { cycles: 10, sdram: 0 },
         extra: { cycles: 53, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 51, sdram: 0 },
+        shared: { cycles: 10, sdram: 0 },
+        extra: { cycles: 51, sdram: 0 }
       }
     },
     snapshotHash: 'a6bc9c67c8ed7f33'
@@ -757,6 +942,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 59, sdram: 0 },
         shared: { cycles: -1, sdram: 0 },
         extra: { cycles: 55, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 19, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 15, sdram: 0 }
       }
     },
     snapshotHash: 'ff48b03b50520cf3'
@@ -782,6 +972,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 32, sdram: 0 },
         shared: { cycles: 2, sdram: 0 },
         extra: { cycles: 32, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 10, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 9, sdram: 0 }
       }
     },
     snapshotHash: 'd139dc1b3b1c3b34'
@@ -797,6 +992,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 74, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
         extra: { cycles: 72, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 18, sdram: 0 },
+        shared: { cycles: -1, sdram: 0 },
+        extra: { cycles: 16, sdram: 0 }
       }
     },
     snapshotHash: '012908465f425a50'
@@ -812,6 +1012,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 58, sdram: 0 },
         shared: { cycles: -3, sdram: 0 },
         extra: { cycles: 57, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 16, sdram: 0 },
+        shared: { cycles: -3, sdram: 0 },
+        extra: { cycles: 18, sdram: 0 }
       }
     },
     snapshotHash: '779c8ef1206c74bd'
@@ -837,6 +1042,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 21, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
         extra: { cycles: 19, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 22, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 20, sdram: 0 }
       }
     },
     snapshotHash: 'e3d3cef19609c42b'
@@ -849,6 +1059,11 @@ export const FX_CPU_COST_TABLE: Record<
         extra: { cycles: 14, sdram: 0 }
       },
       control: {
+        first: { cycles: 10, sdram: 0 },
+        shared: { cycles: -7, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      },
+      'control-still': {
         first: { cycles: 10, sdram: 0 },
         shared: { cycles: -7, sdram: 0 },
         extra: { cycles: 0, sdram: 0 }
@@ -867,6 +1082,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 0, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
         extra: { cycles: 0, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
       }
     },
     snapshotHash: '43132007849f2d5e'
@@ -881,6 +1101,11 @@ export const FX_CPU_COST_TABLE: Record<
       control: {
         first: { cycles: 2, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 0, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 0, sdram: 0 },
+        shared: { cycles: 2, sdram: 0 },
         extra: { cycles: 0, sdram: 0 }
       }
     },
@@ -898,6 +1123,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 8, sdram: 0 },
         extra: { cycles: 525, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 435, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 452, sdram: 0 }
+      },
       RETRIG: {
         first: { cycles: 257, sdram: 0 },
         shared: { cycles: -7, sdram: 0 },
@@ -907,6 +1137,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 533, sdram: 0 },
         shared: { cycles: 8, sdram: 0 },
         extra: { cycles: 525, sdram: 0 }
+      },
+      'RETRIG+control-still': {
+        first: { cycles: 435, sdram: 0 },
+        shared: { cycles: -2, sdram: 0 },
+        extra: { cycles: 452, sdram: 0 }
       }
     },
     snapshotHash: 'da5adbf9ea4c7a45'
@@ -922,6 +1157,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 249, sdram: 0 },
         shared: { cycles: 71, sdram: 0 },
         extra: { cycles: 309, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 245, sdram: 0 },
+        shared: { cycles: 69, sdram: 0 },
+        extra: { cycles: 314, sdram: 0 }
       }
     },
     snapshotHash: '718efdc3d5a3a5fc'
@@ -938,6 +1178,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: -7, sdram: 0 },
         extra: { cycles: 273, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 336, sdram: 0 },
+        shared: { cycles: -19, sdram: 0 },
+        extra: { cycles: 360, sdram: 0 }
+      },
       SYNC: {
         first: { cycles: 237, sdram: 0 },
         shared: { cycles: -18, sdram: 0 },
@@ -947,6 +1192,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 259, sdram: 0 },
         shared: { cycles: -6, sdram: 0 },
         extra: { cycles: 255, sdram: 0 }
+      },
+      'SYNC+control-still': {
+        first: { cycles: 319, sdram: 0 },
+        shared: { cycles: -17, sdram: 0 },
+        extra: { cycles: 341, sdram: 0 }
       },
       'heavy-size-window-100': {
         first: { cycles: 448, sdram: 0 },
@@ -973,6 +1223,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 6, sdram: 0 },
         extra: { cycles: 160, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 23, sdram: 0 },
+        shared: { cycles: 1, sdram: 0 },
+        extra: { cycles: 32, sdram: 0 }
+      },
       TRACK: {
         first: { cycles: 19, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
@@ -982,6 +1237,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 68, sdram: 0 },
         shared: { cycles: -42, sdram: 0 },
         extra: { cycles: 107, sdram: 0 }
+      },
+      'TRACK+control-still': {
+        first: { cycles: 22, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 31, sdram: 0 }
       },
       'heavy-short': {
         first: { cycles: 10, sdram: 0 },
@@ -1033,6 +1293,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: -26, sdram: 0 },
         extra: { cycles: 304, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 115, sdram: 0 },
+        shared: { cycles: -80, sdram: 0 },
+        extra: { cycles: 189, sdram: 0 }
+      },
       'heavy-reso': {
         first: { cycles: 105, sdram: 0 },
         shared: { cycles: -60, sdram: 0 },
@@ -1062,6 +1327,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 396, sdram: 0 },
         shared: { cycles: 8, sdram: 0 },
         extra: { cycles: 435, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 125, sdram: 0 },
+        shared: { cycles: -6, sdram: 0 },
+        extra: { cycles: 176, sdram: 0 }
       }
     },
     snapshotHash: '773b9bbd527f1576'
@@ -1078,6 +1348,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 0, sdram: 0 },
         extra: { cycles: 461, sdram: 0 }
       },
+      'control-still': {
+        first: { cycles: 113, sdram: 0 },
+        shared: { cycles: -17, sdram: 0 },
+        extra: { cycles: 150, sdram: 0 }
+      },
       TZFM: {
         first: { cycles: 96, sdram: 0 },
         shared: { cycles: 13, sdram: 0 },
@@ -1087,6 +1362,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 443, sdram: 0 },
         shared: { cycles: 29, sdram: 0 },
         extra: { cycles: 430, sdram: 0 }
+      },
+      'TZFM+control-still': {
+        first: { cycles: 117, sdram: 0 },
+        shared: { cycles: 10, sdram: 0 },
+        extra: { cycles: 128, sdram: 0 }
       }
     },
     snapshotHash: '689d43e99e06ce9c'
@@ -1102,6 +1382,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 222, sdram: 0 },
         shared: { cycles: -15, sdram: 0 },
         extra: { cycles: 231, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 62, sdram: 0 },
+        shared: { cycles: -26, sdram: 0 },
+        extra: { cycles: 84, sdram: 0 }
       }
     },
     snapshotHash: 'b34b1284af3c9ca7'
@@ -1117,6 +1402,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 388, sdram: 0 },
         shared: { cycles: 8, sdram: 0 },
         extra: { cycles: 422, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 114, sdram: 0 },
+        shared: { cycles: -3, sdram: 0 },
+        extra: { cycles: 164, sdram: 0 }
       }
     },
     snapshotHash: '9a189b5fd7ef929c'
@@ -1132,6 +1422,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 358, sdram: 0 },
         shared: { cycles: -3, sdram: 0 },
         extra: { cycles: 337, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 104, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 109, sdram: 0 }
       }
     },
     snapshotHash: 'de6812a7e1beb6e4'
@@ -1147,6 +1442,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 203, sdram: 0 },
         shared: { cycles: -17, sdram: 0 },
         extra: { cycles: 214, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 44, sdram: 0 },
+        shared: { cycles: -26, sdram: 0 },
+        extra: { cycles: 66, sdram: 0 }
       }
     },
     snapshotHash: 'c19162f9574d3fe7'
@@ -1182,6 +1482,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 121, sdram: 0 },
         shared: { cycles: 2, sdram: 0 },
         extra: { cycles: 118, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 28, sdram: 0 },
+        shared: { cycles: -3, sdram: 0 },
+        extra: { cycles: 27, sdram: 0 }
       }
     },
     snapshotHash: 'fd99dae03aa4746d'
@@ -1197,6 +1502,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 33, sdram: 0 },
         shared: { cycles: 0, sdram: 0 },
         extra: { cycles: 31, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 31, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 30, sdram: 0 }
       }
     },
     snapshotHash: '94bd46054709e8a4'
@@ -1212,6 +1522,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 26, sdram: 0 },
         shared: { cycles: -31, sdram: 0 },
         extra: { cycles: 54, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 24, sdram: 0 },
+        shared: { cycles: -29, sdram: 0 },
+        extra: { cycles: 52, sdram: 0 }
       }
     },
     snapshotHash: '6597b9a61c6b5800'
@@ -1238,6 +1553,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: -15, sdram: 0 },
         extra: { cycles: 74, sdram: 2 }
       },
+      'control-still': {
+        first: { cycles: 64, sdram: 2 },
+        shared: { cycles: -14, sdram: 0 },
+        extra: { cycles: 74, sdram: 2 }
+      },
       FREEZE: {
         first: { cycles: 27, sdram: 0 },
         shared: { cycles: -10, sdram: 0 },
@@ -1246,6 +1566,11 @@ export const FX_CPU_COST_TABLE: Record<
       'FREEZE+control': {
         first: { cycles: 30, sdram: 0 },
         shared: { cycles: -8, sdram: 0 },
+        extra: { cycles: 40, sdram: 0 }
+      },
+      'FREEZE+control-still': {
+        first: { cycles: 28, sdram: 0 },
+        shared: { cycles: -6, sdram: 0 },
         extra: { cycles: 40, sdram: 0 }
       }
     },
@@ -1261,6 +1586,11 @@ export const FX_CPU_COST_TABLE: Record<
       control: {
         first: { cycles: 94, sdram: 4 },
         shared: { cycles: 4, sdram: 0 },
+        extra: { cycles: 79, sdram: 4 }
+      },
+      'control-still': {
+        first: { cycles: 93, sdram: 4 },
+        shared: { cycles: 5, sdram: 0 },
         extra: { cycles: 79, sdram: 4 }
       }
     },
@@ -1287,6 +1617,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 172, sdram: 0 },
         shared: { cycles: 1, sdram: 0 },
         extra: { cycles: 164, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 181, sdram: 0 },
+        shared: { cycles: -4, sdram: 0 },
+        extra: { cycles: 163, sdram: 0 }
       }
     },
     snapshotHash: 'da512c286cda27d0'
@@ -1302,6 +1637,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 315, sdram: 0 },
         shared: { cycles: -2, sdram: 0 },
         extra: { cycles: 301, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 293, sdram: 0 },
+        shared: { cycles: 0, sdram: 0 },
+        extra: { cycles: 289, sdram: 0 }
       }
     },
     snapshotHash: 'e1b3aaea0b6b5dba'
@@ -1328,6 +1668,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 0, sdram: 0 },
         extra: { cycles: 50, sdram: 1 }
       },
+      'control-still': {
+        first: { cycles: 25, sdram: 0 },
+        shared: { cycles: 1, sdram: 0 },
+        extra: { cycles: 25, sdram: 0 }
+      },
       'heavy-capturing': {
         first: { cycles: 111, sdram: 3 },
         shared: { cycles: -1, sdram: 0 },
@@ -1348,6 +1693,11 @@ export const FX_CPU_COST_TABLE: Record<
         shared: { cycles: 33, sdram: 0 },
         extra: { cycles: 168, sdram: 3 }
       },
+      'control-still': {
+        first: { cycles: 147, sdram: 3 },
+        shared: { cycles: 29, sdram: 0 },
+        extra: { cycles: 168, sdram: 3 }
+      },
       SYNC: {
         first: { cycles: 134, sdram: 3 },
         shared: { cycles: 36, sdram: 0 },
@@ -1356,6 +1706,11 @@ export const FX_CPU_COST_TABLE: Record<
       'SYNC+control': {
         first: { cycles: 159, sdram: 3 },
         shared: { cycles: 37, sdram: 0 },
+        extra: { cycles: 191, sdram: 3 }
+      },
+      'SYNC+control-still': {
+        first: { cycles: 166, sdram: 3 },
+        shared: { cycles: 33, sdram: 0 },
         extra: { cycles: 191, sdram: 3 }
       }
     },
@@ -1387,6 +1742,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 96, sdram: 2 },
         shared: { cycles: 1, sdram: 0 },
         extra: { cycles: 93, sdram: 2 }
+      },
+      'control-still': {
+        first: { cycles: 98, sdram: 2 },
+        shared: { cycles: 2, sdram: 0 },
+        extra: { cycles: 94, sdram: 2 }
       }
     },
     snapshotHash: 'f0f4d753989ec3d8'
@@ -1412,6 +1772,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 16, sdram: 0 },
         shared: { cycles: 8, sdram: 0 },
         extra: { cycles: 12, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 3, sdram: 0 },
+        shared: { cycles: 5, sdram: 0 },
+        extra: { cycles: 12, sdram: 0 }
       }
     },
     snapshotHash: 'a29dc3d4ed9dc21e'
@@ -1427,6 +1792,11 @@ export const FX_CPU_COST_TABLE: Record<
         first: { cycles: 54, sdram: 0 },
         shared: { cycles: 19, sdram: 0 },
         extra: { cycles: 73, sdram: 0 }
+      },
+      'control-still': {
+        first: { cycles: 24, sdram: 0 },
+        shared: { cycles: 17, sdram: 0 },
+        extra: { cycles: 43, sdram: 0 }
       }
     },
     snapshotHash: 'e3861ecccecfc253'

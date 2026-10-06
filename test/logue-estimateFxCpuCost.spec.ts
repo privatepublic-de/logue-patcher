@@ -88,14 +88,16 @@ describe('estimateFxCpuCost', () => {
     expect(ok(pass('revfx')).cyclesPerSample).toBe(cost(FX_CPU_BASELINE.revfx))
   })
 
-  it('treats an input from knob-only math as unwired, and that math as free', () => {
+  it('counts an input from knob-only math as still (control-still), and that math as free', () => {
     const fromConstant = ok(
       fx(
         [node('logue/util/constant', 'k'), node('logue/util/long-delay', 'd')],
         [net('in', 'mono', 'd', 'in'), net('k', 'out', 'd', 'time'), net('d', 'out', 'out', 'l')]
       )
     )
-    expect(fromConstant.perInstance.map((i) => [i.nodeName, i.variant])).toEqual([['d', 'base #1']])
+    expect(fromConstant.perInstance.map((i) => [i.nodeName, i.variant])).toEqual([
+      ['d', 'control-still #1']
+    ])
 
     const fromLfo = ok(
       fx(
