@@ -1888,7 +1888,11 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   square/pulse/triangle/sync/phase-dist harmonics re h1 (a tonal case's fundamental is the note
   times the measured clock offset, never searched for: sync at an octave has almost nothing at
   its own fundamental), a tracked svf and comb in third octaves (noise cases record 6 s: 3 s
-  scattered the lowest bands +-2 dB). Results: all 10 pass on both devices; pitch within 0.6 ct
+  scattered the lowest bands +-2 dB). 2026-10-06 added the primitives `functional.ts` only
+  checked as effects (noise colours, lfsr long/short tracked, ladder incl. tracked
+  self-oscillation, eq-band bell/high shelf, tilt, svf `notch` tracked, drive, freq-shift on a
+  saw, formant), 15 cases; `--host` renders every case without a device. Not yet run on a
+  device. Results (the first 10): all 10 pass on both devices; pitch within 0.6 ct
   (both devices show the same -0.56/+0.30 at notes 24/36: the analysis, not the devices),
   harmonics mostly within 0.3 dB. The voice is made neutral first: NTS-1 mkII `neutralVoice` in
   the program dump; xd by CC after the program write (`XD_VOICE`). **On the xd LFO INT and EG INT

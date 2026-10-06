@@ -18,6 +18,8 @@
  *
  * Usage: npx tsx logue-codegen/scripts/hwtest/oscChecks.ts [--xd] [name filter ...]
  * Leaves the device as it was (osc slot 1 and the program restored and verified).
+ * `--host` touches no device: every case's host render on both platforms (level, peak, finite),
+ * to check a new case before a device run.
  */
 import { writeFileSync } from 'fs'
 import { join } from 'path'
@@ -102,6 +104,8 @@ interface Case {
 }
 
 const noise = (): [string, string, ParamValue[]] => ['n', 'logue/osc/noise', [p('LEVEL', 75)]]
+/** +12 dB, for a case whose filter takes most of the noise away (host under ~-45 dBFS). */
+const boost = (): [string, string, ParamValue[]] => ['g', 'logue/gain/vca', [p('GAIN', 100)]]
 const CASES: Case[] = [
   { name: 'chain-white', doc: chain(noise()), notes: [57] },
   {
@@ -145,6 +149,111 @@ const CASES: Case[] = [
     name: 'comb-tracked',
     doc: chain(noise(), ['f', 'logue/filter/comb', [p('TRACK', 100), p('FEEDBACK', 80)]]),
     notes: [57]
+  },
+  // The primitives `functional.ts` only checked as effects (2026-10-06). Inside an oscillator they
+  // read the firmware's note table (lfsr/ladder/svf tracking, ladder/eq/tilt cutoffs through
+  // note_w0) and sine table (freq-shift's carrier), which an effect's stand-ins replace.
+  ...(
+    [
+      ['noise-pink', 1],
+      ['noise-brown', 2],
+      ['noise-violet', 3]
+    ] as const
+  ).map(([name, color]): Case => ({
+    name,
+    doc: chain(['n', 'logue/osc/noise', [p('COLOR', color), p('LEVEL', 75)]]),
+    notes: [57]
+  })),
+  // TRACK on (the default): the clock is 127x the note, so the long sequence's spectrum moves
+  // with it and the short loop plays the note itself.
+  { name: 'lfsr-long', doc: chain(['l', 'logue/osc/lfsr', [p('LEVEL', 75)]]), notes: [45, 69] },
+  {
+    name: 'lfsr-short',
+    doc: chain(['l', 'logue/osc/lfsr', [p('MODE', 1), p('LEVEL', 75)]]),
+    notes: [45, 69],
+    harmonics: 10
+  },
+  {
+    name: 'ladder-c50-r70',
+    doc: chain(
+      noise(),
+      ['f', 'logue/filter/ladder', [p('CUTOFF', 50), p('RESONANCE', 70)]],
+      boost()
+    ),
+    notes: [57]
+  },
+  {
+    // Self-oscillation on the tracked note, started by the ladder's own -120 dB noise (silent
+    // input): ~200 ms at A3, inside the settle time.
+    name: 'ladder-selfosc',
+    doc: chain(
+      ['n', 'logue/osc/noise', [p('LEVEL', 0)]],
+      ['f', 'logue/filter/ladder', [p('RESONANCE', 100), p('TRACK', 100)]]
+    ),
+    notes: [57, 69],
+    harmonics: 3
+  },
+  {
+    name: 'eq-bell+18',
+    doc: chain(noise(), [
+      'f',
+      'logue/filter/eq-band',
+      [p('TYPE', 0), p('FREQ', 50), p('GAIN', 100), p('Q', 25)]
+    ]),
+    notes: [57]
+  },
+  {
+    name: 'eq-hishelf-12',
+    doc: chain(
+      noise(),
+      ['f', 'logue/filter/eq-band', [p('TYPE', 2), p('FREQ', 70), p('GAIN', -67)]],
+      boost()
+    ),
+    notes: [57]
+  },
+  {
+    name: 'tilt+100',
+    doc: chain(noise(), ['f', 'logue/filter/tilt', [p('TILT', 100)]]),
+    notes: [57]
+  },
+  {
+    name: 'svf-notch-tracked',
+    doc: chain(noise(), ['f', 'logue/filter/svf', [p('TRACK', 100), p('RESONANCE', 50)], 'notch']),
+    notes: [45, 69]
+  },
+  {
+    name: 'drive-50',
+    doc: chain(
+      ['s', 'logue/osc/sine', []],
+      ['h', 'logue/gain/vca', [p('GAIN', 12.5)]],
+      ['d', 'logue/shape/drive', [p('DRIVE', 50), p('TONE', 50)]]
+    ),
+    notes: [45, 69],
+    harmonics: 7
+  },
+  {
+    // 2000 * 0.5^3 = 250 Hz up, every partial of a saw: no longer harmonic, so third octaves.
+    name: 'freqshift+250',
+    doc: chain(
+      ['s', 'logue/osc/saw', []],
+      ['f', 'logue/util/freq-shift', [p('SHIFT', 50), p('MIX', 100)], 'shifted']
+    ),
+    notes: [45]
+  },
+  {
+    // Per-block coefficients since 2026-10-06. Three narrow bands of noise are quiet (-62 dBFS
+    // at RESONANCE 70 through the trim): wider bands and +12 dB keep it clear of the floor.
+    name: 'formant',
+    doc: chain(
+      noise(),
+      [
+        'f',
+        'logue/filter/formant',
+        [p('VOWEL', 30), p('CHARACTER', 60), p('RESONANCE', 30), p('SHIFT', 3)]
+      ],
+      boost()
+    ),
+    notes: [57]
   }
 ]
 
@@ -167,11 +276,34 @@ function writeWav(path: string, x: Float32Array): void {
 
 const db = (v: number): string => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`
 
+/** `--host`: no device -- every case's host render on both platforms, its level and peak, so a
+ *  new case can be checked for silence, clipping or a build error before a device run. */
+function hostDryRun(cases: Case[]): void {
+  for (const c of cases)
+    for (const note of c.notes)
+      for (const [platform, render] of [
+        ['nts1', renderNts1OscOnHost],
+        ['xd', renderXdOscOnHost]
+      ] as const) {
+        const x = render(c.doc, Math.round((SECONDS + SETTLE_S) * SAMPLE_RATE), note).subarray(
+          Math.round(SETTLE_S * SAMPLE_RATE)
+        )
+        const finite = x.every(Number.isFinite)
+        const rms = Math.sqrt(x.reduce((a, v) => a + v * v, 0) / x.length)
+        const peak = x.reduce((a, v) => Math.max(a, Math.abs(v)), 0)
+        console.log(
+          `${c.name.padEnd(20)} ${String(note).padStart(3)} ${platform.padEnd(4)} ` +
+            `rms ${db(20 * Math.log10(rms))} dBFS, peak ${peak.toFixed(3)}${finite ? '' : ' NON-FINITE'}`
+        )
+      }
+}
+
 async function main(): Promise<void> {
   const filters = process.argv.slice(2).filter((a) => !a.startsWith('--'))
   const cases = CASES.filter(
     (c) => !filters.length || c.name.startsWith('chain-') || filters.some((f) => c.name.includes(f))
   )
+  if (process.argv.includes('--host')) return hostDryRun(cases)
   const rig = await LogueRig.connect(XD ? 'minilogue-xd' : 'nts1mkii')
   let snapshot: Snapshot | undefined
   const failures: string[] = []
