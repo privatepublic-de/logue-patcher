@@ -1891,8 +1891,9 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
   scattered the lowest bands +-2 dB). 2026-10-06 added the primitives `functional.ts` only
   checked as effects (noise colours, lfsr long/short tracked, ladder incl. tracked
   self-oscillation, eq-band bell/high shelf, tilt, svf `notch` tracked, drive, freq-shift on a
-  saw, formant), 15 cases; `--host` renders every case without a device. Not yet run on a
-  device. Results (the first 10): all 10 pass on both devices; pitch within 0.6 ct
+  saw, formant), 14 cases; `--host` renders every case without a device. NTS-1 mkII: all 14
+  pass (bands <= 0.32 dB rms, worst svf-notch at note 69 -1.2 dB at 99 Hz; harmonics within
+  0.6 dB, tracked notes exact); xd not run yet. Results (the first 10): all 10 pass on both devices; pitch within 0.6 ct
   (both devices show the same -0.56/+0.30 at notes 24/36: the analysis, not the devices),
   harmonics mostly within 0.3 dB. The voice is made neutral first: NTS-1 mkII `neutralVoice` in
   the program dump; xd by CC after the program write (`XD_VOICE`). **On the xd LFO INT and EG INT
