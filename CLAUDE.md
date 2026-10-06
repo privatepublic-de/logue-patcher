@@ -2003,8 +2003,12 @@ earlier snapshot instead. `compareWithSnapshot.ts` checks the device against one
 
 - Both effect gauges' "busy" anchors are measured with particular factory effects (NTS-1 mkII:
   CHORUS + STEREO delay; xd: CHORUS + a reverb), not the heaviest of every type, and with a
-  factory oscillator. A knob can move an effect's cost a lot (the xd auto-wah: 532 cycles at
-  DEPTH 0, 254 at 64), which the knob-reachable maximum doesn't model for continuous params.
+  factory oscillator. The knob-reachable maximum doesn't model continuous params, which can move
+  cost through the data (a svf cutoff that keeps moving redoes its divide; a saturated one
+  doesn't). A note here once said the xd auto-wah cost 532 at DEPTH 0 against 254 at 64; the
+  emulator (2026-10-06, `emulateXdFxCycles.py ... 1=<depth>`) gives 163 at DEPTH 0 and 0.1,
+  147 from 0.25 up (~264 vs ~241 real) -- ~10 %, not 2x. The 532 has no recorded run and was
+  probably a stale-slot reading (see HISTORY, "minilogue xd: effect CPU measured").
 - `util/reverse-tap` and the reverse-wash examples (2026-10-01) are harness-, link- and
   emulator-checked only; no listening pass yet. Staged: `lp-fx-revwash` (+ `-cpu` with the probe
   on WIDTH's row) and `lp-xdfx-revwash`/`lp-xdfx-revwash-xd`. xd emulator (penalty 0/8): the
