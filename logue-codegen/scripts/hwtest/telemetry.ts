@@ -51,7 +51,7 @@ const EMPTY_ROW = '{0, 0, 0, 0, k_unit_param_type_none, 0, 0, 0, {""}}'
 /** Edits a generated effect's files (`header.c`, `unit.cc`). */
 export function withFxTelemetry(
   files: Record<string, string>,
-  opts: { burnRow?: number } = {}
+  opts: { burnRow?: number; passInput?: boolean } = {}
 ): Record<string, string> {
   let headerC = files['header.c']
   let unitCc = files['unit.cc']
@@ -111,8 +111,7 @@ static inline void telemetry_tone(float *out, uint32_t frames, int k, float hz)
     const uint32_t fxc = ((DWT_CYCCNT - t0) << 4) / frames;
     s_t_fx = s_t_fx ? s_t_fx + ((int32_t)(fxc - s_t_fx) >> 4) : fxc;
   }
-  for (uint32_t i = 0; i < 2 * frames; ++i) out[i] = 0.f;
-  telemetry_tone(out, frames, 0, ${DETECTOR_HZ}.f);
+${opts.passInput ? '' : '  for (uint32_t i = 0; i < 2 * frames; ++i) out[i] = 0.f;\n'}  telemetry_tone(out, frames, 0, ${DETECTOR_HZ}.f);
   telemetry_tone(out, frames, 1, ${FX_BASE_HZ}.f + (float)s_t_fx * ${1 / 16 / CYCLES_PER_HZ}f);
   if (s_t_tot)
     telemetry_tone(out, frames, 2, ${TOT_BASE_HZ}.f + ((float)s_t_tot * ${1 / 16}f - ${TOT_OFFSET}.f) * ${1 / CYCLES_PER_HZ}f);`
@@ -293,14 +292,20 @@ static inline void telemetry_write(float *out, uint32_t frames, float totOffset)
 }
 `
 
+/** Where a LOAD oscillator's tones go (`withNts1OscTelemetry`'s `loadTones`), clear of an
+ *  effect's own when both play at once: detector 300 Hz, its cycles at 9000 + c/4, the total at
+ *  12000 + (c - 10000)/4. */
+export const LOAD_TONES = { detector: 300, fxBase: 9000, totBase: 12000 }
+
 /**
  * NTS-1 mkII oscillator: wraps `unit_render`'s `process` (pitch and Shape LFO set as usual), the
  * tones in place of the voice's output (same decoding as an effect's: `cyclesFromFxTone`,
- * `cyclesFromTotTone`). With `burnRow`, a BURN menu param at that row (the first free one).
+ * `cyclesFromTotTone`). With `burnRow`, a BURN menu param at that row (the first free one). With
+ * `loadTones`, the tones sit at `LOAD_TONES` instead.
  */
 export function withNts1OscTelemetry(
   files: Record<string, string>,
-  opts: { burnRow?: number } = {}
+  opts: { burnRow?: number; loadTones?: boolean } = {}
 ): Record<string, string> {
   let headerC = files['header.c']
   let unitCc = files['unit.cc']
@@ -336,6 +341,11 @@ export function withNts1OscTelemetry(
   telemetry_measure(t0, frames);
   telemetry_write(out, frames, ${TOT_OFFSET}.f);`
   )
+  if (opts.loadTones) {
+    replace(`frames, 0, ${DETECTOR_HZ}.f)`, `frames, 0, ${LOAD_TONES.detector}.f)`)
+    replace(`frames, 1, ${FX_BASE_HZ}.f +`, `frames, 1, ${LOAD_TONES.fxBase}.f +`)
+    replace(`frames, 2, ${TOT_BASE_HZ}.f +`, `frames, 2, ${LOAD_TONES.totBase}.f +`)
+  }
   return { ...files, 'header.c': headerC, 'unit.cc': unitCc }
 }
 
